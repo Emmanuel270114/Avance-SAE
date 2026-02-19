@@ -1,0 +1,221 @@
+{% extends 'base.html' %}
+
+{% block title %}Programas{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="/static/css/components/header.css">
+<link rel="stylesheet" href="/static/css/components/forms.css">
+<link rel="stylesheet" href="/static/css/components/filters.css">
+<link rel="stylesheet" href="/static/css/components/tables.css">
+<link rel="stylesheet" href="/static/css/components/modal.css">
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="header-usuarios">
+        <h2>Catálogo de Programas</h2>
+        <form action="/mod_principal" method="get">
+            <button type="submit" class="btn-volver">Regresar</button>
+        </form>
+    </div>
+
+
+     <!-- Formulario de registro/edición de usuarios -->
+    {% if rol == 'Administrador' %}
+        <div class="registro-container">
+        <h3 id="titulo-usuario">Registro Programa</h3>
+        <form id="registroP">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="sigla">Nombre</label>
+                    <input type="text" id="nPrograma" name="nPrograma" placeholder="Nombre del Programa" required class="input-form">
+                </div>
+                <div class="form-group">
+                    <label for="nombreUA">Nivel</label>
+                    <input type="text" id="nivel" name="nivel" placeholder="Nivel" required class="input-form">
+                </div>
+               
+            </div>
+            <div class="form-row">
+                  <div class="form-group">
+                    <label for="director">Rama</label>
+                    <input type="text" id="director" name="director" placeholder="Rama"  class="input-form">
+                </div>
+                <div class="form-group">
+                    <label for="rama">Semestre</label>
+                    <input type="text" id="Semestre" name="Semestre" placeholder="Semestre" required readonly class="input-form">
+                </div>  
+                <div class="form-group">
+                    <label for="calle">Descripción</label>
+                    <input type="text" id="descripcion" name="descripcion" placeholder="Descripción"  class="input-form">
+                </div>
+            </div>
+            
+            <input type="hidden" id="id_usuario" name="id_usuario">
+            <div class="form-row">
+                <button type="submit" id="btn-guardar">Registrar</button>
+                <button type="button" id="btn-cancelar">Cancelar</button>
+                <button type="button" id="btn-limpiar">Limpiar</button>
+                <button type="button" id="btn-eliminar" style="display:none;">Eliminar</button>
+            </div>
+        </form>
+        <div id="mensaje"></div>
+    </div>
+    {% endif %}
+
+
+
+    <!-- 🔹 Filtro por Programa -->
+    <div class="filtro-ua-box">
+        <label for="filtro-programa">Filtrar por Programa:</label>
+        <select id="filtro-programa" class="input-form">
+            <option value="">Todos los Programas</option>
+            {% for p in programas|unique(attribute='Nombre_Programa') %}
+            <option value="{{ p.Nombre_Programa }}">{{ p.Nombre_Programa }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <!-- 🔹 Tabla de programas -->
+    <div class="table-container">
+        <table id="tabla-programas">
+            <thead>
+                <tr>
+                    <th>Nombre Programa</th>
+                    <th>Nivel</th>
+                    <th>Rama</th>
+                    <th>Semestre</th>
+                    <th>Descripción</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in programas %}
+                <tr class="fila-edit">
+                    <td>{{ p.Nombre_Programa }}</td>
+                    <td>{{ p.Nivel }}</td>
+                    <td>{{ p.Nombre_Rama }}</td>
+                    <td>{{ p.Semestre }}</td>
+                    <td>{{ p.Descripcion }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const filtro = document.getElementById("filtro-programa");
+    const filas = document.querySelectorAll("#tabla-programas tbody tr");
+
+    filtro.addEventListener("change", () => {
+        const valor = filtro.value.toLowerCase().trim();
+
+        filas.forEach(fila => {
+            // 🔹 La columna 0 contiene el "Nombre Programa"
+            const nombrePrograma = fila.cells[0].textContent.toLowerCase().trim();
+
+            // Mostrar todas si no hay filtro o si coincide exactamente
+            if (valor === "" || nombrePrograma === valor) {
+                fila.style.display = "";
+            } else {
+                fila.style.display = "none";
+            }
+        });
+    });
+});
+</script>
+
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const filas = document.querySelectorAll(".fila-edit");
+    const form = document.getElementById("registroP");
+    const btnGuardar = document.getElementById("btn-guardar");
+    const btnEliminar = document.getElementById("btn-eliminar");
+    const btnCancelar = document.getElementById("btn-cancelar");
+    const btnLimpiar = document.getElementById("btn-limpiar");
+    const titulo = document.getElementById("titulo-usuario");
+
+    // 🔹 Cuando se selecciona una fila, llenar el formulario
+    filas.forEach(fila => {
+        fila.addEventListener("click", () => {
+            const celdas = fila.querySelectorAll("td");
+
+            document.getElementById("nPrograma").value = celdas[0].textContent.trim();
+            document.getElementById("nivel").value = celdas[1].textContent.trim();
+            document.getElementById("director").value = celdas[2].textContent.trim();
+            document.getElementById("Semestre").value = celdas[3].textContent.trim();
+            document.getElementById("descripcion").value = celdas[4].textContent.trim();
+
+            // Cambiar al modo edición
+            btnGuardar.textContent = "Actualizar";
+            btnEliminar.style.display = "inline-block";
+            titulo.textContent = "Editar Programa";
+        });
+    });
+
+    // 🔹 Botón Limpiar: borra los campos, mantiene modo actual
+    btnLimpiar.addEventListener("click", function () {
+        form.reset();
+        titulo.textContent = "Registro Programa"
+        btnGuardar.textContent = "Registrar";
+        btnEliminar.style.display = "none";
+    });
+
+    // 🔹 Botón Cancelar: limpia y vuelve al modo “Registrar”
+    btnCancelar.addEventListener("click", function () {
+        form.reset();
+        btnGuardar.textContent = "Registrar";
+        btnEliminar.style.display = "none";
+        titulo.textContent = "Registro Programa";
+    });
+
+    // 🔹 Botón Eliminar: confirma y limpia (puedes agregar tu lógica fetch)
+    btnEliminar.addEventListener("click", function () {
+        const nombre = document.getElementById("nPrograma").value;
+        if (confirm(`¿Seguro que deseas eliminar el programa "${nombre}"?`)) {
+            console.log("Eliminando programa:", nombre);
+
+            // Aquí podrías agregar la llamada fetch() para eliminar desde Flask
+
+            form.reset();
+            btnGuardar.textContent = "Registrar";
+            btnEliminar.style.display = "none";
+            titulo.textContent = "Registro Programa";
+        }
+    });
+
+    // 🔹 Evento de envío del formulario (diferencia entre registrar y actualizar)
+    form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        const modo = btnGuardar.textContent;
+        const datos = {
+            nombre: document.getElementById("nPrograma").value,
+            nivel: document.getElementById("nivel").value,
+            rama: document.getElementById("director").value,
+            semestre: document.getElementById("Semestre").value,
+            descripcion: document.getElementById("descripcion").value
+        };
+
+        if (modo === "Registrar") {
+            console.log("Registrando nuevo programa:", datos);
+            // Aquí puedes agregar tu fetch POST para registrar
+        } else {
+            console.log("Actualizando programa existente:", datos);
+            // Aquí puedes agregar tu fetch PUT o PATCH para actualizar
+        }
+
+        // (Opcional) limpiar después de enviar
+        // form.reset();
+        // btnGuardar.textContent = "Registrar";
+        // btnEliminar.style.display = "none";
+        // titulo.textContent = "Registro Programa";
+    });
+});
+</script>
+
+{% endblock %}

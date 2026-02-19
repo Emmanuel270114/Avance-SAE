@@ -1,0 +1,26 @@
+{
+  "extensions.ignoreRecommendations": true,
+  "files.watcherExclude": {
+    "**/.git/**": true,
+    "**/.hg/**": true,
+    "**/.svn/**": true,
+    "**/.venv/**": true,
+    "**/venv/**": true,
+    "**/env/**": true,
+    "**/node_modules/**": true,
+    "**/__pycache__/**": true
+  },
+  "search.exclude": {
+    "**/.git/**": true,
+    "**/.venv/**": true,
+    "**/venv/**": true,
+    "**/env/**": true,
+    "**/node_modules/**": true,
+    "**/__pycache__/**": true
+  },
+  "python.analysis.typeCheckingMode": "basic",
+  "python.analysis.autoImportCompletions": true,
+  "cmake.configureOnOpen": false,
+  "java.enabled": false,
+  "gitlens.currentLine.enabled": false
+}

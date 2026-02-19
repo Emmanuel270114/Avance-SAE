@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SAE - Sistema{% endblock %}</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    
+    <!-- CSS Base -->
+    <link rel="stylesheet" href="/static/css/base.css">
+    
+    <!-- CSS específico de página -->
+    {% block styles %}{% endblock %}
+</head>
+<body>
+    <!-- Header con navegación -->
+    {% include 'components/header.html' %}
+
+    <!-- Contenido principal -->
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Scripts base -->
+    <script src="/static/js/config.js"></script>
+    <script src="/static/js/utils.js"></script>
+    
+    <!-- Scripts específicos de página -->
+    {% block scripts %}{% endblock %}
+</body>
+</html>

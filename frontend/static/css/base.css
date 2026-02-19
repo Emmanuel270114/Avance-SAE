@@ -1,0 +1,74 @@
+/* CSS Base - Estilos globales y layout principal */
+
+/* Estilos generales del body */
+body {
+    font-family: Arial, sans-serif;
+    background: linear-gradient(135deg, #6e0343 60%, #ffffff 100%);
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+}
+
+/* Container principal */
+.container {
+    max-width: 1200px;
+    margin: 40px auto;
+    background: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    padding: 32px 24px;
+}
+
+/* Header de páginas */
+.header-usuarios {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+}
+
+.bienvenido {
+    font-size: 1.1em;
+    font-weight: bold;
+    color: #000000;
+}
+
+.btn-volver {
+    background: #6e0343;
+    color: #fff;
+    padding: 8px 20px;
+    border-radius: 4px;
+    border: none;
+    font-size: 15px;
+    cursor: pointer;
+    margin-top: 10px;
+}
+
+.btn-volver:hover {
+    background: #4a022e;
+}
+
+/* Títulos */
+h2 {
+    color: #000000;
+    margin-top: 0;
+    margin-bottom: 18px;
+    font-size: 1.3em;
+    font-weight: bold;
+}
+
+/* Inputs generales */
+.input-form {
+    padding: 8px;
+    width: 100%;
+    margin-bottom: 0;
+    box-sizing: border-box;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    font-size: 1em;
+}
+
+.input-error {
+    border: 2px solid #c62828 !important;
+    background: #ffebee;
+}

@@ -1,0 +1,18 @@
+<!-- Filtros para la tabla de usuarios -->
+{% if es_super_admin %}
+<!-- Filtro de Unidad Académica (solo para super admin) -->
+<div class="filtro-ua-box">
+    <label for="filtro-ua">Filtrar por Unidad Académica:</label>
+    <select id="filtro-ua" class="input-form">
+        <option value="">Todas las Unidades Académicas</option>
+        {% for ua in unidades_academicas %}
+        <option value="{{ ua.Id_Unidad_Academica }}">{{ ua.Sigla }} </option>
+        {% endfor %}
+    </select>
+</div>
+{% endif %}
+
+<div class="filtro-usuarios-box" style="display: flex; gap: 0.5em; align-items: center;">
+    <input type="text" id="filtro-usuarios" class="input-form" placeholder="Filtrar por nombre, usuario o email..." aria-label="Filtrar usuarios">
+    <button type="button" id="btn-limpiar-filtros" class="btn-filtros" title="Limpiar filtros" style="padding: 0.3em 0.8em;">Borrar Filtros</button>
+</div>

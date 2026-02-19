@@ -1,0 +1,75 @@
+<!-- templates/login.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login SAE</title>
+    <!--Links para descargar la fuente NotoSans-->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/login.css">
+</head>
+<body>
+    <div class="container">
+        <h2>SAE <br> Iniciar Sesión</h2>
+        <form method="post" action="/login">
+            <input type="text" name="usuario_email" placeholder="Usuario" required class="input-form">
+            <br>
+            <div class="password-wrapper">
+                <input id="password" type="password" name="password" placeholder="Contraseña" required class="input-form" autocomplete="current-password">
+                <button type="button" id="togglePassword" class="toggle-eye" aria-label="Mostrar contraseña" title="Mostrar/Ocultar">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <!-- Ojo abierto -->
+                        <g class="icon-open" style="display:none">
+                            <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </g>
+                        <!-- Ojo cerrado sin diagonal: párpado y pestañas -->
+                        <g class="icon-closed">
+                            <!-- Párpado (arco superior) -->
+                            <path d="M2 12 C7 8, 17 8, 22 12"></path>
+                            <!-- Pestañas -->
+                            <line x1="6" y1="10" x2="6" y2="8"></line>
+                            <line x1="12" y1="9.5" x2="12" y2="7.5"></line>
+                            <line x1="18" y1="10" x2="18" y2="8"></line>
+                        </g>
+                    </svg>
+                </button>
+            </div>
+            <br>
+            <button type="submit">Ingresar</button>
+            <div class="recuperacion-links" style="margin-top:12px; font-size:0.85rem; line-height:1.4;">
+                <a href="/recuperacion/usuario" style="display:inline-block; margin-right:10px;">¿Olvidaste tu usuario?</a>
+                <a href="/recuperacion/password" style="display:inline-block;">¿Olvidaste tu contraseña?</a>
+            </div>
+        </form>
+        {% if mensaje is defined %}
+            <div class="status {{ 'ok' if exito else 'fail' }}">
+                {{ mensaje }}
+            </div>
+        {% endif %}
+
+    <script>
+        (function(){
+            const input = document.getElementById('password');
+            const btn = document.getElementById('togglePassword');
+            if (input && btn) {
+                const openG = btn.querySelector('.icon-open');
+                const closedG = btn.querySelector('.icon-closed');
+                btn.addEventListener('click', function(){
+                    const isHidden = input.type === 'password';
+                    input.type = isHidden ? 'text' : 'password';
+                    if (openG && closedG) {
+                        openG.style.display = isHidden ? 'inline' : 'none';
+                        closedG.style.display = isHidden ? 'none' : 'inline';
+                    }
+                    this.setAttribute('aria-label', isHidden ? 'Ocultar contraseña' : 'Mostrar contraseña');
+                });
+            }
+        })();
+    </script>
+    </div>
+</body>
+</html>

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard SAE</title>
+    <link rel="stylesheet" href="/static/css/dashboard.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <div class="dashboard-header">
+            <h1>Dashboard SAE - Tablero General</h1>
+            <button onclick="window.location.href='/mod_principal/'" class="btn-regresar">← Regresar</button>
+        </div>
+        
+        <div class="dashboard-content">
+            <iframe 
+                title="Tablero_SAE" 
+                width="100%" 
+                height="100%" 
+                src="https://app.powerbi.com/reportEmbed?reportId=c221c2f2-617f-4ea7-95f1-2b9a30262368&autoAuth=true&ctid=f94bf4d9-8097-4794-adf6-a5466ca28563" 
+                frameborder="0" 
+                allowFullScreen="true">
+            </iframe>
+            <!--
+            <iframe 
+                title="Monitoreo_SAE" 
+                width="100%" 
+                height="541.25" 
+                src="https://app.powerbi.com/reportEmbed?reportId=6b57dbc9-541e-4ca2-937d-885c6a06cc3a&autoAuth=true&ctid=f94bf4d9-8097-4794-adf6-a5466ca28563" 
+                frameborder="0" 
+                allowFullScreen="true">
+            </iframe>
+            -->
+        </div>
+    </div>
+</body>
+</html>

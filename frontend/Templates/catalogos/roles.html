@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+
+{% block title %}Roles{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="/static/css/components/header.css">
+<link rel="stylesheet" href="/static/css/components/forms.css">
+<link rel="stylesheet" href="/static/css/components/filters.css">
+<link rel="stylesheet" href="/static/css/components/tables.css">
+<link rel="stylesheet" href="/static/css/components/modal.css">
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="header-usuarios">
+        <h2>Catálogo de Roles</h2>
+        <form action="/mod_principal" method="get">
+            <button type="submit" class="btn-volver">Regresar</button>
+        </form>
+    </div>
+
+
+    <!-- 🔹 Formulario de Registro/Edición del Rol -->
+    <div class="registro-container">
+        <h3 id="titulo-usuario">Registro Rol </h3>
+        <form id="registroRol">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="rol">Rol</label>
+                    <input type="text" id="rol" name="rol"  class="input-form">
+                </div>
+                <div class="form-group">
+                    <label for="estado">Estado</label>
+                    <select id="estado" name="estado" class="input-form" required>
+                        <option value="Activo">Activo</option>
+                        <option value="Inactivo">Inactivo</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <button type="submit" id="btn-guardar">Registrar</button>
+                <button type="button" id="btn-cancelar">Cancelar</button>
+                <button type="button" id="btn-limpiar">Limpiar</button>
+                <button type="button" id="btn-eliminar" style="display:none;">Eliminar</button>
+            </div>
+        </form>
+    </div>
+
+
+    <!-- 🔹 Filtro por descripción del rol -->
+    <div class="filtro-ua-box">
+        <label for="filtro-rol">Filtrar por Descripción:</label>
+        <select id="filtro-rol" class="input-form">
+            <option value="">Todos</option>
+            {% for r in roles|unique(attribute='Descripcion') %}
+            <option value="{{ r.Descripcion }}">{{ r.Descripcion }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <!-- 🔹 Tabla de roles -->
+    <div class="table-container">
+        <table id="tabla-roles">
+            <thead>
+                <tr>
+                    <th>Rol</th>
+                    <th>Descripción</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in roles %}
+                <tr class="fila-edit">
+                    <td>{{ r.Rol }}</td>
+                    <td>{{ r.Descripcion }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const filtro = document.getElementById("filtro-edit");
+    const filas = document.querySelectorAll("#tabla-roles tbody tr");
+
+    filtro.addEventListener("change", () => {
+        const valor = filtro.value.toLowerCase().trim();
+
+        filas.forEach(fila => {
+            const descripcion = fila.cells[1].textContent.toLowerCase().trim();
+
+            if (valor === "" || descripcion === valor) {
+                fila.style.display = "";
+            } else {
+                fila.style.display = "none";
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

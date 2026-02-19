@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+
+{% block title %}Usuarios - SAE Sistema{% endblock %}
+
+{% block styles %}
+    <link rel="stylesheet" href="/static/css/components/header.css">
+    <link rel="stylesheet" href="/static/css/components/forms.css">
+    <link rel="stylesheet" href="/static/css/components/filters.css">
+    <link rel="stylesheet" href="/static/css/components/tables.css">
+    <link rel="stylesheet" href="/static/css/components/modal.css">
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="header-usuarios">
+        <h2>Usuarios</h2>
+        <form action="/mod_principal" method="get">
+            <button type="submit" class="btn-volver">Regresar</button>
+        </form>
+    </div>
+    
+    
+
+    <!-- Formulario de usuario -->
+    {% include 'components/user_form.html' %}
+
+    <!-- Filtros -->
+    {% include 'components/filters.html' %}
+
+    <!-- Tabla de usuarios -->
+    <div  class="table-container">
+    {% include 'components/user_table.html' %}
+    </div>
+    
+
+    <!-- Modal de confirmación -->
+    {% include 'components/modal_confirm.html' %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+    <script src="/static/js/utils.js"></script>
+    <script src="/static/js/filters.js"></script>
+    <script src="/static/js/modal.js"></script>
+    <script src="/static/js/user_form.js"></script>
+{% endblock %}

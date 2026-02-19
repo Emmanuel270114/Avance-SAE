@@ -1,0 +1,103 @@
+/* Componente: Formularios - Estilos para formularios de usuario */
+
+.registro-container {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(110,3,67,0.10);
+    padding: 24px 24px 16px 24px;
+    margin-bottom: 32px;
+}
+
+.registro-container h3 {
+    color: #6e0343;
+    margin-top: 0;
+    margin-bottom: 18px;
+    font-size: 1.3em;
+    font-weight: bold;
+}
+
+.form-row {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 12px;
+}
+
+.form-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    font-size: 0.98em;
+    color: #000000;
+    margin-bottom: 4px;
+    font-weight: 600;
+}
+
+.input-readonly {
+    background-color: #f5f5f5;
+    cursor: not-allowed;
+}
+
+/* Botones del formulario */
+#btn-guardar {
+    background: #6e0343;
+    color: #fff;
+    border: none;
+    padding: 10px 24px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+#btn-guardar:hover {
+    background: #4a022e;
+}
+
+#btn-cancelar {
+    background: #aaa;
+    color: #fff;
+    border: none;
+    padding: 10px 24px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    margin-left: 10px;
+    display: none;
+}
+
+#btn-cancelar:hover {
+    background: #6e0343;
+}
+
+#btn-limpiar {
+    background: #aaa;
+    color: #fff;
+    border: none;
+    padding: 10px 24px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    margin-left: 10px;
+}
+
+#btn-limpiar:hover {
+    background: #6e0343;
+}
+
+#btn-eliminar {
+    background: #6e0343;
+    color: #fff;
+    border: none;
+    padding: 10px 24px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    margin-left: 10px;
+    display: none;
+}
+
+#btn-eliminar:hover {
+    background: #ff0000;
+}

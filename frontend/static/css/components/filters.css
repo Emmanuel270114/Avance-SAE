@@ -1,0 +1,47 @@
+/* Componente: Filtros - Estilos para filtros de búsqueda */
+
+/* Buscador de usuarios */
+.filtro-usuarios-box { 
+    margin: 16px 0 8px 0; 
+}
+
+#filtro-usuarios { 
+    width: 100%; 
+}
+
+/* Filtro de Unidad Académica (super admin) */
+.filtro-ua-box { 
+    margin: 16px 0 8px 0; 
+    display: flex; 
+    align-items: center; 
+    gap: 12px;
+    background: #f8f4f6;
+    padding: 12px;
+    border-radius: 6px;
+    border: 1px solid #e1bee7;
+}
+
+.filtro-ua-box label { 
+    font-weight: 600; 
+    color: #000000; 
+    white-space: nowrap;
+}
+
+#filtro-ua { 
+    flex: 1; 
+    max-width: 400px;
+}
+
+#btn-limpiar-filtros {
+    background: #6e0343;
+    color: #fff;
+    border: none;
+    padding: 10px 24px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+#btn-limpiar-filtros:hover {
+    background: #4a022e;
+}

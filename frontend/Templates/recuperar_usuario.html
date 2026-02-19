@@ -1,0 +1,42 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recuperar Usuario - SAE</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/recuperar_usuario.css">
+</head>
+<body>
+  <div class="auth-box">
+    <h2>Recuperar Usuario</h2>
+    <form id="form-recuperar-usuario">
+      <label for="email">Correo registrado</label>
+      <input type="email" id="email" name="email" required class="input-form" placeholder="usuario@ipn.mx">
+      <button type="submit" class="btn-primary">Buscar usuario</button>
+    </form>
+    <div id="resultado" class="resultado"></div>
+    <div class="acciones-secundarias">
+      <a href="/recuperacion/password" class="link">¿Olvidaste tu contraseña?</a> |
+      <a href="/login">Volver al login</a>
+    </div>
+  </div>
+  <script>
+    const formRecUsuario = document.getElementById('form-recuperar-usuario');
+    formRecUsuario.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fd = new FormData(formRecUsuario);
+      const resp = await fetch('/recuperacion/usuario', { method: 'POST', body: fd });
+      const data = await resp.json();
+      if (data.usuario) {
+        document.getElementById('resultado').innerHTML = `<p class='ok'>Tu usuario es: <strong>${data.usuario}</strong></p>`;
+      } else {
+        document.getElementById('resultado').innerHTML = `<p class='info'>Si el correo existe, se ha procesado la solicitud.</p>`;
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,84 @@
+/* Componente: Tablas - Estilos para tablas de datos */
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+th, td {
+    padding: 5px;
+    border-bottom: 1px solid #ddd;
+    text-align: left;
+}
+
+th {
+    background: #6e0343;
+    color: #fff;
+}
+
+tr:hover {
+    background: #f1f1f1;
+}
+
+.btn-editar {
+    background: #6e0343;
+    color: #fff;
+    padding: 6px 14px;
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 14px;
+}
+
+.btn-editar:hover {
+    background: #4a022e;
+}
+
+.fila-usuario {
+    cursor: pointer;
+}
+
+.fila-usuario:hover {
+    background: #f1e6ee;
+}
+
+.fila-edit {
+    cursor: pointer;
+}
+
+.fila-edit:hover {
+    background: #f1e6ee;
+}
+
+
+
+/* --- Ajustes para eliminar línea blanca y mantener encabezado fijo --- */
+
+/* Contenedor de tabla con scroll */
+.table-container {
+    max-height: 400px;
+    overflow-y: auto;
+    overflow-x: auto;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    margin-top: 15px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    background-color: #6e0343; /* 🔹 mismo color que el encabezado */
+    padding: 0; /* 🔹 elimina espacio interno */
+    display: block;
+}
+
+/* Tabla dentro del contenedor */
+.table-container table {
+    background-color: white; /* 🔹 fondo uniforme para las filas */
+    margin-top: 0; /* 🔹 evita separación con el borde superior */
+}
+
+/* Encabezado fijo y color igual al contenedor */
+.table-container thead th {
+    position: sticky;
+    top: 0;
+    background-color: #6e0343; /* 🔹 mismo color del encabezado */
+    color: white;
+    z-index: 2;
+}

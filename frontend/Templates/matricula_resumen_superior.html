@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resumen Ejecutivo de Matrícula - {{nombre_rol}}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        :root {
+            --rosa-principal: #6e0343;
+            --rosa-secundario: #6e0343;
+            --rosa-claro: #6e0343;
+            --rosa-muy-claro: #fce4ec;
+            --verde-exito: #28a745;
+            --azul-info: #17a2b8;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #6e0343 0%, #6e0343 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .container-resumen {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            padding: 30px;
+            margin: 30px auto;
+            max-width: 95%;
+        }
+        
+        .header-resumen {
+            background: linear-gradient(135deg, var(--rosa-principal), var(--rosa-secundario));
+            color: white;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(110, 3, 67, 0.4);
+        }
+        
+        .header-resumen h1 {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        
+        .info-badge {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 15px;
+            border-radius: 20px;
+            display: inline-block;
+            margin: 5px;
+        }
+        
+        .programa-section {
+            margin-bottom: 40px;
+            border: 2px solid var(--rosa-muy-claro);
+            border-radius: 12px;
+            padding: 20px;
+            background: linear-gradient(to bottom, #ffffff, var(--rosa-muy-claro));
+        }
+        
+        .programa-title {
+            background: var(--rosa-principal);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin: -20px -20px 20px -20px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .tabla-resumen {
+            width: 100%;
+            margin-bottom: 20px;
+            border-collapse: collapse;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .tabla-resumen thead {
+            background: linear-gradient(135deg, var(--rosa-principal), var(--rosa-claro));
+            color: white;
+        }
+        
+        .tabla-resumen th {
+            padding: 12px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 0.95rem;
+            border-right: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .tabla-resumen th:last-child {
+            border-right: none;
+        }
+        
+        .tabla-resumen td {
+            padding: 10px;
+            text-align: center;
+            border-bottom: 1px solid #e0e0e0;
+            border-right: 1px solid #e0e0e0;
+        }
+        
+        .tabla-resumen td:last-child {
+            border-right: none;
+        }
+        
+        .tabla-resumen tbody tr:hover {
+            background-color: var(--rosa-muy-claro);
+            transition: background-color 0.2s;
+        }
+        
+        .tabla-resumen tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        
+        .subtotal-row {
+            background: var(--rosa-claro) !important;
+            color: white;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+        
+        .subtotal-row td {
+            border-color: white !important;
+        }
+        
+        .total-general {
+            background: linear-gradient(135deg, var(--verde-exito), #66bb6a);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin-top: 30px;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+        }
+        
+        .total-general h2 {
+            margin: 0;
+            font-size: 1.8rem;
+            font-weight: bold;
+        }
+        
+        .total-general .numero {
+            font-size: 3rem;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        
+        .subseccion {
+            margin-top: 25px;
+            margin-bottom: 20px;
+        }
+        
+        .subseccion-title {
+            background: var(--azul-info);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 6px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            display: inline-block;
+        }
+        
+        .boton-volver {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            color: var(--rosa-principal);
+            padding: 12px 25px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+        
+        .boton-volver:hover {
+            background: var(--rosa-principal);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(110, 3, 67, 0.4);
+        }
+        
+        .boton-exportar {
+            background: var(--verde-exito);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            border: none;
+            font-weight: bold;
+            margin-left: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .boton-exportar:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+        
+        /* Estilos para botones de validación y rechazo */
+        .botones-validacion {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .btn-validar, .btn-rechazar {
+            padding: 12px 25px;
+            border-radius: 25px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 1rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-validar {
+            background: linear-gradient(135deg, var(--verde-exito), #45a049);
+            color: white;
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.4);
+        }
+        
+        .btn-validar:hover:not(:disabled) {
+            background: linear-gradient(135deg, #45a049, var(--verde-exito));
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(40, 167, 69, 0.6);
+        }
+        
+        .btn-rechazar {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+            color: white;
+            box-shadow: 0 4px 15px rgba(220, 53, 69, 0.4);
+        }
+        
+        .btn-rechazar:hover:not(:disabled) {
+            background: linear-gradient(135deg, #c82333, #dc3545);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(220, 53, 69, 0.6);
+        }
+        
+        .btn-validar:disabled, .btn-rechazar:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+        
+        /* Panel de rechazo */
+        .panel-rechazo {
+            background: white;
+            border: 2px solid #dc3545;
+            border-radius: 12px;
+            padding: 25px;
+            margin-top: 20px;
+            box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+            display: none;
+            animation: slideDown 0.3s ease-out;
+        }
+        
+        .panel-rechazo.panel-abierto {
+            display: block;
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .panel-rechazo-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .panel-rechazo-header h3 {
+            margin: 0;
+            color: #dc3545;
+            font-size: 1.5rem;
+        }
+        
+        .btn-cerrar-panel {
+            background: transparent;
+            border: none;
+            font-size: 1.5rem;
+            color: #dc3545;
+            cursor: pointer;
+            padding: 5px 10px;
+            transition: all 0.2s;
+        }
+        
+        .btn-cerrar-panel:hover {
+            transform: rotate(90deg);
+            color: #bd2130;
+        }
+        
+        .panel-warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            color: #856404;
+        }
+        
+        .textarea-motivo-rechazo {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-family: inherit;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+        
+        .textarea-motivo-rechazo:focus {
+            border-color: #dc3545;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1);
+        }
+        
+        .contador-caracteres {
+            text-align: right;
+            margin-top: 5px;
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .panel-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid #f0f0f0;
+        }
+        
+        .btn-cancelar, .btn-confirmar-rechazo {
+            padding: 10px 20px;
+            border-radius: 20px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-cancelar {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-cancelar:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+        
+        .btn-confirmar-rechazo {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-confirmar-rechazo:hover:not(:disabled) {
+            background: #c82333;
+            transform: translateY(-2px);
+        }
+        
+        .btn-confirmar-rechazo:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .texto-ayuda {
+            font-size: 0.85rem;
+            color: #666;
+            font-weight: normal;
+            display: block;
+            margin-top: 5px;
+        }
+        
+        @media print {
+            body {
+                background: white;
+            }
+            .boton-volver, .boton-exportar {
+                display: none;
+            }
+            .programa-section {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="/matricula/consulta" class="boton-volver">
+        <i class="fas fa-arrow-left"></i> Volver
+    </a>
+    
+    <div class="container-resumen">
+        <div class="header-resumen">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h1><i class="fas fa-chart-bar"></i> Resumen Ejecutivo de Matrícula</h1>
+                    <div>
+                        <span class="info-badge"><i class="fas fa-university"></i> {{unidad_academica.Unidad_Academica if unidad_academica else 'N/A'}}</span>
+                        <span class="info-badge"><i class="fas fa-graduation-cap"></i> {{nivel.Nivel if nivel else 'N/A'}}</span>
+                        <span class="info-badge"><i class="fas fa-calendar"></i> Período {{periodo}}</span>
+                    </div>
+                </div>
+                <div class="text-end">
+                    <button class="boton-exportar" onclick="window.print()">
+                        <i class="fas fa-file-pdf"></i> Exportar PDF
+                    </button>
+                    <div style="margin-top: 10px; font-size: 0.9rem;">
+                        {{nombre_usuario}} - {{nombre_rol}}
+                    </div>
+                    <!-- Botones de Validación y Rechazo -->
+                    <div class="botones-validacion">
+                        <button class="btn-validar" onclick="validarMatricula()" 
+                                {% if usuario_ya_valido or usuario_ya_rechazo %}disabled title="Ya has validado/rechazado esta matrícula"{% endif %}>
+                            <i class="fas fa-check-circle"></i> ✅ Validar Matrícula
+                        </button>
+                        <button class="btn-rechazar" onclick="rechazarMatricula()"
+                                {% if usuario_ya_valido or usuario_ya_rechazo %}disabled title="Ya has validado/rechazado esta matrícula"{% endif %}>
+                            <i class="fas fa-times-circle"></i> ❌ Rechazar Matrícula
+                        </button>
+                    </div>
+                    {% if usuario_ya_valido or usuario_ya_rechazo %}
+                    <div style="margin-top: 10px; padding: 8px; background: {% if usuario_ya_valido %}#d4edda{% else %}#f8d7da{% endif %}; border-radius: 8px; font-size: 0.85rem;">
+                        {% if usuario_ya_valido %}
+                        ✅ Ya has <strong>validado</strong> esta matrícula.
+                        {% else %}
+                        ❌ Ya has <strong>rechazado</strong> esta matrícula.
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        {% if programas_ordenados %}
+            {% for item in programas_ordenados %}
+            {% set programa = item.nombre %}
+            {% set datos = item.datos %}
+            <div class="programa-section">
+                <div class="programa-title">
+                    <span><i class="fas fa-book"></i> {{programa}}</span>
+                    <span>
+                        <i class="fas fa-user-tie" style="color: #2196F3;"></i> {{datos.total_hombres}} 
+                        <i class="fas fa-user" style="margin-left: 15px; color: #e91e98;"></i> {{datos.total_mujeres}}
+                        = {{datos.total_hombres + datos.total_mujeres}}
+                    </span>
+                </div>
+                
+                <!-- Tabla Principal: Semestre/Turno/Modalidad -->
+                <h5 class="mt-3 mb-3"><i class="fas fa-table"></i> Distribución por Semestre, Turno y Modalidad</h5>
+                <table class="tabla-resumen">
+                    <thead>
+                        <tr>
+                            <th>Semestre</th>
+                            <th>Turno</th>
+                            <th>Modalidad</th>
+                            <th><i class="fas fa-user-tie" style="color: #2196F3;"></i> Hombres</th>
+                            <th><i class="fas fa-user" style="color: #e91e98;"></i> Mujeres</th>
+                            <th><i class="fas fa-users"></i> Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in datos.semestre_turno_modalidad %}
+                        <tr>
+                            <td>{{item.semestre}}</td>
+                            <td>{{item.turno}}</td>
+                            <td>{{item.modalidad}}</td>
+                            <td>{{item.hombres}}</td>
+                            <td>{{item.mujeres}}</td>
+                            <td><strong>{{item.hombres + item.mujeres}}</strong></td>
+                        </tr>
+                        {% endfor %}
+                        <tr class="subtotal-row">
+                            <td colspan="3">SUBTOTAL {{programa}}</td>
+                            <td>{{datos.total_hombres}}</td>
+                            <td>{{datos.total_mujeres}}</td>
+                            <td>{{datos.total_hombres + datos.total_mujeres}}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <!-- Tabla de Grupos de Edad -->
+                {% if datos.grupos_edad_list %}
+                <div class="subseccion">
+                    <div class="subseccion-title">
+                        <i class="fas fa-birthday-cake"></i> Grupos de Edad
+                    </div>
+                    <table class="tabla-resumen">
+                        <thead>
+                            <tr>
+                                <th>Grupo de Edad</th>
+                                <th><i class="fas fa-user-tie" style="color: #2196F3;"></i> Hombres</th>
+                                <th><i class="fas fa-user" style="color: #e91e98;"></i> Mujeres</th>
+                                <th><i class="fas fa-users"></i> Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for grupo in datos.grupos_edad_list %}
+                            <tr>
+                                <td>{{grupo.grupo}}</td>
+                                <td>{{grupo.hombres}}</td>
+                                <td>{{grupo.mujeres}}</td>
+                                <td><strong>{{grupo.hombres + grupo.mujeres}}</strong></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+                
+                <!-- Tabla de Tipos de Ingreso -->
+                {% if datos.tipos_ingreso_list %}
+                <div class="subseccion">
+                    <div class="subseccion-title">
+                        <i class="fas fa-door-open"></i> Tipos de Ingreso
+                    </div>
+                    <table class="tabla-resumen">
+                        <thead>
+                            <tr>
+                                <th>Tipo de Ingreso</th>
+                                <th><i class="fas fa-user-tie" style="color: #2196F3;"></i> Hombres</th>
+                                <th><i class="fas fa-user" style="color: #e91e98;"></i> Mujeres</th>
+                                <th><i class="fas fa-users"></i> Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for tipo in datos.tipos_ingreso_list %}
+                            <tr>
+                                <td>{{tipo.tipo}}</td>
+                                <td>{{tipo.hombres}}</td>
+                                <td>{{tipo.mujeres}}</td>
+                                <td><strong>{{tipo.hombres + tipo.mujeres}}</strong></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+            
+            <!-- Total General -->
+            <div class="total-general">
+                <h2><i class="fas fa-trophy"></i> TOTAL GENERAL</h2>
+                <div class="numero">{{total_general}}</div>
+                <div style="font-size: 1.3rem;">
+                    <i class="fas fa-user-tie" style="color: #2196F3;"></i> {{total_general_hombres}} Hombres | 
+                    <i class="fas fa-user" style="color: #e91e98;"></i> {{total_general_mujeres}} Mujeres
+                </div>
+            </div>
+        {% else %}
+            <div class="alert alert-warning text-center" role="alert">
+                <i class="fas fa-exclamation-triangle"></i> 
+                No se encontraron datos de matrícula para los parámetros seleccionados.
+            </div>
+        {% endif %}
+    </div>
+    
+    <!-- Panel de Rechazo (se despliega cuando se hace clic en Rechazar) -->
+    <div id="panel-rechazo" class="panel-rechazo container-resumen">
+        <div class="panel-rechazo-header">
+            <h3><i class="fas fa-exclamation-triangle"></i> Rechazar Matrícula</h3>
+            <button class="btn-cerrar-panel" onclick="cerrarPanelRechazo()">
+                <span>✕</span>
+            </button>
+        </div>
+        <div class="panel-rechazo-body">
+            <div class="panel-warning">
+                <strong><i class="fas fa-exclamation-circle"></i> Atención:</strong>
+                Está a punto de rechazar la matrícula completa. Esta acción devolverá todos los datos al capturista para que realice las correcciones necesarias.
+            </div>
+            <div class="form-group">
+                <label for="motivo-rechazo-panel">
+                    Motivo del Rechazo <span style="color: #dc3545;">*</span>
+                    <span class="texto-ayuda">Explique detalladamente por qué se rechaza (mínimo 10 caracteres)</span>
+                </label>
+                <textarea 
+                    id="motivo-rechazo-panel" 
+                    rows="5" 
+                    maxlength="250"
+                    placeholder="Ejemplo: Los datos no coinciden con los registros oficiales. Se requiere verificación de las cifras de nuevo ingreso..."
+                    class="textarea-motivo-rechazo"
+                    oninput="actualizarContadorPanel()"
+                ></textarea>
+                <div class="contador-caracteres">
+                    <span id="contador-caracteres-panel">0</span> / 250 caracteres
+                </div>
+            </div>
+        </div>
+        <div class="panel-footer">
+            <button class="btn-cancelar" onclick="cerrarPanelRechazo()">
+                <i class="fas fa-times"></i> Cancelar
+            </button>
+            <button class="btn-confirmar-rechazo" onclick="confirmarRechazoPanel()">
+                <i class="fas fa-check"></i> Confirmar Rechazo
+            </button>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Variables globales desde el backend
+        const periodo = "{{periodo}}";
+        const unidadAcademicaId = "{{unidad_academica.Id_Unidad_Academica if unidad_academica else ''}}";
+        const nivelId = "{{nivel.Id_Nivel if nivel else ''}}";
+        
+        // Función para validar la matrícula
+        async function validarMatricula() {
+            const confirmar = confirm(
+                `¿Está seguro que desea VALIDAR la matrícula?\n\n` +
+                `Unidad Académica: {{unidad_academica.Unidad_Academica if unidad_academica else 'N/A'}}\n` +
+                `Nivel: {{nivel.Nivel if nivel else 'N/A'}}\n` +
+                `Período: ${periodo}\n\n` +
+                `Esta acción marcará la matrícula como aprobada y bloqueará cualquier modificación futura.\n\n` +
+                `¿Continuar?`
+            );
+            
+            if (!confirmar) {
+                console.log('❌ Usuario canceló la validación');
+                return;
+            }
+            
+            try {
+                console.log('🔄 Enviando validación al servidor...');
+                
+                const response = await fetch('/matricula/validar_semestre_rol', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        periodo: periodo
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    console.log('✅ Matrícula validada exitosamente:', data);
+                    alert(
+                        `✅ ${data.mensaje}\n\n` +
+                        `Validado por: ${data.data.validado_por}\n` +
+                        `Unidad Académica: ${data.data.unidad_academica}\n` +
+                        `Periodo: ${data.data.periodo}\n` +
+                        `Fecha: ${new Date(data.data.fecha_validacion).toLocaleString()}\n\n` +
+                        `La matrícula ha sido aprobada completamente.`
+                    );
+                    
+                    // Recargar la página para reflejar los cambios
+                    setTimeout(() => {
+                        location.reload();
+                    }, 2000);
+                } else {
+                    throw new Error(data.error || 'Error desconocido al validar');
+                }
+                
+            } catch (error) {
+                console.error('❌ Error al validar la matrícula:', error);
+                alert(`❌ Error al validar la matrícula:\n\n${error.message}`);
+            }
+        }
+        
+        // Función para abrir el panel de rechazo
+        function rechazarMatricula() {
+            const panel = document.getElementById('panel-rechazo');
+            const textarea = document.getElementById('motivo-rechazo-panel');
+            const contador = document.getElementById('contador-caracteres-panel');
+            
+            // Toggle: si ya está abierto, cerrarlo
+            if (panel.style.display === 'block') {
+                cerrarPanelRechazo();
+                return;
+            }
+            
+            // Limpiar textarea y reiniciar contador
+            textarea.value = '';
+            contador.textContent = '0';
+            
+            // Mostrar panel con animación
+            panel.style.display = 'block';
+            
+            // Pequeño delay para que la animación se vea
+            setTimeout(() => {
+                panel.classList.add('panel-abierto');
+            }, 10);
+            
+            // Focus en el textarea
+            setTimeout(() => textarea.focus(), 300);
+            
+            // Scroll suave hacia el panel
+            setTimeout(() => {
+                panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 350);
+        }
+        
+        // Función para actualizar el contador de caracteres del panel
+        function actualizarContadorPanel() {
+            const textarea = document.getElementById('motivo-rechazo-panel');
+            const contador = document.getElementById('contador-caracteres-panel');
+            contador.textContent = textarea.value.length;
+            
+            // Cambiar color si se acerca al límite
+            if (textarea.value.length > 230) {
+                contador.style.color = '#dc3545';
+                contador.style.fontWeight = 'bold';
+            } else {
+                contador.style.color = '#666';
+                contador.style.fontWeight = 'normal';
+            }
+        }
+        
+        // Función para cerrar el panel de rechazo
+        function cerrarPanelRechazo() {
+            const panel = document.getElementById('panel-rechazo');
+            const textarea = document.getElementById('motivo-rechazo-panel');
+            
+            // Quitar clase de animación
+            panel.classList.remove('panel-abierto');
+            
+            // Limpiar textarea y contador
+            textarea.value = '';
+            document.getElementById('contador-caracteres-panel').textContent = '0';
+            
+            // Esperar a que termine la animación antes de ocultar
+            setTimeout(() => {
+                panel.style.display = 'none';
+            }, 300);
+        }
+        
+        // Función para confirmar el rechazo desde el panel
+        async function confirmarRechazoPanel() {
+            const textarea = document.getElementById('motivo-rechazo-panel');
+            const motivo = textarea.value.trim();
+            
+            // Validar que hay motivo
+            if (!motivo) {
+                alert('❌ Debe ingresar un motivo para el rechazo');
+                textarea.focus();
+                return;
+            }
+            
+            if (motivo.length < 10) {
+                alert('❌ El motivo debe tener al menos 10 caracteres para ser descriptivo');
+                textarea.focus();
+                return;
+            }
+            
+            // Deshabilitar botón para evitar doble click
+            const btnConfirmar = document.querySelector('.btn-confirmar-rechazo');
+            btnConfirmar.disabled = true;
+            btnConfirmar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
+            
+            try {
+                console.log('🔄 Enviando rechazo al servidor...');
+                
+                const response = await fetch('/matricula/rechazar_semestre_rol', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        periodo: periodo,
+                        motivo: motivo
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Cerrar panel
+                    cerrarPanelRechazo();
+                    
+                    console.log('❌ Matrícula rechazada:', data);
+                    alert(
+                        `✅ Matrícula Rechazada Exitosamente\n\n` +
+                        `Rechazado por: ${data.data.rechazado_por}\n` +
+                        `Unidad Académica: ${data.data.unidad_academica}\n` +
+                        `Periodo: ${data.data.periodo}\n` +
+                        `Motivo: ${data.data.motivo}\n` +
+                        `Fecha: ${new Date(data.data.fecha_rechazo).toLocaleString()}\n\n` +
+                        `El capturista será notificado para realizar las correcciones necesarias.`
+                    );
+                    
+                    // Recargar la página para reflejar los cambios
+                    setTimeout(() => {
+                        location.reload();
+                    }, 2000);
+                } else {
+                    throw new Error(data.error || 'Error desconocido al rechazar');
+                }
+                
+            } catch (error) {
+                console.error('❌ Error al rechazar la matrícula:', error);
+                alert(`❌ Error al rechazar la matrícula:\n\n${error.message}`);
+                
+                // Reactivar botón
+                btnConfirmar.disabled = false;
+                btnConfirmar.innerHTML = '<i class="fas fa-check"></i> Confirmar Rechazo';
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,343 @@
+{% extends 'base.html' %}
+
+{% block title %}Aprovechamiento (SP){% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="/static/css/components/header.css">
+<link rel="stylesheet" href="/static/css/components/tables.css">
+<link rel="stylesheet" href="/static/css/components/matricula_consulta.css">
+<link rel="stylesheet" href="/static/css/panel-rechazo.css">
+<script src="/static/js/matricula_inputs.js"></script>
+<style>
+    /* Ocultar el submenu de categorias que viene de base.html en esta vista */
+    .submenu-categorias-box {
+        display: none !important;
+    }
+
+    /* 3. Asegúrate de que el div.tabla-header no añada un espacio innecesario */
+    .tabla-matricula-container .tabla-header {
+        margin: 0;
+        padding: 0;
+    }
+
+    /* Estilos visuales para inputs bloqueados */
+    .input-matricula-nueva.input-disabled {
+        background-color: #f3f4f6 !important;
+        /* gris claro */
+        color: #6b7280 !important;
+        /* gris medio */
+        border-color: #e5e7eb !important;
+        cursor: not-allowed !important;
+    }
+
+    /* Atenuar y desactivar interacción del contenedor cuando está bloqueado */
+    .matricula-box.input-container-disabled {
+        position: relative;
+        opacity: 0.6;
+        pointer-events: none;
+        /* evita focus/click */
+    }
+
+    /* Tooltip simple usando el atributo data-tooltip */
+    .matricula-box.input-container-disabled:hover::after {
+        opacity: 0.95;
+    }
+
+    .matricula-box.input-container-disabled::after {
+        content: attr(data-tooltip);
+        position: absolute;
+        top: -26px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: #111827;
+        color: #fff;
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 12px;
+        white-space: nowrap;
+        opacity: 0;
+        pointer-events: none;
+        z-index: 10;
+    }
+
+    /* Apariencia deshabilitada para Total Grupos */
+    #input-total-grupos.input-disabled {
+        background-color: #f3f4f6 !important;
+        color: #6b7280 !important;
+        border-color: #e5e7eb !important;
+        cursor: not-allowed !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- **VERIFICACIÓN DE ACCESO RESTRINGIDO** -->
+    {% if acceso_restringido %}
+    <div class="header-usuarios">
+        <div class="bienvenido">Bienvenido: <strong>{{ nombre_usuario }}</strong></div>
+        <form action="/mod_principal" method="get">
+            <button type="submit" class="btn-volver">Regresar</button>
+        </form>
+    </div>
+
+    <div style="display: flex; justify-content: center; align-items: center; min-height: 60vh;">
+        <div
+            style="text-align: center; max-width: 600px; padding: 40px; background: linear-gradient(135deg, #6e0343 0%, #6e0343 100%); border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.2);">
+            <div style="font-size: 80px; margin-bottom: 20px;">🔒</div>
+            <h2 style="color: white; margin-bottom: 20px; font-size: 28px;">En proceso de Validación por: {{ nombre_rol
+                }}</h2>
+            <p style="color: rgba(255,255,255,0.95); font-size: 18px; line-height: 1.6; margin-bottom: 30px;">
+                {{ mensaje_restriccion }}
+            </p>
+            {% if estado_actual %}
+            <div style="background: rgba(255,255,255,0.2); padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+                <p style="color: white; margin: 0; font-size: 16px;">
+                    <strong>Estado actual:</strong> {{ estado_actual }}
+                </p>
+            </div>
+            {% endif %}
+            <a href="/mod_principal"
+                style="display: inline-block; padding: 12px 30px; background: white; color: #6e0343; text-decoration: none; border-radius: 25px; font-weight: bold; transition: all 0.3s; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+                Volver al Menú Principal
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+
+    <!-- **CONTENIDO NORMAL DE LA MATRÍCULA** -->
+    <div class="header-usuarios">
+        <div class="bienvenido">Bienvenido: <strong>{{ nombre_usuario }}</strong>
+            &nbsp;|&nbsp; Periodo: <strong id="periodo-texto">{{ periodo }}</strong>
+            &nbsp;|&nbsp; Unidad Académica: <strong id="unidad-texto">{{ unidad_academica }}</strong>
+            <strong hidden id="rama-texto">{{ rama }}</strong>
+        </div>
+        <form action="/mod_principal" method="get">
+            <button type="submit" class="btn-volver">Regresar</button>
+        </form>
+    </div>
+
+    <h2>Aprovechamiento</h2>
+    {% if not aprovechamientos %}
+    <div class="alert-info">
+        <strong>Información:</strong> No hay aprovechamientos disponibles para su nivel y unidad académica.
+    </div>
+    {% else %}
+    <!-- Sección de Filtros para roles de validación (4 y 5) - HABILITADOS -->
+    <div class="filtros-container">
+        <div class="filtros-row">
+            <!-- Periodo - Campo oculto (se usa el periodo por defecto del sistema) -->
+            <input type="hidden" id="periodo" name="periodo" value="{{ periodo_default_id }}">
+
+            <div class="filtro-item" id="programa-container">
+                <label for="programa"><strong>Programa Académico:</strong></label>
+                <select id="programa" name="programa" required></select>
+                <span class="no-info" style="display:none;">Información no disponible</span>
+            </div>
+
+            <div class="filtro-item" id="modalidad-container">
+                <label for="modalidad"><strong>Modalidad:</strong></label>
+                <select id="modalidad" name="modalidad" required></select>
+                <span class="no-info" style="display:none;">Información no disponible</span>
+            </div>
+
+
+            <!-- Campos ocultos para semestre y turno (se manejan con pestañas y botones) -->
+            <input type="hidden" id="semestre" name="semestre" value="1">
+            <input type="hidden" id="turno" name="turno" value="1">
+
+            <!-- Unidad Académica - Campo oculto (roles 4 y 5 solo ven su propia UA) -->
+            {% if unidad_actual %}
+            <input type="hidden" id="unidad_academica" name="unidad_academica"
+                value="{{ unidad_actual.Id_Unidad_Academica }}">
+            {% else %}
+            <input type="hidden" id="unidad_academica" name="unidad_academica" value="0">
+            {% endif %}
+        </div>
+
+    </div>
+    <!-- Leyenda del Semáforo -->
+    <div class="semaforo-leyenda">
+        <div class="leyenda-titulo">
+            <span style="font-weight: 600; color: #6e0343;">📊 Estado de Semestres:</span>
+        </div>
+        <div class="leyenda-items">
+            <div class="leyenda-item">
+                <div class="leyenda-color" style="background-color: #ff4444;"></div>
+                <span class="leyenda-texto">Sin Datos</span>
+            </div>
+            <div class="leyenda-item">
+                <div class="leyenda-color" style="background-color: #ffbb33;"></div>
+                <span class="leyenda-texto">Datos Parciales</span>
+            </div>
+            <div class="leyenda-item">
+                <div class="leyenda-color" style="background-color: #00C851;"></div>
+                <span class="leyenda-texto">Datos Completos</span>
+            </div>
+        </div>
+    </div>
+    <!-- Sección de Captura con tabla completa -->
+    <div class="captura-container">
+        <!-- Pestañas de Semestres -->
+        <div class="semestres-tabs" id="semestres-tabs">
+            <!-- Las pestañas se generarán dinámicamente con JavaScript -->
+        </div>
+
+        <!-- Navegación de Turnos con Semestre integrado -->
+        <div class="turno-navigation">
+            <div class="turno-display">
+                <span class="turno-label">Turno:</span>
+                <span class="turno-nombre" id="turno-nombre">Matutino</span>
+            </div>
+
+            <div class="semestre-display">
+                <h2 id="semestre-titulo" style="margin:0; font-size:28px; font-weight:700; color:#ffffff;">
+                    Semestre <span id="semestre-num">1</span>
+                </h2>
+            </div>
+
+            <div class="turno-buttons">
+                <button type="button" class="btn-turno" id="btn-turno-anterior" onclick="cambiarTurno(-1)">
+                    ← Anterior
+                </button>
+                <button type="button" class="btn-turno" id="btn-turno-siguiente" onclick="cambiarTurno(1)">
+                    Siguiente →
+                </button>
+            </div>
+        </div>
+
+
+
+
+        <div class="tabla-matricula-completa">
+            <div class="tabla-header"></div>
+
+            <table class="tabla-matricula-completa"
+                style="box-shadow: 0 4px 8px rgba(0,0,0,0.1); border-radius: 8px; overflow: hidden; font-size: 16px;">
+                <thead>
+                    <tr>
+                        <th>Situación Escolar</th>
+                        <th>Hombres</th>
+                        <th>Mujeres</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr style="border-bottom: 1px solid #eee; background: #fdfdfd;">
+                        <td style="padding: 15px; text-align: center; font-weight: 700;">Inscritos</td>
+                        <td style="text-align: center;">
+                            <input type="number" id="inscritos-h" readonly value="0"
+                                style="width: 70px; text-align: center; border: 1px solid #ccc; background: #eee; border-radius: 4px; padding: 5px; font-weight: bold;">
+                        </td>
+                        <td style="text-align: center;">
+                            <input type="number" id="inscritos-m" readonly value="0"
+                                style="width: 70px; text-align: center; border: 1px solid #ccc; background: #eee; border-radius: 4px; padding: 5px; font-weight: bold;">
+                        </td>
+                    </tr>
+
+                    <tr style="border-bottom: 1px solid #eee;">
+                        <td style="padding: 15px; text-align: center; font-weight: 700; color: #333;">Reincorporados
+                        </td>
+                        <td style="text-align: center;">
+                            <div
+                                style="display:inline-flex; align-items:center; gap:6px; background:#e3f2fd; padding:4px; border-radius:6px;">
+                                <span style="color:#1976d2; font-weight:bold;">H</span>
+                                <input type="number" id="reinc-h" oninput="calcularTotalMatricula()" placeholder=" "
+                                    style="width:55px; text-align:center; border:2px solid #2196f3; border-radius:4px;">
+                            </div>
+                        </td>
+                        <td style="text-align: center;">
+                            <div
+                                style="display:inline-flex; align-items:center; gap:6px; background:#fce4ec; padding:4px; border-radius:6px;">
+                                <span style="color:#c2185b; font-weight:bold;">M</span>
+                                <input type="number" id="reinc-m" oninput="calcularTotalMatricula()" placeholder=" "
+                                    style="width:55px; text-align:center; border:2px solid #e91e63; border-radius:4px;">
+                            </div>
+                        </td>
+                    </tr>
+
+                    <tr style="background: #f1f3f4;">
+                        <td
+                            style="padding: 15px; text-align: center; font-weight: 800; color: #764ba2; font-size: 16px;">
+                            Total Matrícula</td>
+                        <td style="text-align: center;">
+                            <input type="number" id="total-h" readonly value="0"
+                                style="width: 80px; text-align: center; border: none; background: transparent; font-weight: 900; color: #1976d2; font-size: 16px;">
+                        </td>
+                        <td style="text-align: center;">
+                            <input type="number" id="total-m" readonly value="0"
+                                style="width: 80px; text-align: center; border: none; background: transparent; font-weight: 900; color: #c2185b; font-size: 16px;">
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+
+
+            <table class="tabla-matricula-completa">
+                <thead>
+                    <tr>
+                        <th class="col-edad"
+                            style="padding: 15px; text-align: center; font-weight: 600; font-size: 14px; width: 28%;">
+                            Situación Escolar</th>
+                        <th class="col-tipo-ingreso"
+                            style="padding: 15px; text-align: center; font-weight: 600; font-size: 14px; width: 28%;">
+                            Hombres</th>
+                        <th class="col-tipo-ingreso"
+                            style="padding: 15px; text-align: center; font-weight: 600; font-size: 14px; width: 28%;">
+                            Mujeres</th>
+                    </tr>
+                </thead>
+
+                <tbody id="aprovechamiento-tbody">
+
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Botones justo después de la tabla -->
+        <div class="actions-section actions-after-table">
+            {% if rol == 'Capturista' %}
+            <!-- Botones para Capturista (rol ID 3) -->
+            <button id="btn-guardar-matricula" type="button" class="btn-primary"
+                onclick="guardarYActualizarAprovechamiento()">
+                💾 Guardar Avance
+            </button>
+            <button id="btn-validar-matricula" type="button" class="btn-success" onclick="validarCapturaSemestre()">
+                ✅ Finalizar Captura
+            </button>
+            {% else %}
+            <!-- Botones para roles de validación (ID 4, 5, 6, 7, 8) -->
+            <button id="btn-validar-semestre" type="button" class="btn-success" onclick="validarSemestre()" {% if
+                usuario_ya_valido or usuario_ya_rechazo %}disabled title="Ya has validado/rechazado esta matrícula" {%
+                endif %}>
+                ✅ Validar
+            </button>
+            <button id="btn-rechazar-semestre" type="button" class="btn-danger" onclick="rechazarSemestre()" {% if
+                usuario_ya_valido or usuario_ya_rechazo %}disabled title="Ya has validado/rechazado esta matrícula" {%
+                endif %}>
+                ❌ Rechazar
+            </button>
+
+            <!-- Mensaje informativo cuando ya se validó/rechazó -->
+
+            {% endif %}
+        </div>
+
+
+    </div>
+
+    {% endif %}
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    window.aprovechamientos = {{ aprovechamientos | tojson }};
+    window.inscritos = {{ inscritos | tojson }};
+    window.reincorporados = {{ reincorporados | tojson }};
+</script>
+
+<script src="/static/js/aprovechamiento.js"></script>
+{% endblock %}

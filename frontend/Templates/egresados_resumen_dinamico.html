@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resumen Dinámico de Egresados</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        :root {
+            --rosa-principal: #6e0343;
+            --rosa-secundario: #8b1257;
+            --rosa-claro: #c2185b;
+            --rosa-muy-claro: #ffffff;
+            --azul-claro: #b3d9ff;
+            --verde-claro: #c8e6c9;
+            --naranja-claro: #ffe0b2;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #6e0343 0%, #8b1257 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px 0;
+        }
+        
+        .contenedor-principal {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+            padding: 0;
+            margin: 20px auto;
+            max-width: 98%;
+            overflow: hidden;
+        }
+        
+        .header-info {
+            background: linear-gradient(135deg, var(--rosa-principal), var(--rosa-secundario));
+            color: white;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .header-info .info-usuario {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .header-info .info-item {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+        
+        .btn-cerrar-sesion {
+            background: white;
+            color: var(--rosa-principal);
+            border: none;
+            padding: 10px 25px;
+            border-radius: 25px;
+            font-weight: bold;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        
+        .btn-cerrar-sesion:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 255, 255, 0.3);
+        }
+        
+        .contenido-vista {
+            padding: 30px;
+        }
+        
+        .titulo-principal {
+            text-align: center;
+            color: var(--rosa-principal);
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 30px;
+        }
+        
+        .filtros-aplicados {
+            background: var(--rosa-muy-claro);
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .filtros-aplicados .filtro-item {
+            color: var(--rosa-principal);
+            font-weight: 600;
+        }
+        
+        .filtros-aplicados .filtro-item strong {
+            color: var(--rosa-secundario);
+        }
+        
+        .contenedor-tabla {
+            overflow-x: auto;
+            margin-bottom: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .tabla-resumen {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            background: white;
+        }
+        
+        .tabla-resumen th,
+        .tabla-resumen td {
+            border: 1px solid #ddd;
+            padding: 10px 8px;
+            text-align: center;
+            vertical-align: middle;
+        }
+        
+        .tabla-resumen th {
+            background: linear-gradient(135deg, var(--rosa-principal), var(--rosa-secundario));
+            color: white;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        .tabla-resumen .encabezado-nivel-1 {
+            background: var(--rosa-principal);
+            font-size: 1rem;
+            font-weight: bold;
+        }
+        
+        .tabla-resumen .encabezado-nivel-2 {
+            background: var(--rosa-secundario);
+            font-size: 0.9rem;
+        }
+        
+        .tabla-resumen .encabezado-nivel-3 {
+            background: var(--rosa-claro);
+            font-size: 0.85rem;
+        }
+        
+        .tabla-resumen .celda-programa {
+            background: var(--azul-claro);
+            font-weight: bold;
+            text-align: left;
+            padding-left: 15px;
+            position: sticky;
+            left: 0;
+            z-index: 5;
+        }
+        
+        .tabla-resumen .celda-modalidad {
+            background: #e3f2fd;
+            text-align: left;
+            padding-left: 25px;
+            font-weight: 600;
+            position: sticky;
+            left: 0;
+            z-index: 5;
+        }
+        
+        .tabla-resumen .celda-boletas {
+            background: var(--naranja-claro);
+            font-weight: bold;
+        }
+        
+        .tabla-resumen .celda-total {
+            background: var(--verde-claro);
+            font-weight: bold;
+        }
+        
+        .tabla-resumen .fila-total-general {
+            background: var(--verde-claro);
+            font-weight: bold;
+            font-size: 1rem;
+        }
+        
+        .tabla-resumen tbody tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .celda-genero-h {
+            background: #ffffff;
+        }
+        
+        .celda-genero-m {
+            background: #ffffff;
+        }
+        
+        .celda-genero-t {
+            background: #ffffff;
+            font-weight: bold;
+        }
+        
+        .btn-regresar {
+            background: transparent;
+            color: var(--rosa-principal);
+            border: 2px solid var(--rosa-principal);
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-regresar:hover {
+            background: var(--rosa-principal);
+            color: white;
+            transform: translateX(-3px);
+        }
+        
+        .btn-exportar {
+            background: var(--rosa-principal);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-exportar:hover {
+            background: var(--rosa-secundario);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(110, 3, 67, 0.3);
+        }
+        
+        .footer-botones {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 30px;
+        }
+        
+        .alerta-sin-datos {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            color: #856404;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin: 30px 0;
+        }
+        
+        .alerta-sin-datos i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+        
+        .alerta-error {
+            background: #f8d7da;
+            border: 2px solid #f5c6cb;
+            color: #721c24;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 30px 0;
+        }
+        
+        /* Estilos para tipo de egreso */
+        .celda-regular {
+            background: #e8f5e9;
+        }
+        
+        .celda-extemporaneo {
+            background: #fff3e0;
+        }
+    </style>
+</head>
+<body>
+    <div class="contenedor-principal">
+        <!-- Header con información del usuario -->
+        <div class="header-info">
+            <div class="info-usuario">
+                <div class="info-item">
+                    <i class="fas fa-user"></i>
+                    <strong>{{ nombre_usuario }}</strong>
+                </div>
+                <div class="info-item">
+                    <i class="fas fa-id-badge"></i>
+                    {{ nombre_rol }}
+                </div>
+            </div>
+            <button class="btn-cerrar-sesion" onclick="window.location.href='/login'">
+                Cerrar Sesión
+            </button>
+        </div>
+        
+        <!-- Footer con botones -->
+        <div class="contenido-vista">
+            <div class="footer-botones">
+                {% if datos_resumen %}
+                <button class="btn-exportar" onclick="exportarExcel()">
+                    <i class="fas fa-file-excel"></i>
+                    Exportar a Excel
+                </button>
+                {% endif %}
+
+                <a href="/egresados/consulta" class="btn-regresar">
+                    <i class="fas fa-arrow-left"></i>
+                    Regresar
+                </a>
+            </div>
+        </div>
+        
+        <!-- Contenido principal -->
+        <div class="contenido-vista">
+            <h1 class="titulo-principal">
+                <i class="fas fa-graduation-cap"></i>
+                Resumen Dinámico de Egresados
+            </h1>
+
+            <!-- Filtros aplicados -->
+            <div class="filtros-aplicados">
+                <div class="filtro-item">
+                    <i class="fas fa-calendar-alt"></i>
+                    Periodo: <strong>{{ periodo }}</strong>
+                </div>
+                <div class="filtro-item">
+                    <i class="fas fa-layer-group"></i>
+                    Nivel: <strong>{{ nivel }}</strong>
+                </div>
+                <div class="filtro-item">
+                    <i class="fas fa-building"></i>
+                    Unidad: <strong>{{ unidad }}</strong>
+                </div>
+            </div>
+
+            {% if error_message %}
+            <!-- Mensaje de error -->
+            <div class="alerta-error">
+                <h4><i class="fas fa-exclamation-triangle"></i> Error</h4>
+                <p>{{ error_message }}</p>
+            </div>
+            {% elif not datos_resumen %}
+            <!-- Sin datos -->
+            <div class="alerta-sin-datos">
+                <div><i class="fas fa-info-circle"></i></div>
+                <h4>No hay datos disponibles</h4>
+                <p>No se encontraron registros de egresados para los filtros seleccionados.</p>
+            </div>
+            {% else %}
+            <!-- Tabla de resumen -->
+            <div class="contenedor-tabla">
+                <table class="tabla-resumen">
+                    <thead>
+                        <!-- Fila 1: Encabezado principal con generaciones -->
+                        <tr>
+                            <th rowspan="3" class="encabezado-nivel-1">Programa Académico</th>
+                            <th rowspan="3" class="encabezado-nivel-1">Modalidad</th>
+                            <th rowspan="3" class="encabezado-nivel-1">Boletas</th>
+                            
+                            {% for generacion in generaciones %}
+                                <th colspan="6" class="encabezado-nivel-1">{{ generacion }}</th>
+                            {% endfor %}
+                            
+                            <th colspan="3" class="encabezado-nivel-1">Total Egresados</th>
+                        </tr>
+                        
+                        <!-- Fila 2: Tipo de egreso (Regular/Extemporáneo) -->
+                        <tr>
+                            {% for generacion in generaciones %}
+                                <th colspan="3" class="encabezado-nivel-2">Regular</th>
+                                <th colspan="3" class="encabezado-nivel-2">Extemporáneo</th>
+                            {% endfor %}
+                            
+                            <th colspan="3" class="encabezado-nivel-2">Total</th>
+                        </tr>
+                        
+                        <!-- Fila 3: Género (H/M/T) -->
+                        <tr>
+                            {% for generacion in generaciones %}
+                                {% for tipo in range(2) %}
+                                    <th class="encabezado-nivel-3">H</th>
+                                    <th class="encabezado-nivel-3">M</th>
+                                    <th class="encabezado-nivel-3">T</th>
+                                {% endfor %}
+                            {% endfor %}
+                            
+                            <th class="encabezado-nivel-3">H</th>
+                            <th class="encabezado-nivel-3">M</th>
+                            <th class="encabezado-nivel-3">T</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% set programa_actual = None %}
+                        {% set datos_por_programa = {} %}
+                        
+                        {# Agrupar datos por programa #}
+                        {% for dato in datos_resumen %}
+                            {% if dato.programa not in datos_por_programa %}
+                                {% set _ = datos_por_programa.__setitem__(dato.programa, []) %}
+                            {% endif %}
+                            {% set _ = datos_por_programa[dato.programa].append(dato) %}
+                        {% endfor %}
+                        
+                        {# Renderizar por programa con modalidades y boletas #}
+                        {% for programa, filas in datos_por_programa.items() %}
+                            {% for i in range(filas|length) %}
+                                {% set dato = filas[i] %}
+                                <tr>
+                                    {# Programa (solo en primera fila de cada programa) #}
+                                    {% if i == 0 %}
+                                        <td class="celda-programa" rowspan="{{ filas|length }}">
+                                            {{ programa }}
+                                        </td>
+                                    {% endif %}
+                                    
+                                    {# Modalidad #}
+                                    <td class="celda-modalidad">{{ dato.modalidad }}</td>
+                                    
+                                    {# Boleta literal #}
+                                    <td class="celda-boletas">{{ dato.boleta }}</td>
+                                    
+                                    {# Datos por generación #}
+                                    {% for gen in dato.generaciones %}
+                                        {# Regular #}
+                                        <td class="celda-genero-h celda-regular">{{ gen.regular.H }}</td>
+                                        <td class="celda-genero-m celda-regular">{{ gen.regular.M }}</td>
+                                        <td class="celda-genero-t celda-regular">{{ gen.regular.T }}</td>
+                                        
+                                        {# Extemporáneo #}
+                                        <td class="celda-genero-h celda-extemporaneo">{{ gen.extemporaneo.H }}</td>
+                                        <td class="celda-genero-m celda-extemporaneo">{{ gen.extemporaneo.M }}</td>
+                                        <td class="celda-genero-t celda-extemporaneo">{{ gen.extemporaneo.T }}</td>
+                                    {% endfor %}
+                                    
+                                    {# Total egresados #}
+                                    <td class="celda-total celda-genero-h">{{ dato.total_h }}</td>
+                                    <td class="celda-total celda-genero-m">{{ dato.total_m }}</td>
+                                    <td class="celda-total celda-genero-t">{{ dato.total_t }}</td>
+                                </tr>
+                            {% endfor %}
+                        {% endfor %}
+                        
+                        {# Fila de totales generales #}
+                        {% set total_general_h = datos_resumen | sum(attribute='total_h') %}
+                        {% set total_general_m = datos_resumen | sum(attribute='total_m') %}
+                        {% set total_general_t = datos_resumen | sum(attribute='total_t') %}
+                        
+                        <tr class="fila-total-general">
+                            <td colspan="3">TOTAL GENERAL</td>
+                            
+                            {# Calcular totales por generación y tipo #}
+                            {% for gen_idx in range(generaciones|length) %}
+                                {# Regular #}
+                                {% set sum_reg_h = 0 %}
+                                {% set sum_reg_m = 0 %}
+                                {% set sum_reg_t = 0 %}
+                                {# Extemporáneo #}
+                                {% set sum_ext_h = 0 %}
+                                {% set sum_ext_m = 0 %}
+                                {% set sum_ext_t = 0 %}
+                                
+                                {% for dato in datos_resumen %}
+                                    {% set gen_data = dato.generaciones[gen_idx] %}
+                                    {% set sum_reg_h = sum_reg_h + gen_data.regular.H %}
+                                    {% set sum_reg_m = sum_reg_m + gen_data.regular.M %}
+                                    {% set sum_reg_t = sum_reg_t + gen_data.regular.T %}
+                                    {% set sum_ext_h = sum_ext_h + gen_data.extemporaneo.H %}
+                                    {% set sum_ext_m = sum_ext_m + gen_data.extemporaneo.M %}
+                                    {% set sum_ext_t = sum_ext_t + gen_data.extemporaneo.T %}
+                                {% endfor %}
+                                
+                                <td class="celda-regular">{{ sum_reg_h }}</td>
+                                <td class="celda-regular">{{ sum_reg_m }}</td>
+                                <td class="celda-regular">{{ sum_reg_t }}</td>
+                                <td class="celda-extemporaneo">{{ sum_ext_h }}</td>
+                                <td class="celda-extemporaneo">{{ sum_ext_m }}</td>
+                                <td class="celda-extemporaneo">{{ sum_ext_t }}</td>
+                            {% endfor %}
+                            
+                            <td>{{ total_general_h }}</td>
+                            <td>{{ total_general_m }}</td>
+                            <td>{{ total_general_t }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script>
+        // Variables del backend
+        const periodo = "{{ periodo }}";
+        const nivel = "{{ nivel }}";
+        const unidad = "{{ unidad }}";
+        
+        function exportarExcel() {
+            // Obtener la tabla
+            const tabla = document.querySelector('.tabla-resumen');
+            
+            // Convertir a workbook
+            const wb = XLSX.utils.table_to_book(tabla, {sheet: "Resumen Egresados"});
+            
+            // Generar nombre del archivo
+            const periodoClean = periodo.replace(/\//g, '-');
+            const nivelClean = nivel.replace(/\s+/g, '_');
+            const filename = `Resumen_Egresados_${unidad}_${nivelClean}_${periodoClean}.xlsx`;
+            
+            // Descargar
+            XLSX.writeFile(wb, filename);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+
+{% block title %}Programas por Unidad Académica - SAE Sistema{% endblock %}
+
+{% block styles %}
+    <link rel="stylesheet" href="/static/css/components/header.css">
+    <link rel="stylesheet" href="/static/css/components/tables.css">
+    <link rel="stylesheet" href="/static/css/programas.css">
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="header-usuarios">
+        {% if es_super_admin %}
+            <div class="bienvenido">Vista de Administrador - Todos los Programas</div>
+        {% else %}
+            <div class="bienvenido">Programas de tu Unidad Académica</div>
+        {% endif %}
+        <form action="/unidad-academica" method="get">
+            <button type="submit" class="btn-volver">Regresar</button>
+        </form>
+    </div>
+    
+    {% if es_super_admin %}
+        <div class="info-banner admin-info">
+            <p><strong>🔧 Vista de Administrador:</strong> Selecciona una Unidad Académica para ver sus programas.</p>
+        </div>
+        <div class="filtro-ua">
+            <label for="select-ua">Unidad Académica:</label>
+            <select id="select-ua">
+                <option value="">-- Selecciona UA --</option>
+                {% for ua in todas_uas %}
+                    <option value="{{ ua.Id_Unidad_Academica }}">{{ ua.Sigla }} - {{ ua.Nombre }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div id="contenedor-programas"></div>
+    {% else %}
+        <div class="info-banner user-info">
+            <p><strong>👤 Vista de Usuario</strong></p>
+        </div>
+        {% if programas_por_ua %}
+            {% for ua_nombre, programas in programas_por_ua.items() %}
+            <div class="ua-section">
+                <h3>{{ ua_nombre }}</h3>
+                <table class="tabla-programas">
+                    <thead>
+                        <tr>
+                            <th>Programa</th>
+                            <th>Modalidad</th>
+                            <th>Nivel</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for programa in programas %}
+                        <tr>
+                            <td>{{ programa.nombre_programa }}</td>
+                            <td>{{ programa.modalidad }}</td>
+                            <td>{{ programa.nivel }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endfor %}
+        {% else %}
+        <div class="no-data">
+            <p>No se encontraron programas registrados en tu unidad académica.</p>
+        </div>
+        {% endif %}
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+{% if es_super_admin %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const selectUA = document.getElementById('select-ua');
+    const contenedor = document.getElementById('contenedor-programas');
+    if (selectUA) {
+        selectUA.addEventListener('change', async function() {
+            const idUA = this.value;
+            contenedor.innerHTML = '';
+            if (!idUA) return;
+            contenedor.innerHTML = '<p>Cargando programas...</p>';
+            try {
+                const resp = await fetch(`/programas/por-ua/${idUA}`);
+                if (!resp.ok) {
+                    contenedor.innerHTML = '<p>Error al cargar programas.</p>';
+                    return;
+                }
+                const data = await resp.json();
+                if (!data.programas || data.programas.length === 0) {
+                    contenedor.innerHTML = '<div class="no-data"><p>No hay programas registrados para esta unidad académica.</p></div>';
+                    return;
+                }
+                let html = `<div class='ua-section'><h3>${data.ua}</h3><table class='tabla-programas'><thead><tr><th>Programa</th><th>Modalidad</th><th>Nivel</th></tr></thead><tbody>`;
+                for (const prog of data.programas) {
+                    html += `<tr><td>${prog.nombre_programa}</td><td>${prog.modalidad}</td><td>${prog.nivel}</td></tr>`;
+                }
+                html += '</tbody></table></div>';
+                contenedor.innerHTML = html;
+            } catch (e) {
+                contenedor.innerHTML = '<p>Error de conexión.</p>';
+            }
+        });
+    }
+});
+</script>
+{% endif %}
+{% endblock %}

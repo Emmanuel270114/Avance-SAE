@@ -1,0 +1,291 @@
+{% extends 'base.html' %}
+
+{% block title %}Periodos{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="/static/css/components/header.css">
+<link rel="stylesheet" href="/static/css/components/forms.css">
+<link rel="stylesheet" href="/static/css/components/filters.css">
+<link rel="stylesheet" href="/static/css/components/tables.css">
+<link rel="stylesheet" href="/static/css/components/modal.css">
+
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="header-usuarios">
+        <h2>Catálogo de Periodos</h2>
+        <form action="/mod_principal" method="get">
+            <button type="submit" class="btn-volver">Regresar</button>
+        </form>
+    </div>
+
+
+
+    <!-- Formulario de registro/edición de usuarios -->
+    {% if rol == 'Administrador' or rol == 'Jefe/a de Departamento' or rol == 'Jefe/a de División' or rol == 'Director/a
+    de DII' %}
+    <div class="registro-container">
+        <h3 id="titulo-usuario">Registro Periodo</h3>
+        <form id="registroP">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="periodo">Periodo</label>
+                    <input type="text" id="periodo" name="periodo" placeholder="2026-2027/1" required class="input-form" maxlength="11" pattern="\d{4}-\d{4}/[12]" readonly style="background-color: #f0f0f0; cursor: not-allowed;">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="fecha-inicial">Fecha Inicial del Periodo</label>
+                    <input type="date" id="fecha-inicial" name="fecha-inicial" required class="input-form">
+                </div>
+                
+                <div class="form-group">
+                    <label for="fecha-final">Fecha Final del Periodo</label>
+                    <input type="date" id="fecha-final" name="fecha-final" required class="input-form">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <button type="submit" id="btn-guardar">Registrar Nuevo Periodo</button>
+            </div>
+
+        </form>
+        <div id="mensaje"></div>
+    </div>
+    {% endif %}
+
+
+
+    <!-- 🔹 Filtro por Activos/Inactivos -->
+    <div class="filtro-ua-box">
+        <label for="filtro-periodo">Filtrar por Estado:</label>
+        <select id="filtro-periodo" class="input-form">
+            <option value="">Todos (Activos e Inactivos)</option>
+            {% for d in periodos|unique(attribute='Descripcion') %}
+            <option value="{{ d.Descripcion }}">{{ d.Descripcion }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+
+    <!-- 🔹 Tabla de periodos -->
+    <div class="table-container">
+        <table id="tabla-periodos">
+            <thead>
+                <tr>
+                    <th>Periodo</th>
+                    <th>Descripción</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for d in periodos %}
+                <tr class="fila-edit">
+                    <td>{{ d.Periodo }}</td>
+                    <td>{{ d.Descripcion }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+
+
+<!-- Script que sirve para el filtro por periodos -->
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const filtro = document.getElementById("filtro-periodo");
+        const filas = document.querySelectorAll("#tabla-periodos tbody tr");
+
+        filtro.addEventListener("change", () => {
+            const valor = filtro.value.toLowerCase().trim();
+
+            filas.forEach(fila => {
+                // Cambiado: ahora filtra por la columna 1 (Descripción)
+                const estado = fila.cells[1].textContent.toLowerCase().trim();
+
+                // Mostrar todas si no hay filtro o si coincide exactamente
+                if (valor === "" || estado === valor) {
+                    fila.style.display = "";
+                } else {
+                    fila.style.display = "none";
+                }
+            });
+        });
+    });
+</script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+
+        // 🔹 TOMAR EL ÚLTIMO PERIODO QUE LLEGA DESDE PYTHON (periodos[0] debería ser el más reciente)
+        {% if periodos %}
+        const ultimoPeriodo = "{{ periodos[0].Periodo }}";  // Ejemplo: "2022-2023/2"
+        {% else %}
+        const ultimoPeriodo = null;
+        {% endif %}
+
+        const inputPeriodo = document.getElementById("periodo");
+
+        if (ultimoPeriodo) {
+            const siguiente = calcularSiguientePeriodo(ultimoPeriodo);
+            inputPeriodo.value = siguiente;
+        }
+
+        // 🔹 Formatear el input con el formato AAAA-AAAA/N
+        inputPeriodo.addEventListener("input", (e) => {
+            let valor = e.target.value.replace(/[^\d]/g, ""); // Solo números
+            let formatted = "";
+
+            // Primer año (4 dígitos)
+            if (valor.length > 0) {
+                formatted += valor.substring(0, 4);
+            }
+
+            // Agregar guión
+            if (valor.length >= 5) {
+                formatted += "-" + valor.substring(4, 8);
+            }
+
+            // Agregar barra y último dígito (solo 1 o 2)
+            if (valor.length >= 9) {
+                const ultimoDigito = valor.charAt(8);
+                // Solo permitir 1 o 2
+                if (ultimoDigito === "1" || ultimoDigito === "2") {
+                    formatted += "/" + ultimoDigito;
+                } else {
+                    formatted += "/";
+                }
+            }
+
+            e.target.value = formatted;
+        });
+
+        // 🔹 Validar al pegar texto
+        inputPeriodo.addEventListener("paste", (e) => {
+            e.preventDefault();
+            const pastedText = (e.clipboardData || window.clipboardData).getData("text");
+            const numeros = pastedText.replace(/[^\d]/g, "");
+            
+            if (numeros.length >= 9) {
+                const year1 = numeros.substring(0, 4);
+                const year2 = numeros.substring(4, 8);
+                const num = numeros.charAt(8);
+                
+                if (num === "1" || num === "2") {
+                    inputPeriodo.value = `${year1}-${year2}/${num}`;
+                }
+            }
+        });
+
+        // 🔹 Función para calcular el periodo siguiente
+        function calcularSiguientePeriodo(periodoActual) {
+            // periodoActual ejemplo: "2022-2023/2"
+            const [anos, numero] = periodoActual.split("/");
+            const [a1, a2] = anos.split("-").map(n => parseInt(n.trim()));
+            const n = parseInt(numero.trim());
+
+            let nuevoA1 = a1;
+            let nuevoA2 = a2;
+            let nuevoN = n;
+
+            if (n === 1) {
+                nuevoN = 2;
+            } else if (n === 2) {
+                nuevoA1 = a1 + 1;
+                nuevoA2 = a2 + 1;
+                nuevoN = 1;
+            }
+
+            return `${nuevoA1}-${nuevoA2}/${nuevoN}`;
+        }
+
+        // 🔹 Al registrar nuevo periodo → llamada a FastAPI
+        document.getElementById("registroP").addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const periodo = inputPeriodo.value.trim();
+            const fechaInicial = document.getElementById("fecha-inicial").value;
+            const fechaFinal = document.getElementById("fecha-final").value;
+            const btnGuardar = document.getElementById("btn-guardar");
+            const divMensaje = document.getElementById("mensaje");
+
+            // Validar formato del periodo
+            const regexPeriodo = /^\d{4}-\d{4}\/[12]$/;
+            if (!regexPeriodo.test(periodo)) {
+                divMensaje.innerHTML = `<p style="color: #dc3545; font-weight: bold; margin-top: 10px;">⚠️ Formato inválido. Use: AAAA-AAAA/1 o AAAA-AAAA/2</p>`;
+                return;
+            }
+
+            // Validar que las fechas estén completas
+            if (!fechaInicial || !fechaFinal) {
+                divMensaje.innerHTML = `<p style="color: #dc3545; font-weight: bold; margin-top: 10px;">⚠️ Debe seleccionar ambas fechas</p>`;
+                return;
+            }
+
+            // Validar que la fecha inicial sea menor que la final
+            if (new Date(fechaInicial) >= new Date(fechaFinal)) {
+                divMensaje.innerHTML = `<p style="color: #dc3545; font-weight: bold; margin-top: 10px;">⚠️ La fecha inicial debe ser anterior a la fecha final</p>`;
+                return;
+            }
+
+            // Deshabilitar botón mientras procesa
+            btnGuardar.disabled = true;
+            btnGuardar.textContent = "Procesando...";
+            divMensaje.innerHTML = `<p style="color: #007bff;">⏳ Creando periodo y generando información...</p>`;
+
+            try {
+                const respuesta = await fetch("/nuevo_periodo", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ 
+                        periodo,
+                        fecha_inicial: fechaInicial,
+                        fecha_final: fechaFinal
+                    })
+                });
+
+                const data = await respuesta.json();
+
+                //Si el periodo ya está registrado, no mostrar mensaje de creado exitosamente  
+                    if (data.status === "success") {
+                        divMensaje.innerHTML = `
+                            <p style="color: #28a745; font-weight: bold; margin-top: 10px;">
+                                ✅ ${data.message || 'Periodo creado exitosamente'}
+                            </p>
+                        `;
+                        
+                        // Recargar página después de 2 segundos para mostrar el nuevo periodo
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 2000);
+                } else {
+                    divMensaje.innerHTML = `
+                        <p style="color: #dc3545; font-weight: bold; margin-top: 10px;">
+                            ❌ ${data.error || 'Error al crear el periodo'}
+                        </p>
+                    `;
+                    btnGuardar.disabled = false;
+                    btnGuardar.textContent = "Registrar Nuevo Periodo";
+                }
+            } catch (error) {
+                divMensaje.innerHTML = `
+                    <p style="color: #dc3545; font-weight: bold; margin-top: 10px;">
+                        ❌ Error de conexión: ${error.message}
+                    </p>
+                `;
+                btnGuardar.disabled = false;
+                btnGuardar.textContent = "Registrar Nuevo Periodo";
+            }
+        });
+
+    });
+</script>
+
+
+
+{% endblock %}

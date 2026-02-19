@@ -1,0 +1,31 @@
+<!-- Tabla de usuarios -->
+<table id="tabla-usuarios" >
+    <thead>
+        <tr>
+            <th>Nombre</th>
+            <th>Usuario</th>
+            <th>Email</th>
+            <th>Rol</th>
+            <th>Unidad Académica</th>
+    <!--    {% if es_super_admin %} 
+            <th>Unidad Académica</th>
+            {% endif %}
+    -->
+        </tr>
+    </thead>
+    <tbody>
+        {% for u, nombre_rol, nombre_ua_usuario in usuarios_con_rol %}
+    <tr class="fila-usuario" data-id="{{ u.Id_Usuario }}" data-nombre="{{ u.Nombre }}" data-paterno="{{ u.Paterno }}" data-materno="{{ u.Materno }}" data-usuario="{{ u.Usuario }}" data-email="{{ u.Email }}" data-id_unidad="{{ u.Id_Unidad_Academica }}" data-id_rol="{{ u.Id_Rol }}" data-id_nivel="{{ u.Id_Nivel }}">
+            <td>{{ u.Nombre }} {{ u.Paterno }} {{ u.Materno }}</td>
+            <td>{{ u.Usuario }}</td>
+            <td>{{ u.Email }}</td>
+            <td>{{ nombre_rol }}</td>
+            <td>{{ nombre_ua_usuario }}</td>
+<!--            {% if es_super_admin %}
+            <td>{{ nombre_ua_usuario }}</td>
+            {% endif %}
+-->
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>

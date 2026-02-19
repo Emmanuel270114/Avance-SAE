@@ -1,0 +1,15 @@
+# Ignorar archivos de entorno
+.env
+assets/external/
+.states
+__pycache__/
+*.db
+.web
+__pycache__
+.pytest_cache
+assets
+myenv
+menv
+.venv
+venv
+.env

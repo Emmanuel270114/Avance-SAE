@@ -1,0 +1,152 @@
+-- Tabla: roles
+CREATE TABLE roles (
+    id_role SERIAL PRIMARY KEY,
+    role_name VARCHAR(256) NOT NULL,
+    role_acronym VARCHAR(64) NOT NULL,
+    modified_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabla: privileges
+CREATE TABLE privileges (
+    id_privilege SERIAL PRIMARY KEY,
+    privilege_name VARCHAR(256) NOT NULL,
+    privilege_description VARCHAR(512) NOT NULL,
+    modified_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabla: role_privileges
+CREATE TABLE role_privileges (
+    id_role INTEGER NOT NULL REFERENCES roles(id_role),
+    id_privilege INTEGER NOT NULL REFERENCES privileges(id_privilege),
+    modified_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id_role, id_privilege)
+);
+
+-- Tabla: branches
+CREATE TABLE branches (
+    id_branch SERIAL PRIMARY KEY,
+    branch_name VARCHAR(128) NOT NULL,
+    acronym_branch VARCHAR(64) NOT NULL,
+    modified_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabla: modalities
+CREATE TABLE modalities (
+    id_modality SERIAL PRIMARY KEY,
+    modality_name VARCHAR(128) NOT NULL,
+    modality_acronym VARCHAR(64) NOT NULL,
+    modified_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabla: levels
+CREATE TABLE levels (
+    id_level SERIAL PRIMARY KEY,
+    level_name VARCHAR(128) NOT NULL,
+    acronym_level VARCHAR(64) NOT NULL,
+    modified_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabla: programs
+CREATE TABLE programs (
+    id_program SERIAL PRIMARY KEY,
+    program_name VARCHAR(512) NOT NULL,
+    id_branch INTEGER NOT NULL REFERENCES branches(id_branch),
+    id_level INTEGER NOT NULL REFERENCES levels(id_level),
+    modified_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabla: dates
+CREATE TABLE dates (
+    id_date SERIAL PRIMARY KEY,
+    anio INTEGER,
+    semestre INTEGER,
+    trimestre INTEGER,
+    inicio_periodo TIMESTAMP,
+    fin_periodo TIMESTAMP,
+    modified_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabla: programs_modalities
+CREATE TABLE programs_modalities (
+    id_program_modality SERIAL PRIMARY KEY,
+    id_program INTEGER NOT NULL REFERENCES programs(id_program),
+    id_modality INTEGER NOT NULL REFERENCES modalities(id_modality),
+    start_date INTEGER NOT NULL REFERENCES dates(id_date),
+    cancellation_date INTEGER NOT NULL REFERENCES dates(id_date),
+    modified_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabla: units
+CREATE TABLE units (
+    id_unit SERIAL PRIMARY KEY,
+    unit_name VARCHAR(512) NOT NULL,
+    unit_acronym VARCHAR(128) NOT NULL,
+    capacity INTEGER,
+    id_entidad_federativa INTEGER NOT NULL,
+    intranet_name VARCHAR(512) NOT NULL,
+    id_branch INTEGER NOT NULL REFERENCES branches(id_branch),
+    modified_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabla: users
+CREATE TABLE users (
+    id_user SERIAL PRIMARY KEY,
+    username VARCHAR(128) UNIQUE NOT NULL,
+    first_name VARCHAR(128) NOT NULL,
+    paternal_surname VARCHAR(128),
+    maternal_surname VARCHAR(128),
+    password TEXT NOT NULL,
+    id_role INTEGER NOT NULL REFERENCES roles(id_role),
+    email VARCHAR(256) NOT NULL,
+    id_unit INTEGER NOT NULL REFERENCES units(id_unit),
+    active BOOLEAN DEFAULT TRUE,
+    modified_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabla: sexes
+CREATE TABLE sexes (
+    id_sex SERIAL PRIMARY KEY,
+    sex_name VARCHAR(64) NOT NULL,
+    sex_acronym VARCHAR(32) NOT NULL,
+    modified_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabla: units_programs
+CREATE TABLE units_programs (
+    id_unit INTEGER NOT NULL REFERENCES units(id_unit),
+    id_program_modality INTEGER NOT NULL REFERENCES programs_modalities(id_program_modality),
+    id_date INTEGER NOT NULL REFERENCES dates(id_date),
+    modified_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id_unit, id_program_modality, id_date)
+);
+
+-- Plantilla para tablas de hechos
+CREATE TABLE basicas (
+    id_unit INTEGER NOT NULL REFERENCES units(id_unit),
+    id_program INTEGER NOT NULL REFERENCES programs(id_program),
+    id_date INTEGER NOT NULL REFERENCES dates(id_date),
+    id_sex INTEGER NOT NULL REFERENCES sexes(id_sex),
+    concepts VARCHAR(128) NOT NULL,
+    numerical_data INTEGER NOT NULL,
+    modified_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id_unit, id_program, id_date, id_sex, concepts)
+);
+
+-- Clonar estructura para otras tablas de hechos
+CREATE TABLE egresados (LIKE basicas INCLUDING ALL);
+CREATE TABLE titulados (LIKE basicas INCLUDING ALL);
+CREATE TABLE aprovechamiento (LIKE basicas INCLUDING ALL);

@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block title %}Objetos{% endblock %}
+
+{% block styles %}
+    <link rel="stylesheet" href="/static/css/components/header.css">
+    <link rel="stylesheet" href="/static/css/components/filters.css">
+    <link rel="stylesheet" href="/static/css/components/tables.css">
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="header-usuarios">
+        <h2>Objetos</h2>
+        <form action="/mod_principal" method="get">
+            <button type="submit" class="btn-volver">Regresar</button>
+        </form>
+    </div>
+
+
+    <div class="table-container">
+    <table id="tabla-domicilios">
+        <thead>
+            <tr>
+                <th>Botones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for o in objetos %}
+            <tr class="fila-edit">
+                <td>{{ o.Objeto }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+
+
+{% endblock %}
+
+{% block scripts %}
+
+{% endblock %}

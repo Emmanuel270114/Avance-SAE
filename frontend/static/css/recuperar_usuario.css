@@ -1,0 +1,84 @@
+/* Estilos específicos para la vista de Recuperar Usuario */
+body {
+  font-family: 'Noto Sans', Arial, sans-serif;
+  background: linear-gradient(135deg, #6e0343 60%, #ffffff 100%);
+  min-height: 100vh;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.auth-box {
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  padding: 2.5rem 2rem 2rem 2rem;
+  max-width: 370px;
+  width: 100%;
+  margin: auto;
+  text-align: center;
+}
+h2 {
+  font-weight: 700;
+  margin-bottom: 1.2rem;
+  color: #2d3a4a;
+}
+label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+  color: #2d3a4a;
+}
+.input-form {
+  padding: 0.7rem 0.9rem;
+  border: 1px solid #dbe2ef;
+  border-radius: 6px;
+  font-size: 1rem;
+  margin-bottom: 1.1rem;
+  background: #f7f9fc;
+  transition: border-color 0.2s;
+}
+.input-form:focus {
+  border-color: #6e0343;
+  outline: none;
+  background: #fff;
+}
+.btn-primary {
+  background: #6e0343;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 0.7rem 1.3rem;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(63,114,175,0.08);
+  margin-bottom: 1rem;
+  transition: background 0.2s;
+}
+.btn-primary:hover {
+  background: #2d3a4a;
+}
+.acciones-secundarias {
+  margin-top: 1.2rem;
+  font-size: 0.95rem;
+  color: #3f72af;
+}
+.acciones-secundarias a {
+  color: #3f72af;
+  text-decoration: none;
+  margin: 0 6px;
+  transition: color 0.2s;
+}
+.acciones-secundarias a:hover {
+  color: #112d4e;
+  text-decoration: underline;
+}
+.resultado {
+  margin-top: 1rem;
+  min-height: 24px;
+  font-size: 1rem;
+}
+.ok { color: #219150; font-weight: 700; }
+.info { color: #2d3a4a; }
+.error { color: #d32f2f; font-weight: 700; }

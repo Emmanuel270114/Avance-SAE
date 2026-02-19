@@ -1,0 +1,60 @@
+/* Componente: Header - Navegación y cerrar sesión */
+
+/* Header superior para botón cerrar sesión */
+.cerrar-sesion-externo {
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+    padding: 18px 32px 0 0;
+    box-sizing: border-box;
+}
+
+.btn-cerrar-externo {
+    background: #ffffff;
+    color: #6e0343;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 22px;
+    font-size: 1em;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(231,76,60,0.10);
+    transition: background 0.2s, transform 0.2s;
+}
+
+.btn-cerrar-externo:hover {
+    background: #ffffff;
+    transform: translateY(-2px) scale(1.03);
+}
+
+/* Submenú de categorías */
+.submenu-categorias-box {
+    max-width: 1200px;
+    margin: 18px auto 0 auto;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(110,3,67,0.10);
+    padding: 14px 24px;
+    display: flex;
+    gap: 18px;
+    justify-content: flex-start;
+    align-items: center;
+}
+
+.btn-categoria {
+    background: #f3e6ef;
+    color: #6e0343;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 18px;
+    font-size: 1em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+}
+
+.btn-categoria.active, 
+.btn-categoria:hover {
+    background: #6e0343;
+    color: #fff;
+}

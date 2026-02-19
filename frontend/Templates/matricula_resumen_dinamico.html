@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resumen Dinámico de Matrícula</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        :root {
+            --rosa-principal: #6e0343;
+            --rosa-secundario: #8b1257;
+            --rosa-claro: #c2185b;
+            --rosa-muy-claro: #ffffff;
+            --azul-claro: #b3d9ff;
+            --verde-claro: #c8e6c9;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #6e0343 0%, #8b1257 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px 0;
+        }
+        
+        .contenedor-principal {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+            padding: 0;
+            margin: 20px auto;
+            max-width: 98%;
+            overflow: hidden;
+        }
+        
+        .header-info {
+            background: linear-gradient(135deg, var(--rosa-principal), var(--rosa-secundario));
+            color: white;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .header-info .info-usuario {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .header-info .info-item {
+            background: rgba(255, 255, 255, 0.15);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+        
+        .btn-cerrar-sesion {
+            background: white;
+            color: var(--rosa-principal);
+            border: none;
+            padding: 10px 25px;
+            border-radius: 25px;
+            font-weight: bold;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        
+        .btn-cerrar-sesion:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 255, 255, 0.3);
+        }
+        
+        .contenido-vista {
+            padding: 30px;
+        }
+        
+        .titulo-principal {
+            text-align: center;
+            color: var(--rosa-principal);
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 30px;
+        }
+        
+        .filtros-aplicados {
+            background: var(--rosa-muy-claro);
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .filtros-aplicados .filtro-item {
+            color: var(--rosa-principal);
+            font-weight: 600;
+        }
+        
+        .filtros-aplicados .filtro-item strong {
+            color: var(--rosa-secundario);
+        }
+        
+        .contenedor-tabla {
+            overflow-x: auto;
+            margin-bottom: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .tabla-resumen {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            background: white;
+        }
+        
+        .tabla-resumen th,
+        .tabla-resumen td {
+            border: 1px solid #ddd;
+            padding: 10px 8px;
+            text-align: center;
+            vertical-align: middle;
+        }
+        
+        .tabla-resumen th {
+            background: linear-gradient(135deg, var(--rosa-principal), var(--rosa-secundario));
+            color: white;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        .tabla-resumen .encabezado-nivel-1 {
+            background: var(--rosa-principal);
+            font-size: 1rem;
+            font-weight: bold;
+        }
+        
+        .tabla-resumen .encabezado-nivel-2 {
+            background: var(--rosa-secundario);
+            font-size: 0.9rem;
+        }
+        
+        .tabla-resumen .encabezado-nivel-3 {
+            background: var(--rosa-claro);
+            font-size: 0.85rem;
+        }
+        
+        .tabla-resumen .celda-programa {
+            background: var(--azul-claro);
+            font-weight: bold;
+            text-align: left;
+            padding-left: 15px;
+            position: sticky;
+            left: 0;
+            z-index: 5;
+        }
+        
+        .tabla-resumen .celda-modalidad {
+            background: #e3f2fd;
+            text-align: left;
+            padding-left: 25px;
+            font-weight: 600;
+            position: sticky;
+            left: 0;
+            z-index: 5;
+        }
+        
+        .tabla-resumen .celda-grupos {
+            background: #fff3e0;
+            font-weight: bold;
+        }
+        
+        .tabla-resumen .celda-total {
+            background: var(--verde-claro);
+            font-weight: bold;
+        }
+        
+        .tabla-resumen .fila-total-modalidad {
+            background: #f5f5f5;
+            font-weight: bold;
+        }
+        
+        .tabla-resumen .fila-total-general {
+            background: var(--verde-claro);
+            font-weight: bold;
+            font-size: 1rem;
+        }
+        
+        .tabla-resumen tbody tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .celda-genero-h {
+            background: #ffffff;
+        }
+        
+        .celda-genero-m {
+            background: #ffffff;
+        }
+        
+        .celda-genero-t {
+            background: #ffffff;
+            font-weight: bold;
+        }
+        
+        .btn-regresar {
+            background: transparent;
+            color: var(--rosa-principal);
+            border: 2px solid var(--rosa-principal);
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-regresar:hover {
+            background: var(--rosa-principal);
+            color: white;
+            transform: translateX(-3px);
+        }
+        
+        .btn-exportar {
+            background: var(--rosa-principal);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-exportar:hover {
+            background: var(--rosa-secundario);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(110, 3, 67, 0.3);
+        }
+        
+        .footer-botones {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 30px;
+        }
+        
+        .alerta-sin-datos {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            color: #856404;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin: 30px 0;
+        }
+        
+        .alerta-sin-datos i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+        
+        .alerta-error {
+            background: #f8d7da;
+            border: 2px solid #f5c6cb;
+            color: #721c24;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 30px 0;
+        }
+        
+        /* Botones de validación/rechazo */
+        .contenedor-botones-validacion {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin: 30px 0;
+        }
+        
+        .btn-validar {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1rem;
+        }
+        
+        .btn-validar:hover {
+            background: #218838;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
+        }
+        
+        .btn-rechazar {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1rem;
+        }
+        
+        .btn-rechazar:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(220, 53, 69, 0.3);
+        }
+        
+        .btn-validar:disabled,
+        .btn-rechazar:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+        
+        /* Panel de rechazo */
+        .panel-rechazo {
+            display: none;
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 10px;
+            padding: 25px;
+            margin: 20px 0;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .panel-rechazo.panel-abierto {
+            animation: slideDown 0.3s ease-out;
+        }
+        
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .panel-rechazo h4 {
+            color: #856404;
+            margin-bottom: 15px;
+        }
+        
+        .panel-rechazo textarea {
+            width: 100%;
+            min-height: 150px;
+            padding: 15px;
+            border: 2px solid #ffc107;
+            border-radius: 8px;
+            font-size: 1rem;
+            resize: vertical;
+            font-family: inherit;
+        }
+        
+        .panel-rechazo textarea:focus {
+            outline: none;
+            border-color: #ff9800;
+            box-shadow: 0 0 10px rgba(255, 152, 0, 0.2);
+        }
+        
+        .panel-rechazo-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+        }
+        
+        .contador-caracteres {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .panel-rechazo-botones {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn-confirmar-rechazo {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 20px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-confirmar-rechazo:hover {
+            background: #c82333;
+        }
+        
+        .btn-cancelar-rechazo {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 20px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-cancelar-rechazo:hover {
+            background: #5a6268;
+        }
+        
+        /* Mensajes de estado */
+        .mensaje-validacion {
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin: 20px 0;
+            font-size: 1rem;
+        }
+        
+        .mensaje-validacion.validada {
+            background: #d4edda;
+            color: #155724;
+            border: 2px solid #c3e6cb;
+        }
+        
+        .mensaje-validacion.rechazada {
+            background: #f8d7da;
+            color: #721c24;
+            border: 2px solid #f5c6cb;
+        }
+        
+        .mensaje-validacion.esperando {
+            background: #fff3cd;
+            color: #856404;
+            border: 2px solid #ffeeba;
+        }
+    </style>
+</head>
+<body>
+    <div class="contenedor-principal">
+        <!-- Header con información del usuario -->
+        <div class="header-info">
+            <div class="info-usuario">
+                <div class="info-item">
+                    <i class="fas fa-user"></i>
+                    <strong>{{ nombre_usuario }}</strong>
+                </div>
+                <div class="info-item">
+                    <i class="fas fa-id-badge"></i>
+                    {{ nombre_rol }}
+                </div>
+            </div>
+            <button class="btn-cerrar-sesion" onclick="window.location.href='/login'">
+                Cerrar Sesión
+            </button>
+        </div>
+        <!-- Footer con botones -->
+            <div class="footer-botones">
+                {% if datos_resumen %}
+                <button class="btn-exportar" onclick="exportarExcel()">
+                    <i class="fas fa-file-excel"></i>
+                    Exportar a Excel
+                </button>
+                {% endif %}
+
+                <a href="/matricula/consulta" class="btn-regresar">
+                    <i class="fas fa-arrow-left"></i>
+                    Regresar
+                </a>
+            </div>
+        <!-- Contenido principal -->
+        <div class="contenido-vista">
+            <h1 class="titulo-principal">
+                <i class="fas fa-chart-bar"></i>
+                Resumen Dinámico de Matrícula
+            </h1>
+
+            <!-- Filtros aplicados -->
+            <div class="filtros-aplicados">
+                <div class="filtro-item">
+                    <i class="fas fa-calendar-alt"></i>
+                    Periodo: <strong>{{ periodo }}</strong>
+                </div>
+                <div class="filtro-item">
+                    <i class="fas fa-layer-group"></i>
+                    Nivel: <strong>{{ nivel }}</strong>
+                </div>
+                <div class="filtro-item">
+                    <i class="fas fa-building"></i>
+                    Unidad: <strong>{{ unidad }}</strong>
+                </div>
+                {% if total_grupos_ua is defined %}
+                <div class="filtro-item">
+                    <i class="fas fa-users"></i>
+                    Total Grupos: <strong>{{ total_grupos_ua }}</strong>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Botones de validación/rechazo para roles 4-5 -->
+            {% if id_rol in [4, 5] and datos_resumen %}
+            <div class="contenedor-botones-validacion" id="contenedor-botones-validacion">
+                <button class="btn-validar" id="btn-validar" onclick="validarMatricula()">
+                    <i class="fas fa-check-circle"></i>
+                    Validar Matrícula
+                </button>
+                <button class="btn-rechazar" id="btn-rechazar" onclick="rechazarMatricula()">
+                    <i class="fas fa-times-circle"></i>
+                    Rechazar Matrícula
+                </button>
+            </div>
+            
+            <!-- Panel de rechazo (oculto inicialmente) -->
+            <div class="panel-rechazo" id="panel-rechazo">
+                <h4>
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Motivo del Rechazo
+                </h4>
+                <textarea 
+                    id="motivo-rechazo"
+                    placeholder="Por favor, describa el motivo del rechazo de esta matrícula (máximo 250 caracteres)..."
+                    maxlength="250"
+                    oninput="actualizarContador()"
+                ></textarea>
+                <div class="panel-rechazo-footer">
+                    <span class="contador-caracteres">
+                        <span id="contador-caracteres">0</span>/250 caracteres
+                    </span>
+                    <div class="panel-rechazo-botones">
+                        <button class="btn-cancelar-rechazo" onclick="cerrarPanelRechazo()">
+                            <i class="fas fa-times"></i>
+                            Cancelar
+                        </button>
+                        <button class="btn-confirmar-rechazo" onclick="confirmarRechazo()">
+                            <i class="fas fa-paper-plane"></i>
+                            Enviar Rechazo
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Mensaje de validación previa -->
+            <div class="mensaje-validacion" id="mensaje-validacion" style="display: none;"></div>
+            {% endif %}
+
+            {% if error_message %}
+            <!-- Mensaje de error -->
+            <div class="alerta-error">
+                <h4><i class="fas fa-exclamation-triangle"></i> Error</h4>
+                <p>{{ error_message }}</p>
+            </div>
+            {% elif not datos_resumen %}
+            <!-- Sin datos -->
+            <div class="alerta-sin-datos">
+                <div><i class="fas fa-info-circle"></i></div>
+                <h4>No hay datos disponibles</h4>
+                <p>No se encontraron registros para los filtros seleccionados.</p>
+            </div>
+            {% else %}
+            <!-- Tabla de resumen -->
+            <div class="contenedor-tabla">
+                <table class="tabla-resumen">
+                    <thead>
+                        <!-- Fila 1: Encabezado principal con semestres -->
+                        <tr>
+                            <th rowspan="3" class="encabezado-nivel-1">Programa Académico</th>
+                            <th rowspan="3" class="encabezado-nivel-1">Modalidad</th>
+                            
+                            {% for sem in range(1, max_semestres + 1) %}
+                                {% if sem == 1 %}
+                                    <th colspan="6" class="encabezado-nivel-1">Semestre {{ sem }}</th>
+                                {% else %}
+                                    <th colspan="6" class="encabezado-nivel-1">Semestre {{ sem }}</th>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            <th colspan="3" class="encabezado-nivel-1">Totales Matrícula</th>
+                        </tr>
+                        
+                        <!-- Fila 2: Tipo de ingreso -->
+                        <tr>
+                            {% for sem in range(1, max_semestres + 1) %}
+                                {% if sem == 1 %}
+                                    <th colspan="3" class="encabezado-nivel-2">Nuevo Ingreso</th>
+                                    <th colspan="3" class="encabezado-nivel-2">Repetidores</th>
+                                {% else %}
+                                    <th colspan="3" class="encabezado-nivel-2">Reingreso</th>
+                                    <th colspan="3" class="encabezado-nivel-2">Repetidores</th>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            <th colspan="3" class="encabezado-nivel-2">Total Matrícula</th>
+                        </tr>
+                        
+                        <!-- Fila 3: Género (H/M/T) -->
+                        <tr>
+                            {% for sem in range(1, max_semestres + 1) %}
+                                {% for tipo in range(2) %}
+                                    <th class="encabezado-nivel-3">H</th>
+                                    <th class="encabezado-nivel-3">M</th>
+                                    <th class="encabezado-nivel-3">T</th>
+                                {% endfor %}
+                            {% endfor %}
+                            
+                            <th class="encabezado-nivel-3">H</th>
+                            <th class="encabezado-nivel-3">M</th>
+                            <th class="encabezado-nivel-3">T</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% set programa_actual = None %}
+                        {% set datos_por_programa = {} %}
+                        
+                        {# Agrupar datos por programa #}
+                        {% for dato in datos_resumen %}
+                            {% if dato.programa not in datos_por_programa %}
+                                {% set _ = datos_por_programa.__setitem__(dato.programa, []) %}
+                            {% endif %}
+                            {% set _ = datos_por_programa[dato.programa].append(dato) %}
+                        {% endfor %}
+                        
+                        {# Renderizar por programa con modalidades #}
+                        {% for programa, modalidades in datos_por_programa.items() %}
+                            {% for i in range(modalidades|length) %}
+                                {% set dato = modalidades[i] %}
+                                <tr>
+                                    {# Programa (solo en primera fila de cada programa) #}
+                                    {% if i == 0 %}
+                                        <td class="celda-programa" rowspan="{{ modalidades|length }}">
+                                            {{ programa }}
+                                        </td>
+                                    {% endif %}
+                                    
+                                    {# Modalidad #}
+                                    <td class="celda-modalidad">{{ dato.modalidad }}</td>
+                                    
+                                    {# Datos por semestre #}
+                                    {% for sem in dato.semestres %}
+                                        {% for tipo in sem.tipos %}
+                                            <td class="celda-genero-h">{{ tipo.H }}</td>
+                                            <td class="celda-genero-m">{{ tipo.M }}</td>
+                                            <td class="celda-genero-t">{{ tipo.T }}</td>
+                                        {% endfor %}
+                                    {% endfor %}
+                                    
+                                    {# Total matrícula #}
+                                    <td class="celda-total celda-genero-h">{{ dato.total_h }}</td>
+                                    <td class="celda-total celda-genero-m">{{ dato.total_m }}</td>
+                                    <td class="celda-total celda-genero-t">{{ dato.total_t }}</td>
+                                </tr>
+                            {% endfor %}
+                        {% endfor %}
+                        
+                        {# Fila de totales generales #}
+                        {% set total_general_h = datos_resumen | sum(attribute='total_h') %}
+                        {% set total_general_m = datos_resumen | sum(attribute='total_m') %}
+                        {% set total_general_t = datos_resumen | sum(attribute='total_t') %}
+                        
+                        <tr class="fila-total-general">
+                            <td colspan="2">TOTAL GENERAL</td>
+                            
+                            {# Calcular totales por semestre y tipo #}
+                            {% for sem_idx in range(max_semestres) %}
+                                {% for tipo_idx in range(2) %}
+                                    {% set sum_h = 0 %}
+                                    {% set sum_m = 0 %}
+                                    {% set sum_t = 0 %}
+                                    {% for dato in datos_resumen %}
+                                        {% set sem_data = dato.semestres[sem_idx] %}
+                                        {% set tipo_data = sem_data.tipos[tipo_idx] %}
+                                        {% set sum_h = sum_h + tipo_data.H %}
+                                        {% set sum_m = sum_m + tipo_data.M %}
+                                        {% set sum_t = sum_t + tipo_data.T %}
+                                    {% endfor %}
+                                    <td>{{ sum_h }}</td>
+                                    <td>{{ sum_m }}</td>
+                                    <td>{{ sum_t }}</td>
+                                {% endfor %}
+                            {% endfor %}
+                            
+                            <td>{{ total_general_h }}</td>
+                            <td>{{ total_general_m }}</td>
+                            <td>{{ total_general_t }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script>
+        // Variables del backend
+        const idRol = {{ id_rol }};
+        const periodo = "{{ periodo }}";
+        const nivel = "{{ nivel }}";
+        const unidad = "{{ unidad }}";
+        const puedeValidar = {{ 'true' if puede_validar else 'false' }};
+        const usuarioYaValido = {{ 'true' if usuario_ya_valido else 'false' }};
+        const usuarioYaRechazo = {{ 'true' if usuario_ya_rechazo else 'false' }};
+        
+        // Al cargar la página, verificar estado de validación
+        document.addEventListener('DOMContentLoaded', function() {
+            if (idRol === 4 || idRol === 5) {
+                verificarEstadoValidacion();
+            }
+        });
+        
+        function verificarEstadoValidacion() {
+            const btnValidar = document.getElementById('btn-validar');
+            const btnRechazar = document.getElementById('btn-rechazar');
+            const contenedorBotones = document.getElementById('contenedor-botones-validacion');
+            let mensajeValidacion = document.getElementById('mensaje-validacion');
+            
+            if (!btnValidar || !btnRechazar) return;
+            
+            console.log('🔍 Verificando estado de validación...');
+            console.log(`   puede_validar: ${puedeValidar}`);
+            console.log(`   usuario_ya_valido: ${usuarioYaValido}`);
+            console.log(`   usuario_ya_rechazo: ${usuarioYaRechazo}`);
+            
+            if (usuarioYaValido || usuarioYaRechazo) {
+                // Usuario ya validó o rechazó - OCULTAR botones y MOSTRAR mensaje
+                if (contenedorBotones) {
+                    contenedorBotones.style.display = 'none';
+                }
+                
+                // Crear o actualizar mensaje
+                if (!mensajeValidacion) {
+                    mensajeValidacion = document.createElement('div');
+                    mensajeValidacion.id = 'mensaje-validacion';
+                    mensajeValidacion.className = 'mensaje-validacion';
+                    // Insertar antes del contenedor de botones o donde corresponda
+                    if (contenedorBotones && contenedorBotones.parentNode) {
+                        contenedorBotones.parentNode.insertBefore(mensajeValidacion, contenedorBotones);
+                    }
+                }
+                
+                mensajeValidacion.style.display = 'block';
+                if (usuarioYaValido) {
+                    mensajeValidacion.className = 'mensaje-validacion validada';
+                    mensajeValidacion.innerHTML = '<span style=\"font-size: 24px;\">✅</span> <strong>Ya has validado esta matrícula previamente.</strong>';
+                } else {
+                    mensajeValidacion.className = 'mensaje-validacion rechazada';
+                    mensajeValidacion.innerHTML = '<span style=\"font-size: 24px;\">❌</span> <strong>Ya has rechazado esta matrícula previamente.</strong>';
+                }
+                
+                console.log('   🔒 Botones OCULTOS (usuario ya actuó)');
+            } else if (!puedeValidar) {
+                // Usuario no puede validar aún - OCULTAR botones y MOSTRAR mensaje de espera
+                if (contenedorBotones) {
+                    contenedorBotones.style.display = 'none';
+                }
+                
+                if (!mensajeValidacion) {
+                    mensajeValidacion = document.createElement('div');
+                    mensajeValidacion.id = 'mensaje-validacion';
+                    mensajeValidacion.className = 'mensaje-validacion esperando';
+                    if (contenedorBotones && contenedorBotones.parentNode) {
+                        contenedorBotones.parentNode.insertBefore(mensajeValidacion, contenedorBotones);
+                    }
+                }
+                
+                mensajeValidacion.style.display = 'block';
+                mensajeValidacion.className = 'mensaje-validacion esperando';
+                mensajeValidacion.innerHTML = '<span style=\"font-size: 24px;\">⏳</span> <strong>Esperando validación de nivel anterior.</strong>';
+                
+                console.log('   ⏳ Botones OCULTOS (esperando validación previa)');
+            } else {
+                // Usuario puede validar - MOSTRAR botones y HABILITAR
+                if (contenedorBotones) {
+                    contenedorBotones.style.display = 'flex';
+                }
+                
+                btnValidar.disabled = false;
+                btnRechazar.disabled = false;
+                
+                // Ocultar mensaje si existe
+                if (mensajeValidacion) {
+                    mensajeValidacion.style.display = 'none';
+                }
+                
+                console.log('   ✅ Botones VISIBLES y habilitados (puede validar)');
+            }
+        }
+        
+        function exportarExcel() {
+            // Obtener la tabla
+            const tabla = document.querySelector('.tabla-resumen');
+            
+            // Convertir a workbook
+            const wb = XLSX.utils.table_to_book(tabla, {sheet: "Resumen Matrícula"});
+            
+            // Generar nombre del archivo
+            const periodoClean = periodo.replace(/\//g, '-');
+            const nivelClean = nivel.replace(/\s+/g, '_');
+            const filename = `Resumen_Matricula_${unidad}_${nivelClean}_${periodoClean}.xlsx`;
+            
+            // Descargar
+            XLSX.writeFile(wb, filename);
+        }
+        
+        // ============================================
+        // FUNCIONES DE VALIDACIÓN Y RECHAZO
+        // ============================================
+        
+        async function validarMatricula() {
+            const btnValidar = document.getElementById('btn-validar');
+            
+            // Verificar si el botón está deshabilitado
+            if (btnValidar.disabled) {
+                alert('Ya has validado o rechazado esta matrícula. No puedes realizar esta acción nuevamente.');
+                return;
+            }
+            
+            const confirmar = confirm(
+                `¿Está seguro que desea VALIDAR esta matrícula?\n\n` +
+                `Periodo: ${periodo}\n` +
+                `Nivel: ${nivel}\n` +
+                `Unidad: ${unidad}\n\n` +
+                `Esta acción marcará la matrícula como aprobada y bloqueará cualquier modificación futura.\n\n` +
+                `¿Continuar?`
+            );
+            
+            if (!confirmar) {
+                console.log('❌ Usuario canceló la validación');
+                return;
+            }
+            
+            // Deshabilitar botones
+            btnValidar.disabled = true;
+            btnValidar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Validando...';
+            
+            try {
+                console.log('🔄 Enviando validación al servidor...');
+                
+                const response = await fetch('/matricula/validar_semestre_rol', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        periodo: periodo
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    console.log('✅ Matrícula validada exitosamente:', data);
+                    alert(
+                        `✅ ${data.mensaje}\n\n` +
+                        `Validado por: ${data.data.validado_por}\n` +
+                        `Unidad Académica: ${data.data.unidad_academica}\n` +
+                        `Periodo: ${data.data.periodo}\n` +
+                        `Fecha: ${new Date(data.data.fecha_validacion).toLocaleString()}\n\n` +
+                        `La matrícula ha sido aprobada completamente.`
+                    );
+                    
+                    // Recargar página
+                    location.reload();
+                } else {
+                    alert(`❌ Error: ${data.error || 'No se pudo completar la validación'}`);
+                    btnValidar.disabled = false;
+                    btnValidar.innerHTML = '<i class="fas fa-check-circle"></i> Validar Matrícula';
+                }
+            } catch (error) {
+                console.error('❌ Error en validarMatricula:', error);
+                alert(`❌ Error al validar: ${error.message}`);
+                btnValidar.disabled = false;
+                btnValidar.innerHTML = '<i class="fas fa-check-circle"></i> Validar Matrícula';
+            }
+        }
+        
+        function rechazarMatricula() {
+            const btnRechazar = document.getElementById('btn-rechazar');
+            
+            // Verificar si el botón está deshabilitado
+            if (btnRechazar.disabled) {
+                alert('Ya has validado o rechazado esta matrícula. No puedes realizar esta acción nuevamente.');
+                return;
+            }
+            
+            const panel = document.getElementById('panel-rechazo');
+            const textarea = document.getElementById('motivo-rechazo');
+            const contador = document.getElementById('contador-caracteres');
+            
+            // Toggle: si ya está abierto, cerrarlo
+            if (panel.style.display === 'block') {
+                cerrarPanelRechazo();
+                return;
+            }
+            
+            // Limpiar textarea y reiniciar contador
+            textarea.value = '';
+            contador.textContent = '0';
+            
+            // Mostrar panel con animación
+            panel.style.display = 'block';
+            setTimeout(() => {
+                panel.classList.add('panel-abierto');
+            }, 10);
+            
+            // Focus en el textarea
+            setTimeout(() => textarea.focus(), 300);
+            
+            // Scroll suave hacia el panel
+            setTimeout(() => {
+                panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 350);
+        }
+        
+        function cerrarPanelRechazo() {
+            const panel = document.getElementById('panel-rechazo');
+            const textarea = document.getElementById('motivo-rechazo');
+            
+            panel.classList.remove('panel-abierto');
+            setTimeout(() => {
+                panel.style.display = 'none';
+                textarea.value = '';
+            }, 300);
+        }
+        
+        function actualizarContador() {
+            const textarea = document.getElementById('motivo-rechazo');
+            const contador = document.getElementById('contador-caracteres');
+            contador.textContent = textarea.value.length;
+            
+            // Cambiar color si se acerca al límite
+            if (textarea.value.length > 230) {
+                contador.style.color = '#dc3545';
+                contador.style.fontWeight = 'bold';
+            } else {
+                contador.style.color = '#666';
+                contador.style.fontWeight = 'normal';
+            }
+        }
+        
+        async function confirmarRechazo() {
+            const textarea = document.getElementById('motivo-rechazo');
+            const motivo = textarea.value.trim();
+            
+            // Validar que se haya ingresado un motivo
+            if (!motivo || motivo.length < 10) {
+                alert('⚠️ Por favor, ingrese un motivo de rechazo (mínimo 10 caracteres).');
+                textarea.focus();
+                return;
+            }
+            
+            const confirmar = confirm(
+                `¿Está seguro que desea RECHAZAR esta matrícula?\n\n` +
+                `Periodo: ${periodo}\n` +
+                `Nivel: ${nivel}\n` +
+                `Unidad: ${unidad}\n\n` +
+                `Motivo: ${motivo.substring(0, 100)}${motivo.length > 100 ? '...' : ''}\n\n` +
+                `Esta acción devolverá la matrícula para correcciones.\n\n` +
+                `¿Continuar?`
+            );
+            
+            if (!confirmar) {
+                console.log('❌ Usuario canceló el rechazo');
+                return;
+            }
+            
+            const btnConfirmar = event.target;
+            btnConfirmar.disabled = true;
+            btnConfirmar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
+            
+            try {
+                console.log('🔄 Enviando rechazo al servidor...');
+                
+                const response = await fetch('/matricula/rechazar_semestre_rol', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        periodo: periodo,
+                        motivo: motivo
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    console.log('✅ Matrícula rechazada exitosamente:', data);
+                    alert(
+                        `✅ ${data.mensaje}\n\n` +
+                        `Rechazado por: ${data.data.rechazado_por}\n` +
+                        `Unidad Académica: ${data.data.unidad_academica}\n` +
+                        `Periodo: ${data.data.periodo}\n` +
+                        `Motivo: ${motivo}\n` +
+                        `Fecha: ${new Date(data.data.fecha_rechazo).toLocaleString()}\n\n` +
+                        `La matrícula ha sido devuelta para correcciones.`
+                    );
+                    
+                    // Recargar página
+                    location.reload();
+                } else {
+                    alert(`❌ Error: ${data.error || 'No se pudo completar el rechazo'}`);
+                    btnConfirmar.disabled = false;
+                    btnConfirmar.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar Rechazo';
+                }
+            } catch (error) {
+                console.error('❌ Error en confirmarRechazo:', error);
+                alert(`❌ Error al rechazar: ${error.message}`);
+                btnConfirmar.disabled = false;
+                btnConfirmar.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar Rechazo';
+            }
+        }
+    </script>
+</body>
+</html>

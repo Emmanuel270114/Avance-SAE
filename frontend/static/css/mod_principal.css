@@ -1,0 +1,92 @@
+/* Box de bienvenida separado */
+.bienvenida-box {
+    max-width: 500px;
+    margin: 32px auto 0 auto;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(110,3,67,0.13);
+    padding: 18px 32px;
+    text-align: left;
+    font-size: 1.1em;
+    font-weight: bold;
+    color: #6e0343;
+}
+/* Bienvenida usuario en Mod_Principal */
+.bienvenida-mod-principal {
+    color: #000000;
+    font-size: 1.1em;
+    font-weight: bold;
+    margin-bottom: 18px;
+    text-align: left;
+}
+/* Header superior para botón cerrar sesión */
+.header-mod-principal {
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+    padding: 18px 32px 0 0;
+    box-sizing: border-box;
+}
+
+.btn-cerrar-sesion {
+    background: #ffffff;
+    color: #6e0343;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 22px;
+    font-size: 1em;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(231,76,60,0.10);
+    transition: background 0.2s, transform 0.2s;
+}
+.btn-cerrar-sesion:hover {
+    background: #ffffff;
+    transform: translateY(-2px) scale(1.03);
+}
+/* Estilos para la vista Mod_Principal */
+body {
+    background: linear-gradient(135deg, #6e0343 60%, #ffffff 100%);
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+}
+.principal-container {
+    max-width: 500px;
+    margin: 60px auto;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(110,3,67,0.13);
+    padding: 36px 32px 32px 32px;
+    text-align: center;
+}
+.titulo {
+    color: #000000;
+    margin-bottom: 32px;
+    font-size: 2em;
+    font-weight: bold;
+}
+.botones-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    align-items: center;
+}
+.btn-menu {
+    width: 220px;
+    padding: 18px 0;
+    font-size: 1.2em;
+    font-weight: 600;
+    color: #fff;
+    background: #6e0343;
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(110,3,67,0.10);
+    cursor: pointer;
+    transition: background 0.2s, transform 0.2s;
+}
+.btn-menu:hover {
+    background: #4a022e;
+    transform: translateY(-2px) scale(1.03);
+}

@@ -1,0 +1,77 @@
+<!-- Formulario de registro/edición de usuarios -->
+{% if tiene_permisos_admin %}
+<div class="registro-container">
+    <h3 id="titulo-usuario">Registro Usuario</h3>
+    <form id="registroForm">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="nombre">Nombre(s)</label>
+                <input type="text" id="nombre" name="nombre" placeholder="Nombre(s)" required class="input-form">
+            </div>
+            <div class="form-group">
+                <label for="ap_pat">Apellido Paterno</label>
+                <input type="text" id="ap_pat" name="paterno" placeholder="Apellido Paterno" required class="input-form">
+            </div>
+            <div class="form-group">
+                <label for="ap_mat">Apellido Materno</label>
+                <input type="text" id="ap_mat" name="materno" placeholder="Apellido Materno" required class="input-form">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="email">Correo Electrónico</label>
+                <input type="email" id="email" name="email" placeholder="Correo Electrónico" required oninput="sugerirUsuario()" class="input-form">
+            </div>
+            <div class="form-group">
+                <label for="usuario">Usuario</label>
+                <input type="text" id="usuario" name="usuario" placeholder="Usuario Sugerido" required readonly class="input-form input-readonly">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="id_unidad_academica">Unidad Académica</label>
+                {% if es_super_admin or id_rol in [7, 8, 9] %}
+                <select id="id_unidad_academica" name="id_unidad_academica" class="input-form" required>
+                    {% for ua in unidades_academicas %}
+                    <option value="{{ ua.Id_Unidad_Academica }}">{{ ua.Sigla }} </option>
+                    {% endfor %}
+                </select>
+                {% else %}
+                <select id="id_unidad_academica" name="id_unidad_academica" class="input-form" disabled>
+                    {% for ua in unidades_academicas %}
+                        {% if ua.Id_Unidad_Academica == id_unidad_academica %}
+                        <option value="{{ ua.Id_Unidad_Academica }}" selected>{{ ua.Sigla }}</option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+                <input type="hidden" id="id_unidad_academica_hidden" name="id_unidad_academica" value="{{ id_unidad_academica }}">
+                {% endif %}
+            </div>
+            <div class="form-group">
+                <label for="id_rol">Rol</label>
+                <select id="id_rol" name="id_rol" required class="input-form" title="Selecciona el rol">
+                    {% for rol in roles %}
+                    <option value="{{ rol.Id_Rol }}">{{ rol.Rol }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="id_nivel">Nivel</label>
+                <select id="id_nivel" name="id_nivel" required class="input-form" title="Selecciona el nivel">
+                    {% for nivel in niveles %}
+                    <option value="{{ nivel.Id_Nivel }}">{{ nivel.Nivel }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <input type="hidden" id="id_usuario" name="id_usuario">
+        <div class="form-row">
+            <button type="submit" id="btn-guardar">Registrar</button>
+            <button type="button" id="btn-cancelar">Cancelar</button>
+            <button type="button" id="btn-limpiar">Limpiar</button>
+            <button type="button" id="btn-eliminar" style="display:none;">Eliminar</button>
+        </div>
+    </form>
+    <div id="mensaje"></div>
+</div>
+{% endif %}
