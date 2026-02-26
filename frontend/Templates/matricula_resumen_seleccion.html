@@ -1,124 +1,19 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Resumen de Matrícula - Selección de Filtros</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+{% extends 'base.html' %}
+
+{% block title %}Consulta de Matrícula - Selección de Filtros{% endblock %}
+
+{% block styles %}
+    <!-- SweetAlert2 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <link rel="stylesheet" href="/static/css/components/header.css">
+    <link rel="stylesheet" href="/static/css/components/matricula_consulta.css">
     <style>
-        :root {
-            --rosa-principal: #6e0343;
-            --rosa-secundario: #8b1257;
-            --rosa-claro: #c2185b;
-            --rosa-muy-claro: #fce4ec;
-        }
-        
-        body {
-            background: linear-gradient(135deg, #6e0343 0%, #8b1257 100%);
-            min-height: 100vh;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            padding: 20px 0;
-        }
-        
-        .contenedor-principal {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
-            padding: 0;
-            margin: 20px auto;
-            max-width: 1400px;
-            overflow: hidden;
-        }
-        
-        .header-info {
-            background: linear-gradient(135deg, var(--rosa-principal), var(--rosa-secundario));
-            color: white;
-            padding: 20px 30px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 15px;
-        }
-        
-        .header-info .info-usuario {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-        
-        .header-info .info-item {
-            background: rgba(255, 255, 255, 0.15);
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 0.95rem;
-        }
-        
-        .btn-cerrar-sesion {
-            background: white;
-            color: var(--rosa-principal);
-            border: none;
-            padding: 10px 25px;
-            border-radius: 25px;
-            font-weight: bold;
-            transition: all 0.3s;
-            cursor: pointer;
-        }
-        
-        .btn-cerrar-sesion:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(255, 255, 255, 0.3);
-        }
-        
-        .contenido-vista {
-            padding: 40px 30px;
-        }
-        
-        .titulo-principal {
-            text-align: center;
-            color: var(--rosa-principal);
-            font-size: 2.2rem;
-            font-weight: bold;
-            margin-bottom: 40px;
-        }
-        
-        .seccion-filtros {
-            background: linear-gradient(135deg, var(--rosa-principal), var(--rosa-secundario));
-            padding: 35px;
-            border-radius: 15px;
-            box-shadow: 0 8px 25px rgba(110, 3, 67, 0.3);
-            margin-bottom: 30px;
-        }
-        
-        .seccion-filtros .titulo-seccion {
-            color: white;
-            font-size: 1.5rem;
-            font-weight: bold;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        
-        .seccion-filtros .titulo-seccion i {
-            font-size: 1.8rem;
-        }
-        
-        .seccion-filtros .descripcion {
-            color: rgba(255, 255, 255, 0.9);
-            margin-bottom: 25px;
-            font-size: 1rem;
-        }
-        
-        .contenedor-filtros {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 20px;
-            align-items: end;
-        }
-        
-        /* === PANEL DE FILTROS SUPERIORES (estilo igual a egresados) === */
+        /* Ocultar el submenu de categorias que viene de base.html en esta vista */
+        .submenu-categorias-box { display: none !important; }
+
+        /* === PANEL DE FILTROS SUPERIORES (ROLES 4-9) - idéntico a egresados === */
         .panel-filtros-superiores {
             background: linear-gradient(135deg, #6e0343 0%, #8b1155 100%);
             padding: 30px;
@@ -143,7 +38,6 @@
 
         .filtros-superiores-container {
             display: grid;
-            grid-template-columns: 1fr 1fr 1fr 300px;
             gap: 20px;
             margin-top: 20px;
             align-items: end;
@@ -177,285 +71,319 @@
         .btn-consultar-superior {
             width: 100%;
             padding: 14px 24px;
-            border-radius: 999px;
-            border: none;
+            background: linear-gradient(135deg, #4da5ec, #4da5ec);
+            color: #ffffff;
+            border: 2px solid #ffffff;
+            border-radius: 8px;
             font-size: 16px;
-            font-weight: 600;
+            font-weight: bold;
             cursor: pointer;
-            display: inline-flex;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
-            background: linear-gradient(135deg, #4da5ec, #4da5ec);
-            color: white;
-            box-shadow: 0 8px 24px rgba(77, 165, 236, 0.4);
-            transition: all 0.3s ease;
+            gap: 8px;
         }
 
         .btn-consultar-superior:hover:not(:disabled) {
+            background: linear-gradient(135deg, #3a8ed3, #3a8ed3);
             transform: translateY(-2px);
-            box-shadow: 0 12px 30px rgba(77, 165, 236, 0.6);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
         }
 
         .btn-consultar-superior:disabled {
-            opacity: 0.5;
+            background: #999;
             cursor: not-allowed;
-            box-shadow: none;
+            opacity: 0.6;
         }
-        
-        .btn-regresar {
-            background: transparent;
-            color: var(--rosa-principal);
-            border: 2px solid var(--rosa-principal);
-            padding: 12px 30px;
-            border-radius: 25px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .btn-regresar:hover {
-            background: var(--rosa-principal);
-            color: white;
-            transform: translateX(-3px);
-        }
-        
-        .footer-botones {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 30px;
-        }
-        
-        /* Animación de carga */
-        .overlay-carga {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-            backdrop-filter: blur(3px);
-        }
-        
-        .overlay-carga.activo {
-            display: flex;
-        }
-        
-        .contenedor-spinner {
-            background: white;
-            padding: 40px;
-            border-radius: 16px;
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+
+        .btn-icon { font-size: 18px; }
+
+        .mensaje-carga {
             text-align: center;
+            padding: 20px;
+            background: rgba(255,255,255,0.9);
+            border-radius: 8px;
+            margin-top: 20px;
         }
-        
-        .spinner {
-            border: 4px solid rgba(110, 3, 67, 0.2);
-            border-top: 4px solid var(--rosa-principal);
-            border-radius: 50%;
-            width: 60px;
-            height: 60px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .texto-cargando {
-            color: var(--rosa-principal);
-            font-size: 1.2rem;
-            font-weight: 600;
-        }
+        /* === FIN PANEL DE FILTROS SUPERIORES === */
     </style>
-</head>
-<body>
-    <div class="contenedor-principal">
-        <!-- Header con información del usuario -->
-        <div class="header-info">
-            <div class="info-usuario">
-                <div class="info-item">
-                    <i class="fas fa-user"></i>
-                    Bienvenido: <strong>{{ nombre_usuario }}</strong>
-                </div>
-                {% if periodo_activo_literal %}
-                <div class="info-item">
-                    <i class="fas fa-calendar-alt"></i>
-                    Periodo: <strong>{{ periodo_activo_literal }}</strong>
-                </div>
-                {% endif %}
-                <div class="info-item">
-                    <i class="fas fa-id-badge"></i>
-                    Rol: <strong>{{ nombre_rol }}</strong>
-                </div>
-            </div>
-            <button class="btn-cerrar-sesion" onclick="window.location.href='/login'">
-                Cerrar Sesión
-            </button>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Header igual a egresados -->
+    <div class="header-usuarios">
+        <div class="bienvenido">Bienvenido: <strong>{{ nombre_usuario }}</strong>
+            {% if periodo_activo_literal %}
+                &nbsp;|&nbsp; Periodo: <strong>{{ periodo_activo_literal }}</strong>
+            {% endif %}
+            {% if nombre_rol %}
+                &nbsp;|&nbsp; Rol: <strong>{{ nombre_rol }}</strong>
+            {% endif %}
         </div>
-        <!-- Footer con botones -->
-            <div class="footer-botones">
-                <a href="/mod_principal/" class="btn-regresar">
-                    <i class="fas fa-arrow-left"></i>
-                    Regresar
-                </a>
-            </div>
-
-        <!-- Contenido principal -->
-        <div class="contenido-vista">
-            <h1 class="titulo-principal">
-                <i class="fas fa-chart-pie"></i>
-                Consulta de Matrícula Escolar
-            </h1>
-            <!-- Panel de filtros estilo egresados -->
-            <div class="panel-filtros-superiores" id="panel-filtros-superiores">
-                <div class="panel-header">
-                    <h3>🔍 Selección de Periodo, Unidad Académica y Nivel</h3>
-                    <p>Seleccione el <strong>Periodo</strong>, luego la <strong>Unidad Académica</strong> y finalmente el <strong>Nivel</strong> a consultar</p>
-                </div>
-
-                <div class="filtros-superiores-container">
-                    <div class="filtro-superior-item">
-                        <label for="select-periodo-superior"><strong>1. Periodo:</strong></label>
-                        <select id="select-periodo-superior" class="form-select">
-                            <option value="">-- Seleccione un Periodo --</option>
-                            {% for periodo in periodos %}
-                            <option value="{{ periodo.Periodo }}" {% if periodo_activo_id and periodo.Id_Periodo == periodo_activo_id %}selected{% endif %}>
-                                {{ periodo.Periodo }}{% if periodo.Id_Estatus == 1 %} (Activo){% endif %}
-                            </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-
-                    <div class="filtro-superior-item">
-                        <label for="select-nivel-superior"><strong>2. Nivel Académico:</strong></label>
-                        <select id="select-nivel-superior" class="form-select">
-                            <option value="">-- Seleccione un Nivel --</option>
-                            {% for nivel in niveles %}
-                            <option value="{{ nivel.Nivel }}">{{ nivel.Nivel }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-
-                    <div class="filtro-superior-item">
-                        <label for="select-ua-superior"><strong>3. Unidad Académica:</strong></label>
-                        <select id="select-ua-superior" class="form-select" disabled>
-                            <option value="">-- Primero seleccione un Nivel --</option>
-                        </select>
-                    </div>
-
-                    <div class="filtro-superior-accion">
-                        <button type="button" id="btn-ver-resumen" class="btn-consultar-superior" disabled>
-                            <span class="btn-icon">📈</span> Consultar Matrícula
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <form action="/mod_principal" method="get">
+            <button type="submit" class="btn-volver">Regresar</button>
+        </form>
     </div>
 
-    <!-- Overlay de carga -->
-    <div id="overlay-carga" class="overlay-carga">
-        <div class="contenedor-spinner">
-            <div class="spinner"></div>
-            <div class="texto-cargando">Cargando resumen de matrícula...</div>
+    <h2>Consulta de Matrícula Escolar</h2>
+
+    <!-- =====================================================================
+         ROLES 4-5 (Director/Subdirector de UA):
+         Solo ven los niveles de su propia UA. Sin selector de UA.
+         Al seleccionar el nivel, el botón "Consultar" se activa directamente.
+         ===================================================================== -->
+    {% if es_rol_director_nivel %}
+    <div class="panel-filtros-superiores" id="panel-filtros-director">
+        <div class="panel-header">
+            <h3>🔍 Selección de Periodo y Nivel</h3>
+            <p>Consulta los datos de matrícula de <strong>{{ mi_unidad_nombre if mi_unidad_nombre else mi_unidad_sigla }}</strong>. Seleccione el <strong>Periodo</strong> y el <strong>Nivel</strong> a consultar.</p>
         </div>
+
+        <div class="filtros-superiores-container" style="grid-template-columns: 1fr 1fr 300px;">
+            <div class="filtro-superior-item">
+                <label for="select-periodo-director"><strong>1. Periodo:</strong></label>
+                <select id="select-periodo-director" name="periodo_director" required>
+                    <option value="">-- Seleccione un Periodo --</option>
+                    {% for periodo in periodos %}
+                    <option value="{{ periodo.Id_Periodo }}" {% if periodo.Id_Periodo == periodo_activo_id %}selected{% endif %}>
+                        {{ periodo.Periodo }}
+                        {% if periodo.Id_Estatus == 1 %}(Activo){% endif %}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="filtro-superior-item">
+                <label for="select-nivel-director"><strong>2. Nivel Académico:</strong></label>
+                <select id="select-nivel-director" name="nivel_director" required>
+                    <option value="">-- Seleccione un Nivel --</option>
+                    {% for nivel in niveles %}
+                    <option value="{{ nivel.Nivel }}">{{ nivel.Nivel }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="filtro-superior-accion">
+                <button type="button" id="btn-ver-resumen-director" class="btn-consultar-superior" disabled>
+                    <span class="btn-icon">📈</span> Consultar Matrícula
+                </button>
+            </div>
+        </div>
+
     </div>
 
-    <script>
-        // Datos de unidades por nivel
-        const unidadesPorNivel = {
-            {% for nivel in niveles %}
-            "{{ nivel.Nivel }}": [
-                {% for unidad in unidades %}
-                    {% if nivel.Id_Nivel in unidad.niveles %}
-                        {"siglas": "{{ unidad.Siglas }}", "nombre": "{{ unidad.Nombre_Unidad_Academica }}"},
-                    {% endif %}
-                {% endfor %}
-            ],
-            {% endfor %}
-        };
+    <!-- =====================================================================
+         ROLES 6-9 y Admin: Ven todas las UAs.
+         Flujo completo: Periodo → Nivel → UA → Consultar.
+         ===================================================================== -->
+    {% else %}
+    <div class="panel-filtros-superiores" id="panel-filtros-superiores">
+        <div class="panel-header">
+            <h3>🔍 Selección de Periodo, Unidad Académica y Nivel</h3>
+            <p>Seleccione el <strong>Periodo</strong>, luego el <strong>Nivel</strong> y finalmente la <strong>Unidad Académica</strong> a consultar</p>
+        </div>
 
-        console.log('Unidades por nivel (matrícula):', unidadesPorNivel);
+        <div class="filtros-superiores-container" style="grid-template-columns: 1fr 1fr 1fr 300px;">
+            <div class="filtro-superior-item">
+                <label for="select-periodo-superior"><strong>1. Periodo:</strong></label>
+                <select id="select-periodo-superior" name="periodo_superior" required>
+                    <option value="">-- Seleccione un Periodo --</option>
+                    {% for periodo in periodos %}
+                    <option value="{{ periodo.Id_Periodo }}" {% if periodo.Id_Periodo == periodo_activo_id %}selected{% endif %}>
+                        {{ periodo.Periodo }}
+                        {% if periodo.Id_Estatus == 1 %}(Activo){% endif %}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
 
-        const selectPeriodoSuperior = document.getElementById('select-periodo-superior');
-        const selectNivelSuperior = document.getElementById('select-nivel-superior');
-        const selectUASuperior = document.getElementById('select-ua-superior');
-        const btnVerResumen = document.getElementById('btn-ver-resumen');
-        const overlayGarga = document.getElementById('overlay-carga');
+            <div class="filtro-superior-item">
+                <label for="select-nivel-superior"><strong>2. Nivel Académico:</strong></label>
+                <select id="select-nivel-superior" name="nivel_superior" required>
+                    <option value="">-- Seleccione un Nivel --</option>
+                    {% for nivel in niveles %}
+                    <option value="{{ nivel.Nivel }}">{{ nivel.Nivel }}</option>
+                    {% endfor %}
+                </select>
+            </div>
 
-        function actualizarUAsPorNivel() {
-            const nivelSeleccionado = selectNivelSuperior.value;
+            <div class="filtro-superior-item">
+                <label for="select-ua-superior"><strong>3. Unidad Académica:</strong></label>
+                <select id="select-ua-superior" name="ua_superior" required disabled>
+                    <option value="">-- Primero seleccione un Nivel --</option>
+                </select>
+            </div>
 
-            if (!nivelSeleccionado) {
-                selectUASuperior.disabled = true;
-                selectUASuperior.innerHTML = '<option value="">-- Primero seleccione un Nivel --</option>';
-                btnVerResumen.disabled = true;
-                return;
+            <div class="filtro-superior-accion">
+                <button type="button" id="btn-ver-resumen" class="btn-consultar-superior" disabled>
+                    <span class="btn-icon">📈</span> Consultar Matrícula
+                </button>
+            </div>
+        </div>
+
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    function mostrarCargaSeleccion(mensaje) {
+        Swal.fire({
+            title: 'Cargando',
+            text: mensaje || 'Cargando matrícula seleccionada...',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showConfirmButton: false,
+            didOpen: () => {
+                Swal.showLoading();
             }
+        });
+    }
 
-            const unidades = (unidadesPorNivel[nivelSeleccionado] || []).slice();
-            unidades.sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+    function ocultarCargaSeleccion() {
+        if (Swal.isVisible()) {
+            Swal.close();
+        }
+    }
 
-            selectUASuperior.disabled = unidades.length === 0;
-            selectUASuperior.innerHTML = unidades.length === 0
-                ? '<option value="">-- Este Nivel no tiene UAs con matrícula --</option>'
-                : '<option value="">-- Seleccione una Unidad Académica --</option>';
+    // ========================================================
+    // LÓGICA ROLES 4-5: Solo Periodo + Nivel (UA = la propia)
+    // ========================================================
+    {% if es_rol_director_nivel %}
+    const miUnidadSigla = "{{ mi_unidad_sigla }}";
 
-            unidades.forEach(unidad => {
-                const option = document.createElement('option');
-                option.value = unidad.siglas;
-                option.textContent = `${unidad.siglas} - ${unidad.nombre}`;
-                selectUASuperior.appendChild(option);
-            });
+    const selectPeriodoDirector = document.getElementById('select-periodo-director');
+    const selectNivelDirector   = document.getElementById('select-nivel-director');
+    const btnDirector           = document.getElementById('btn-ver-resumen-director');
 
+    function verificarSeleccionDirector() {
+        btnDirector.disabled = !(selectPeriodoDirector.value && selectNivelDirector.value);
+    }
+
+    selectPeriodoDirector.addEventListener('change', verificarSeleccionDirector);
+    selectNivelDirector.addEventListener('change', verificarSeleccionDirector);
+
+    btnDirector.addEventListener('click', function() {
+        const periodoValor = selectPeriodoDirector.value;
+        const nivelValor   = selectNivelDirector.value;
+
+        if (!periodoValor || !nivelValor) {
+            alert('Por favor, seleccione Periodo y Nivel');
+            return;
+        }
+
+        mostrarCargaSeleccion('Cargando matrícula seleccionada...');
+        btnDirector.disabled = true;
+
+        const periodoTexto = selectPeriodoDirector.options[selectPeriodoDirector.selectedIndex].text.replace('(Activo)', '').trim();
+        const url = `/matricula/resumen-dinamico?periodo=${encodeURIComponent(periodoTexto)}&nivel=${encodeURIComponent(nivelValor)}&unidad=${encodeURIComponent(miUnidadSigla)}`;
+        setTimeout(() => {
+            window.location.href = url;
+        }, 80);
+    });
+
+    window.addEventListener('pageshow', function(event) {
+        if (event.persisted) {
+            ocultarCargaSeleccion();
+            btnDirector.disabled = !(selectPeriodoDirector.value && selectNivelDirector.value);
+        }
+    });
+
+    {% else %}
+    // ========================================================
+    // LÓGICA ROLES 6-9: Periodo + Nivel + UA (todas las UAs)
+    // ========================================================
+    const unidadesPorNivel = {
+        {% for nivel in niveles %}
+        "{{ nivel.Nivel }}": [
+            {% for unidad in unidades %}
+                {% if nivel.Id_Nivel in unidad.niveles %}
+                    {"siglas": "{{ unidad.Siglas }}", "nombre": "{{ unidad.Nombre_Unidad_Academica }}"},
+                {% endif %}
+            {% endfor %}
+        ],
+        {% endfor %}
+    };
+
+    const selectPeriodoSuperior = document.getElementById('select-periodo-superior');
+    const selectNivelSuperior   = document.getElementById('select-nivel-superior');
+    const selectUASuperior      = document.getElementById('select-ua-superior');
+    const btnVerResumen         = document.getElementById('btn-ver-resumen');
+
+    function actualizarUAsPorNivel() {
+        const nivelSeleccionado = selectNivelSuperior.value;
+
+        if (!nivelSeleccionado) {
+            selectUASuperior.disabled = true;
+            selectUASuperior.innerHTML = '<option value="">-- Primero seleccione un Nivel --</option>';
+            btnVerResumen.disabled = true;
+            return;
+        }
+
+        const unidades = (unidadesPorNivel[nivelSeleccionado] || []).slice();
+        unidades.sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+
+        selectUASuperior.disabled = unidades.length === 0;
+        selectUASuperior.innerHTML = unidades.length === 0
+            ? '<option value="">-- Este Nivel no tiene UAs con matrícula --</option>'
+            : '<option value="">-- Seleccione una Unidad Académica --</option>';
+
+        unidades.forEach(unidad => {
+            const option = document.createElement('option');
+            option.value = unidad.siglas;
+            option.textContent = `${unidad.siglas} - ${unidad.nombre}`;
+            selectUASuperior.appendChild(option);
+        });
+
+        btnVerResumen.disabled = true;
+    }
+
+    function verificarSeleccion() {
+        btnVerResumen.disabled = !(selectPeriodoSuperior.value && selectNivelSuperior.value && selectUASuperior.value);
+    }
+
+    selectPeriodoSuperior.addEventListener('change', verificarSeleccion);
+    selectNivelSuperior.addEventListener('change', function() {
+        actualizarUAsPorNivel();
+        verificarSeleccion();
+    });
+    selectUASuperior.addEventListener('change', verificarSeleccion);
+
+    btnVerResumen.addEventListener('click', function() {
+        const periodoValor = selectPeriodoSuperior.value;
+        const nivelValor   = selectNivelSuperior.value;
+        const uaValor      = selectUASuperior.value;
+
+        if (!periodoValor || !nivelValor || !uaValor) {
+            alert('Por favor, seleccione Periodo, Nivel y Unidad Académica');
+            return;
+        }
+
+        mostrarCargaSeleccion('Cargando matrícula seleccionada...');
+        btnVerResumen.disabled = true;
+
+        const periodoTexto = selectPeriodoSuperior.options[selectPeriodoSuperior.selectedIndex].text.replace('(Activo)', '').trim();
+        const url = `/matricula/resumen-dinamico?periodo=${encodeURIComponent(periodoTexto)}&nivel=${encodeURIComponent(nivelValor)}&unidad=${encodeURIComponent(uaValor)}`;
+        setTimeout(() => {
+            window.location.href = url;
+        }, 80);
+    });
+
+    window.addEventListener('pageshow', function(event) {
+        if (event.persisted) {
+            ocultarCargaSeleccion();
+            selectPeriodoSuperior.value = '';
+            selectNivelSuperior.value = '';
+            selectUASuperior.innerHTML = '<option value="">-- Primero seleccione un Nivel --</option>';
+            selectUASuperior.disabled = true;
             btnVerResumen.disabled = true;
         }
+    });
+    {% endif %}
+</script>
+{% endblock %}
 
-        function verificarSeleccion() {
-            const periodoSel = selectPeriodoSuperior.value;
-            const nivelSel = selectNivelSuperior.value;
-            const uaSel = selectUASuperior.value;
-            btnVerResumen.disabled = !(periodoSel && nivelSel && uaSel);
-        }
-
-        selectPeriodoSuperior.addEventListener('change', verificarSeleccion);
-        selectNivelSuperior.addEventListener('change', function() {
-            actualizarUAsPorNivel();
-            verificarSeleccion();
-        });
-        selectUASuperior.addEventListener('change', verificarSeleccion);
-
-        btnVerResumen.addEventListener('click', function() {
-            const periodoValor = selectPeriodoSuperior.value;
-            const nivelValor = selectNivelSuperior.value;
-            const uaValor = selectUASuperior.value;
-
-            if (!periodoValor || !nivelValor || !uaValor) {
-                alert('Por favor, seleccione Periodo, Nivel y Unidad Académica');
-                return;
-            }
-
-            // Tomar el texto del periodo sin el sufijo (Activo)
-            const periodoTexto = selectPeriodoSuperior.options[selectPeriodoSuperior.selectedIndex].text.replace(' (Activo)', '').trim();
-
-            // Mostrar overlay de carga
-            overlayGarga.classList.add('activo');
-
-            const url = `/matricula/resumen-dinamico?periodo=${encodeURIComponent(periodoTexto)}&nivel=${encodeURIComponent(nivelValor)}&unidad=${encodeURIComponent(uaValor)}`;
-            window.location.href = url;
-        });
-    </script>
-</body>
-</html>

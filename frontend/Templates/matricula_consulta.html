@@ -3,6 +3,10 @@
 {% block title %}Captura de Matrícula (SP){% endblock %}
 
 {% block styles %}
+    <!-- SweetAlert2 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
     <link rel="stylesheet" href="/static/css/components/header.css">
     <link rel="stylesheet" href="/static/css/components/tables.css">
     <link rel="stylesheet" href="/static/css/components/matricula_consulta.css">
@@ -222,68 +226,78 @@
             background-color: #ffffff;
         }
         
-        /* === OVERLAY DE CARGA SP === */
-        #overlay-carga-sp {
-            position: fixed;
-            top: 0;
-            left: 0;
+        /* === ESTILOS PARA ALINEACIÓN CORRECTA DE LA TABLA DE MATRÍCULA === */
+        .tabla-matricula-completa {
             width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-            backdrop-filter: blur(3px);
+            border-collapse: collapse !important;
+            table-layout: fixed;
         }
-        #overlay-carga-sp.activo {
-            display: flex;
-        }
-        .contenedor-spinner {
-            background: white;
-            padding: 40px;
-            border-radius: 16px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        
+        .tabla-matricula-completa thead th {
+            border: 1px solid #dee2e6;
+            padding: 10px 5px;
             text-align: center;
-            min-width: 300px;
-        }
-        .spinner-sp {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #6e0343;
-            border-radius: 50%;
-            width: 60px;
-            height: 60px;
-            animation: spin-sp 1s linear infinite;
-            margin: 0 auto 20px;
-        }
-        @keyframes spin-sp {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        .texto-carga-sp {
-            font-size: 18px;
+            vertical-align: middle;
             font-weight: 600;
-            color: #6e0343;
-            margin-bottom: 10px;
+            box-sizing: border-box;
         }
-        .subtexto-carga-sp {
-            font-size: 14px;
-            color: #666;
+        
+        .tabla-matricula-completa tbody td {
+            border: 1px solid #dee2e6;
+            padding: 8px 5px !important;
+            text-align: center;
+            vertical-align: middle;
+            box-sizing: border-box;
         }
-        /* === FIN OVERLAY DE CARGA SP === */
+        
+        /* Primera columna (Edad) - ancho fijo y pequeño */
+        .tabla-matricula-completa tbody td:first-child {
+            width: 80px !important;
+            min-width: 80px !important;
+            max-width: 80px !important;
+            padding: 8px 5px !important;
+            text-align: center !important;
+            vertical-align: middle !important;
+            font-weight: 600;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+        }
+        
+        .tabla-matricula-completa thead th:first-child {
+            width: 80px !important;
+            min-width: 80px !important;
+            max-width: 80px !important;
+        }
+        
+        /* Columnas de datos - ancho equitativo */
+        .tabla-matricula-completa tbody td:not(:first-child),
+        .tabla-matricula-completa thead th:not(:first-child) {
+            width: auto;
+            min-width: 100px;
+            max-width: none;
+        }
+        
+        /* Contenedores de inputs - evitar expansión */
+        .tabla-matricula-completa tbody td div {
+            max-width: 100%;
+            overflow: visible;
+        }
+        
+        /* Inputs dentro de las celdas - tamaño fijo */
+        .tabla-matricula-completa input.input-matricula-nueva {
+            width: 34px !important;
+            max-width: 34px !important;
+            min-width: 34px !important;
+            box-sizing: border-box;
+        }
+        
+        /* Overlay eliminado - Ahora se usa SweetAlert2 */
     </style>
 {% endblock %}
 
 {% block content %}
-<!-- Overlay de carga para operaciones SP -->
-<div id="overlay-carga-sp">
-    <div class="contenedor-spinner">
-        <div class="spinner-sp"></div>
-        <div class="texto-carga-sp">Procesando...</div>
-        <div class="subtexto-carga-sp">Por favor espere</div>
-    </div>
-</div>
-
+<!-- Overlay para el spinner -->
 <div class="container">
     <!-- **VERIFICACIÓN DE ACCESO RESTRINGIDO** -->
     {% if acceso_restringido %}
@@ -375,34 +389,7 @@
         <div class="banner-rechazo-icon">
             <span class="icono-advertencia-grande">⚠️</span>
         </div>
-            if (resultado.error) {
-                console.error('Error al cargar datos existentes:', resultado.error);
-                generarTablaVacia();
-                ocultarOverlayCarga(); // Ocultar overlay
-                return;
-            }
-            
-            // Si el backend devolvió rows (raw) preferimos reconstruir la tabla desde ellas
-            if (resultado.rows && resultado.rows.length > 0) {
-                // 1. Guardar TODOS los datos organizados por semestre y turno en memoria
-                if (typeof procesarYGuardarDatosPorSemestre === 'function') {
-                    procesarYGuardarDatosPorSemestre(resultado.rows);
-                }
-
-                // 2. Renderizar la tabla completa (incluye semáforos, pestañas y totales)
-                if (typeof renderMatriculaFromSP === 'function') {
-                    renderMatriculaFromSP(resultado.rows, {});
-                } else {
-                    console.error('❌ Función renderMatriculaFromSP no disponible');
-                    generarTablaVacia();
-                }
-
-                // ✨ MARCAR que los datos completos ya se cargaron
-                datosCompletosYaCargados = true;
-            } else {
-                generarTablaVacia();
-                calcularTotales();
-            }
+        <div class="banner-rechazo-contenido">
             <div class="leyenda-items">
                 <div class="leyenda-item">
                     <div class="leyenda-color" style="background-color: #ff4444;"></div>
@@ -466,20 +453,20 @@
                             <div style="display:flex;justify-content:space-around;align-items:center;flex-wrap:wrap;gap:15px;">
                                 <div style="flex:1;min-width:120px;">
                                     <div style="background:#e3f2fd;padding:8px;border-radius:8px;border:2px solid #2196f3;">
-                                        <div style="font-size:13px;color:#1976d2;font-weight:600;margin-bottom:4px;">HOMBRE</div>
+                                        <div style="font-size:15px;color:#1976d2;font-weight:700;margin-bottom:4px;text-align:center;">HOMBRE</div>
                                         <div id="total_masculino" style="font-size:24px;color:#1976d2;font-weight:700;">0</div>
                                     </div>
                                 </div>
                                 <div style="flex:1;min-width:120px;">
                                     <div style="background:#fce4ec;padding:8px;border-radius:8px;border:2px solid #e91e63;">
-                                        <div style="font-size:13px;color:#c2185b;font-weight:600;margin-bottom:4px;">MUJER</div>
-                                        <div id="total_femenino" style="font-size:24px;color:#c2185b;font-weight:700;">0</div>
+                                        <div style="font-size:15px;color:#c2185b;font-weight:700;margin-bottom:4px;text-align:center;">MUJER</div>
+                                        <div id="total_femenino" style="font-size:24px;color:#c2185b;font-weight:700;text-align:center;">0</div>
                                     </div>
                                 </div>
                                 <div style="flex:1;min-width:140px;">
                                     <div style="background:#e8f5e9;padding:8px;border-radius:8px;border:2px solid #4caf50;">
-                                        <div style="font-size:13px;color:#2e7d32;font-weight:600;margin-bottom:4px;">TOTAL GENERAL</div>
-                                        <div id="total_general" style="font-size:26px;color:#2e7d32;font-weight:700;">0</div>
+                                        <div style="font-size:15px;color:#2e7d32;font-weight:700;margin-bottom:4px;text-align:center;">TOTAL GENERAL</div>
+                                        <div id="total_general" style="font-size:26px;color:#2e7d32;font-weight:700;text-align:center;">0</div>
                                     </div>
                                 </div>
                             </div>
@@ -600,20 +587,20 @@
                         <div style="display:flex;justify-content:space-around;align-items:center;flex-wrap:wrap;gap:15px;">
                             <div style="flex:1;min-width:120px;">
                                 <div style="background:#e3f2fd;padding:8px;border-radius:8px;border:2px solid #2196f3;">
-                                    <div style="font-size:13px;color:#1976d2;font-weight:600;margin-bottom:4px;">HOMBRE</div>
-                                    <div id="total_masculino" style="font-size:24px;color:#1976d2;font-weight:700;">0</div>
+                                    <div style="font-size:15px;color:#1976d2;font-weight:700;margin-bottom:4px;text-align:center;">HOMBRE</div>
+                                    <div id="total_masculino" style="font-size:24px;color:#1976d2;font-weight:700;text-align:center;">0</div>
                                 </div>
                             </div>
                             <div style="flex:1;min-width:120px;">
                                 <div style="background:#fce4ec;padding:8px;border-radius:8px;border:2px solid #e91e63;">
-                                    <div style="font-size:13px;color:#c2185b;font-weight:600;margin-bottom:4px;">MUJER</div>
-                                    <div id="total_femenino" style="font-size:24px;color:#c2185b;font-weight:700;">0</div>
+                                    <div style="font-size:15px;color:#c2185b;font-weight:700;margin-bottom:4px;text-align:center;">MUJER</div>
+                                    <div id="total_femenino" style="font-size:24px;color:#c2185b;font-weight:700;text-align:center;">0</div>
                                 </div>
                             </div>
                             <div style="flex:1;min-width:140px;">
                                 <div style="background:#e8f5e9;padding:8px;border-radius:8px;border:2px solid #4caf50;">
-                                    <div style="font-size:13px;color:#2e7d32;font-weight:600;margin-bottom:4px;">TOTAL GENERAL</div>
-                                    <div id="total_general" style="font-size:26px;color:#2e7d32;font-weight:700;">0</div>
+                                    <div style="font-size:15px;color:#2e7d32;font-weight:700;margin-bottom:4px;text-align:center;">TOTAL GENERAL</div>
+                                    <div id="total_general" style="font-size:26px;color:#2e7d32;font-weight:700;text-align:center;">0</div>
                                 </div>
                             </div>
                         </div>
@@ -632,9 +619,6 @@
             <button id="btn-limpiar-formulario" type="button" class="btn-secondary" onclick="limpiarFormulario()">
                 🧹 Limpiar Formulario
             </button>
-            <button id="btn-validar-matricula" type="button" class="btn-success" onclick="validarCapturaSemestre()">
-                ✅ Finalizar Semestre
-            </button>
             {% if matricula_rechazada %}
             <!-- Botón de validación masiva (solo cuando hay rechazo) -->
             <button id="btn-validar-todos-semestres" type="button" class="btn-success btn-validacion-masiva" 
@@ -643,9 +627,9 @@
                 ✅✅ Validar Todos los Semestres
             </button>
             {% endif %}
-            <!-- Botón Finalizar Captura (solo visible cuando todo está validado) -->
-            <button id="btn-finalizar-captura" type="button" class="btn-finalizar" onclick="finalizarCaptura()" style="display:none;">
-                🎯 Finalizar Captura
+            <!-- Botón Finalizar Semestre -->
+            <button id="btn-finalizar-captura" type="button" class="btn-finalizar" onclick="validarCapturaSemestre()">
+                🎯 Finalizar Semestre
             </button>
             {% else %}
             <!-- Botones para roles de validación (ID 4, 5, 6, 7, 8) -->
@@ -869,7 +853,9 @@
         
         // 6. Renderizar la tabla de matrícula usando la misma función que roles normales
         if (typeof renderMatriculaFromSP === 'function') {
-            renderMatriculaFromSP(data.rows, {});
+            (async () => {
+                await renderMatriculaFromSP(data.rows, {});
+            })();
         } else {
             console.error('❌ Función renderMatriculaFromSP no disponible');
         }
@@ -1446,25 +1432,26 @@
         }
     }
     
-    // === FUNCIONES DE CONTROL DE CARGA ===
+    // === FUNCIONES DE CONTROL DE CARGA CON SWEETALERT2 ===
     function mostrarOverlayCarga(texto = 'Procesando...', subtexto = 'Por favor espere') {
         spEnEjecucion = true;
         interfazBloqueada = true;
-        const overlay = document.getElementById('overlay-carga-sp');
-        if (overlay) {
-            overlay.querySelector('.texto-carga-sp').textContent = texto;
-            overlay.querySelector('.subtexto-carga-sp').textContent = subtexto;
-            overlay.classList.add('activo');
-        }
+        Swal.fire({
+            title: texto,
+            text: subtexto,
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showConfirmButton: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
     }
     
     function ocultarOverlayCarga() {
         spEnEjecucion = false;
         interfazBloqueada = false;
-        const overlay = document.getElementById('overlay-carga-sp');
-        if (overlay) {
-            overlay.classList.remove('activo');
-        }
+        Swal.close();
     }
     
     function verificarSiPuedeContinuar() {
@@ -1735,7 +1722,7 @@
         }
         
         // Mostrar overlay de carga
-        mostrarOverlayCarga('Cargando Datos...');
+        mostrarOverlayCarga('Cargando Datos...', 'Consultando datos del servidor');
         
         const periodo = document.getElementById('periodo').value;
         let programa = document.getElementById('programa').value;
@@ -1754,7 +1741,7 @@
         
         if (!periodo || !programa || !modalidad || !semestre) {
             generarTablaVacia();
-            ocultarOverlayCarga(); // Ocultar overlay
+            ocultarOverlayCarga();
             return;
         }
         
@@ -1802,7 +1789,7 @@
             if (resultado.error) {
                 console.error('Error al cargar datos existentes:', resultado.error);
                 generarTablaVacia();
-                ocultarOverlayCarga(); // Ocultar overlay
+                ocultarOverlayCarga();
                 return;
             }
             
@@ -1865,7 +1852,7 @@
                 // 3. Renderizar tabla completa usando la lógica común basada en rows del SP
                 //    (incluye reglas de semestres para Tronco Común y programas Técnicos)
                 if (typeof renderMatriculaFromSP === 'function') {
-                    renderMatriculaFromSP(resultado.rows, {});
+                    await renderMatriculaFromSP(resultado.rows, {});
                 } else {
                     console.error('❌ Función renderMatriculaFromSP no disponible');
                     generarTablaVacia(false);
@@ -1880,27 +1867,31 @@
                     aplicarBloqueoPorSemaforo();
                     aplicarModoVista();
                     calcularTotales();
+                    // Simular clic en el primer semestre para forzar render correcto de datos
+                    const primerTab = document.querySelector('.semestre-tab');
+                    if (primerTab) primerTab.click();
                 }, 200);
             } else {
                 generarTablaVacia();
                 calcularTotales();
             }
             
-            // Ocultar overlay al finalizar
             ocultarOverlayCarga();
             
         } catch (error) {
             console.error('❌ Error al cargar datos existentes:', error);
             generarTablaVacia();
-            ocultarOverlayCarga(); // Ocultar overlay en caso de error
+            ocultarOverlayCarga();
         }
     }
 
     // Función para procesar los estados de semáforo que vienen del SP
     function procesarEstadosSemaforoDelSP(rows) {
-        // NO limpiar estados anteriores - queremos preservar estados validados
-        // estadosSemaforoPorSemestre = {}; // ❌ ELIMINADO
-        
+        // ✅ Siempre limpiar antes de procesar para que al cambiar de modalidad/programa
+        // no queden estados residuales de la modalidad anterior.
+        // Los semestres finalizados (estado 3) se preservan igual vía localStorage (estadosValidados).
+        estadosSemaforoPorSemestre = {};
+
         if (!rows || rows.length === 0) {
             return;
         }
@@ -1968,13 +1959,17 @@
                     // Agregar a la lista de semestres únicos
                     semestresUnicos.add(semestreNum);
                     
-                    // NUEVA LÓGICA: Preservar estados validados (estado 3)
+                    // Preservar semestres ya finalizados (estado 3) desde localStorage
                     if (estadosValidados[semestreNum] === 3) {
-                        // Este semestre ya fue validado, NO sobrescribir
+                        // Este semestre ya fue validado/finalizado, NO sobrescribir
                         estadosSemaforoPorSemestre[semestreNum] = 3;
                     } else {
-                        // Semestre no validado, usar estado del SP
-                        if (!estadosSemaforoPorSemestre[semestreNum] || idSemaforo > estadosSemaforoPorSemestre[semestreNum]) {
+                        // Usar directamente el estado que viene del SP para esta modalidad.
+                        // Como el diccionario se limpió al inicio, no hay riesgo de residuos
+                        // de otra modalidad. Si el SP devuelve varias filas por semestre
+                        // (múltiples turnos), se queda con el valor más alto de esas filas.
+                        const valorActual = estadosSemaforoPorSemestre[semestreNum] ?? 0;
+                        if (idSemaforo > valorActual) {
                             estadosSemaforoPorSemestre[semestreNum] = idSemaforo;
                         }
                     }
@@ -2223,7 +2218,7 @@
 
     // Renderiza la tabla de captura a partir de rows devueltas por el SP con nueva estructura
     // rows: array de objetos; datosMap: mapa opcional para poblar valores
-        function renderMatriculaFromSP(rows, datosMap) {
+        async function renderMatriculaFromSP(rows, datosMap) {
             lastRowsSp = Array.isArray(rows) ? rows : [];
             if (typeof window !== 'undefined') {
                 window.lastRowsSp = lastRowsSp;
@@ -2265,6 +2260,14 @@
                 console.log('   Es periodo /1:', esPeriodo1);
                 console.log('   Es periodo /2:', esPeriodo2);
                 
+                // Obtener modalidad actual
+                const modalidadSelect = document.getElementById('modalidad');
+                const modalidadId = modalidadSelect ? parseInt(modalidadSelect.value) : null;
+                const modalidadTexto = modalidadSelect ? modalidadSelect.selectedOptions[0]?.text : '';
+                
+                console.log('   Modalidad ID:', modalidadId);
+                console.log('   Modalidad Texto:', modalidadTexto);
+                
                 // LÓGICA 1: Tronco Común
                 if (programaTexto && programaTexto.toLowerCase().includes('tronco común')) {
                     console.log('🎓 TRONCO COMÚN detectado');
@@ -2279,9 +2282,19 @@
                         console.warn('   ⚠️ Periodo sin /1 ni /2, mostrando semestres disponibles del SP');
                     }
                 }
-                // LÓGICA 2: Técnico en... (Medio Superior)
+                // LÓGICA 2: Técnico + Modalidad No Escolarizada (id=2) o Mixta (id=3)
+                else if (programaTexto && (programaTexto.toLowerCase().includes('técnico') || programaTexto.toLowerCase().includes('tecnico')) 
+                         && (modalidadId === 2 || modalidadId === 3)) {
+                    console.log('🔧 TÉCNICO con Modalidad NO ESCOLARIZADA o MIXTA detectado');
+                    console.log('   📚 Modalidad ID:', modalidadId, '(' + modalidadTexto + ')');
+                    
+                    // Para estas modalidades, mostrar TODOS los semestres del SP sin filtrar
+                    // semestresAMostrar ya contiene todos los semestres del SP
+                    console.log('   ✅ Mostrando TODOS los semestres del SP:', semestresAMostrar);
+                }
+                // LÓGICA 3: Técnico con Modalidad Escolarizada (id=1) u otra
                 else if (programaTexto && (programaTexto.toLowerCase().includes('técnico') || programaTexto.toLowerCase().includes('tecnico'))) {
-                    console.log('🔧 TÉCNICO (Medio Superior) detectado');
+                    console.log('🔧 TÉCNICO con Modalidad ESCOLARIZADA (Medio Superior) detectado');
                     
                     // Eliminar semestres 1 y 2 (exclusivos de Tronco Común)
                     semestresAMostrar = semestresAMostrar.filter(sem => sem > 2);
@@ -2299,7 +2312,7 @@
                         console.warn('   ⚠️ Periodo sin /1 ni /2, mostrando todos (excepto 1 y 2)');
                     }
                 }
-                // LÓGICA 3: Otros programas (usar semestres del SP)
+                // LÓGICA 4: Otros programas (usar semestres del SP)
                 else {
                     console.log('📚 Otro tipo de programa, usando semestres del SP sin filtrar');
                 }
@@ -2309,7 +2322,12 @@
                 // Validar que haya al menos un semestre para mostrar
                 if (semestresAMostrar.length === 0) {
                     console.error('❌ No hay semestres disponibles después del filtrado!');
-                    alert('No hay semestres disponibles para este programa y periodo.');
+                    await Swal.fire({
+                        icon: 'warning',
+                        title: 'Sin semestres',
+                        text: 'No hay semestres disponibles para este programa y periodo.',
+                        confirmButtonText: 'Entendido'
+                    });
                     return;
                 }
                 
@@ -2367,9 +2385,13 @@
             semestreActualId = semestreActualElement ? parseInt(semestreActualElement.value) : null;
             
             // Obtener el nombre del semestre actual desde el mapa
-            const semestreActualNombre = semestreActualId ? semestresMap[semestreActualId] : null;
+            // Si semestresMap está vacío (roles 3-5 sin mapa del backend), construirlo desde semestresData
+            const effectiveSemestresMap = Object.keys(semestresMap).length > 0
+                ? semestresMap
+                : (Array.isArray(semestresData) ? semestresData.reduce((acc, s) => { acc[s.Id_Semestre] = s.Semestre; return acc; }, {}) : {});
+            const semestreActualNombre = semestreActualId ? effectiveSemestresMap[semestreActualId] : null;
             
-            console.log(`📌 Semestre seleccionado: ID=${semestreActualId}, Nombre="${semestreActualNombre}"`);
+            console.log(`📌 Semestre seleccionado: ID=${semestreActualId}, Nombre="${semestreActualNombre}" (Map keys: ${Object.keys(effectiveSemestresMap)})`);
 
             // Heurísticas para columnas posibles
             const tipoCandidates = ['Id_Tipo_Ingreso','Id_TipoIngreso','Tipo_Id','Tipo_de_Ingreso','TipoIngreso','Tipo_Ingreso','Tipo'];
@@ -2449,18 +2471,29 @@
                     console.warn('⚠️ Fila sin información de modalidad, pasando filtro...');
                 }
                 
-                // Filtro por semestre
+                // Filtro por semestre — usa el mismo mapa que procesarEstadosSemaforoDelSP
+                // para garantizar consistencia sin depender de semestresMap/effectiveSemestresMap
+                const semestreANumeroFiltro = {
+                    'Primero': 1, 'Primer': 1, '1': 1, 'I': 1,
+                    'Segundo': 2, '2': 2, 'II': 2,
+                    'Tercero': 3, 'Tercer': 3, '3': 3, 'III': 3,
+                    'Cuarto': 4, '4': 4, 'IV': 4,
+                    'Quinto': 5, '5': 5, 'V': 5,
+                    'Sexto': 6, '6': 6, 'VI': 6,
+                    'S\u00e9ptimo': 7, 'Septimo': 7, '7': 7, 'VII': 7,
+                    'Octavo': 8, '8': 8, 'VIII': 8,
+                    'Noveno': 9, '9': 9, 'IX': 9,
+                    'D\u00e9cimo': 10, 'Decimo': 10, '10': 10, 'X': 10
+                };
                 let semestreMatch = true;
-                if (semestreKey && semestreActualNombre) {
-                    const semestreRow = r[semestreKey];
-                    // Aceptar coincidencia por nombre o por id
-                    const byName = normalizeLabel(semestreRow) === normalizeLabel(semestreActualNombre);
-                    const byId = !isNaN(parseInt(semestreRow)) && parseInt(semestreRow) === semestreActualId;
-                    semestreMatch = byName || byId;
-                    if (!semestreMatch) {
-                        // console.log(`⏭️ Semestre no coincide (${semestreRow} vs ${semestreActualNombre}/${semestreActualId})`);
-                        return false;
-                    }
+                if (semestreKey && semestreActualId) {
+                    const semestreRowVal = String(r[semestreKey] ?? '').trim();
+                    // Convertir el valor del SP a número usando el mapa
+                    const rowSemNum = semestreANumeroFiltro[semestreRowVal]
+                        ?? parseInt(semestreRowVal)
+                        ?? (r['Id_Semestre'] !== undefined ? parseInt(r['Id_Semestre']) : NaN);
+                    semestreMatch = rowSemNum === semestreActualId;
+                    if (!semestreMatch) return false;
                 }
 
                 return semestreMatch;
@@ -2571,10 +2604,16 @@
                 }
                 
                 // Determinar sexo: Hombre/M → M, Mujer/F → F
+                // Id_Sexo numérico: 1=Hombre, 2=Mujer
                 let sexo = 'M';
-                if (sexoVal) {
-                    const sexoStr = String(sexoVal).toLowerCase();
-                    if (sexoStr.includes('mujer') || sexoStr.startsWith('f')) {
+                if (sexoVal !== undefined && sexoVal !== null) {
+                    const sexoStr = String(sexoVal).toLowerCase().trim();
+                    if (
+                        sexoStr === '2' ||
+                        sexoStr.includes('mujer') ||
+                        sexoStr === 'f' ||
+                        sexoStr.startsWith('f')
+                    ) {
                         sexo = 'F';
                     }
                 }
@@ -2619,13 +2658,14 @@
                     });
                 }
                 
-                // Asignar el valor de matrícula SOLO si es numérico (incluye 0 explícito)
+                // Asignar el valor de matrícula SOLO si es numérico válido (incluye 0 explícito).
+                // Si el SP devuelve NULL el parseInt dará NaN → no se asigna → input queda vacío.
                 const vNum = parseInt(matriculaVal);
                 if (!isNaN(vNum)) {
                     edadMap[grupoId][turnoId][tipoCategoria][sexo] = vNum;
                     console.log(`🎯 Asignado: ${tipoCategoria} ${sexo} = ${vNum} (grupo ${grupoId})`);
                 } else {
-                    console.log(`⚪ Sin valor numérico para ${tipoCategoria} ${sexo} en grupo ${grupoId}`);
+                    console.log(`⚪ Sin valor numérico (NULL) para ${tipoCategoria} ${sexo} en grupo ${grupoId}`);
                 }
             });
 
@@ -2718,14 +2758,14 @@
                 // Columna de Edad (solo una vez)
                 const tdEdad = document.createElement('td');
                 tdEdad.textContent = edadData.grupoLabel || grupoValor;
-                tdEdad.style.padding = '12px';
+                tdEdad.style.padding = '8px 5px';
                 tdEdad.style.textAlign = 'center';
-                tdEdad.style.fontWeight = '500';
-                tdEdad.style.fontSize = '15px';
+                tdEdad.style.fontWeight = '600';
+                tdEdad.style.fontSize = '13px';
                 tdEdad.style.color = '#424242';
                 tdEdad.style.background = '#f8f9fa';
                 tdEdad.style.verticalAlign = 'middle';
-                tdEdad.style.minWidth = '160px';
+                // Ancho controlado por CSS, no inline
                 tr.appendChild(tdEdad);
 
                 // Columnas para cada turno y tipo de ingreso visible
@@ -2733,9 +2773,9 @@
                     const turnoData = edadData[turno.id] || {};
                     tiposIngresoVisibles.forEach((tipo, indexTipo) => {
                         const tdTipo = document.createElement('td');
-                        tdTipo.style.padding = '10px';
+                        tdTipo.style.padding = '8px 5px';
                         tdTipo.style.verticalAlign = 'middle';
-                        tdTipo.style.minWidth = '160px';
+                        // Ancho controlado por CSS
                         // Línea divisoria más gruesa al final de cada turno
                         if (indexTipo === tiposIngresoVisibles.length - 1) {
                             tdTipo.style.borderRight = '3px solid #b71c1c';
@@ -3023,23 +3063,23 @@
             // Columna de Edad
             const tdEdad = document.createElement('td');
             tdEdad.textContent = edadObj.label;
-            tdEdad.style.padding = '12px';
+            tdEdad.style.padding = '8px 5px';
             tdEdad.style.textAlign = 'center';
-            tdEdad.style.fontWeight = '700';
-            tdEdad.style.fontSize = '15px';
+            tdEdad.style.fontWeight = '600';
+            tdEdad.style.fontSize = '13px';
             tdEdad.style.color = '#424242';
             tdEdad.style.background = '#f8f9fa';
             tdEdad.style.verticalAlign = 'middle';
-            tdEdad.style.minWidth = '160px';
+            // Ancho controlado por CSS, no inline
             tr.appendChild(tdEdad);
             
             // Columnas para cada turno y tipo de ingreso visible
             turnosOrdenados.forEach((turno, indexTurno) => {
                 tiposIngresoVisibles.forEach((tipo, indexTipo) => {
                     const tdTipo = document.createElement('td');
-                    tdTipo.style.padding = '10px';
+                    tdTipo.style.padding = '8px 5px';
                     tdTipo.style.verticalAlign = 'middle';
-                    tdTipo.style.minWidth = '160px';
+                    // Ancho controlado por CSS
                     // Línea divisoria más gruesa al final de cada turno
                     if (indexTipo === tiposIngresoVisibles.length - 1) {
                         tdTipo.style.borderRight = '3px solid #b71c1c';
@@ -3367,8 +3407,10 @@
                 }
 
                 if (typeof renderMatriculaFromSP === 'function') {
-                    renderMatriculaFromSP(lastRowsSp, {});
-                    datosCompletosYaCargados = true;
+                    (async () => {
+                        await renderMatriculaFromSP(lastRowsSp, {});
+                        datosCompletosYaCargados = true;
+                    })();
                 } else {
                     console.error('❌ Función renderMatriculaFromSP no disponible al cambiar filtros');
                 }
@@ -3567,7 +3609,17 @@
         const semestreActualElement = document.getElementById('semestre');
         const semestreActualSeleccionado = semestreActualElement ? parseInt(semestreActualElement.value) : null;
         
-        console.log(`📌 Semestre actualmente seleccionado: ${semestreActualSeleccionado}`);
+        // Si el semestre actualmente seleccionado no está en la lista disponible, usar el primero real
+        let semestreEfectivo = semestreActualSeleccionado;
+        if (!semestreEfectivo || !semestresAGenerar.includes(semestreEfectivo)) {
+            semestreEfectivo = semestresAGenerar[0];
+            if (semestreActualElement) {
+                semestreActualElement.value = semestreEfectivo;
+            }
+            console.log(`⚠️ Semestre ${semestreActualSeleccionado} no disponible en la lista. Usando primer semestre real: ${semestreEfectivo}`);
+        } else {
+            console.log(`📌 Semestre actualmente seleccionado: ${semestreEfectivo}`);
+        }
         
         // ✨ OPTIMIZACIÓN: Usar DocumentFragment para inserciones masivas (mucho más rápido)
         const fragment = document.createDocumentFragment();
@@ -3582,16 +3634,10 @@
             // Aplicar color del semáforo
             actualizarColorPestana(tab, semestreNum);
             
-            // Marcar como activo el semestre que está seleccionado actualmente
-            // Si no hay ninguno seleccionado, marcar el primero
-            if (semestreActualSeleccionado) {
-                if (semestreNum === semestreActualSeleccionado) {
-                    tab.classList.add('active');
-                    console.log(`✅ Pestaña Semestre ${semestreNum} marcada como activa (coincide con seleccionado)`);
-                }
-            } else if (index === 0) {
+            // Marcar como activo el primer semestre real del SP
+            if (semestreNum === semestreEfectivo) {
                 tab.classList.add('active');
-                console.log(`✅ Pestaña Semestre ${semestreNum} marcada como activa (primero por defecto)`);
+                console.log(`✅ Pestaña Semestre ${semestreNum} marcada como activa`);
             }
             
             fragment.appendChild(tab);
@@ -3602,8 +3648,7 @@
         actualizarEstadoBotonesSemestre();
 
         // Inicializar barra de semestre actual al generar las pestañas
-        const semestreInicial = semestreActualSeleccionado || (semestresAGenerar.length > 0 ? semestresAGenerar[0] : 1);
-        actualizarBarraSemestreActual(semestreInicial);
+        actualizarBarraSemestreActual(semestreEfectivo);
     }
 
     // Función para actualizar el color de una pestaña según su estado
@@ -3759,6 +3804,18 @@
             }
 
             header.innerHTML = `<h3>${contenido}</h3>`;
+
+            // Auto-ajustar tamaño de fuente: máximo 30px, mínimo 11px
+            const h3 = header.querySelector('h3');
+            if (h3) {
+                let fs = 30;
+                h3.style.fontSize = fs + 'px';
+                // Reducir hasta que el contenido quepa sin desbordarse
+                while (h3.scrollWidth > header.clientWidth && fs > 11) {
+                    fs -= 0.5;
+                    h3.style.fontSize = fs + 'px';
+                }
+            }
         });
     }
 
@@ -3815,7 +3872,9 @@
             // Esta llamada volverá a construir la tabla completa usando
             // el semestre actual (valor de #semestre) y los filtros de
             // programa/modalidad ya seleccionados.
-            renderMatriculaFromSP(lastRowsSp, {});
+            (async () => {
+                await renderMatriculaFromSP(lastRowsSp, {});
+            })();
         } else {
             console.warn('⚠️ No hay lastRowsSp disponible al cambiar de semestre; se genera tabla vacía');
             generarTablaVacia(false);
@@ -3935,18 +3994,19 @@
         const btnGuardar = document.getElementById('btn-guardar-matricula');
         const btnLimpiar = document.getElementById('btn-limpiar-formulario');
         const btnValidar = document.getElementById('btn-validar-matricula');
+        const btnFinalizar = document.getElementById('btn-finalizar-captura');
         
         if (parseInt(estado) === 3) {
             // Bloquear todos los inputs de matrícula (incluye ambos turnos conceptualmente porque se recrean por turno)
             deshabilitarTodaLaVista();
             // Bloquear también el Total Grupos de este semestre-turno
             aplicarTotalGruposParaSemestreYTurnoActual();
-            // Deshabilitar botones de acción
-            [btnGuardar, btnLimpiar, btnValidar].forEach(b => { if (b) { b.disabled = true; b.classList.add('input-disabled'); }});
-            console.log('🛑 Semestre finalizado: botones Guardar/Limpiar/Validar deshabilitados.');
+            // Deshabilitar botones de acción (incluye Finalizar Semestre)
+            [btnGuardar, btnLimpiar, btnValidar, btnFinalizar].forEach(b => { if (b) { b.disabled = true; b.classList.add('input-disabled'); }});
+            console.log('🛑 Semestre finalizado (semáforo 3): botones Guardar/Limpiar/Validar/Finalizar deshabilitados.');
         } else {
             // Rehabilitar botones si el semestre NO está finalizado
-            [btnGuardar, btnLimpiar, btnValidar].forEach(b => { if (b) { b.disabled = false; b.classList.remove('input-disabled'); }});
+            [btnGuardar, btnLimpiar, btnValidar, btnFinalizar].forEach(b => { if (b) { b.disabled = false; b.classList.remove('input-disabled'); }});
             console.log('✅ Semestre activo: todos los botones habilitados.');
         }
     }
@@ -3965,7 +4025,12 @@
         }
         
         if (!hasData) {
-            alert('⚠️ Por favor, ingrese datos antes de guardar.');
+            await Swal.fire({
+                icon: 'warning',
+                title: 'Sin datos',
+                text: 'Por favor, ingrese datos antes de guardar.',
+                confirmButtonText: 'Entendido'
+            });
             return;
         }
 
@@ -3984,7 +4049,12 @@
         }
         
         if (!periodo || !programa || !semestre || !modalidad) {
-            alert('⚠️ Por favor, complete todos los filtros antes de guardar.');
+            await Swal.fire({
+                icon: 'warning',
+                title: 'Filtros incompletos',
+                text: 'Por favor, complete todos los filtros antes de guardar.',
+                confirmButtonText: 'Entendido'
+            });
             return;
         }
 
@@ -4021,7 +4091,12 @@
 
         const turnosIds = Object.keys(datosPorTurno);
         if (turnosIds.length === 0) {
-            alert('⚠️ No se encontraron datos válidos para guardar.');
+            await Swal.fire({
+                icon: 'warning',
+                title: 'Sin datos',
+                text: 'No se encontraron datos válidos para guardar.',
+                confirmButtonText: 'Entendido'
+            });
             return;
         }
 
@@ -4056,11 +4131,23 @@
                     throw new Error(result.error);
                 }
             }
-            alert('✅ Matrícula guardada correctamente.');
+            await Swal.fire({
+                icon: 'success',
+                title: '✅ Guardado exitoso',
+                text: 'Matrícula guardada correctamente.',
+                timer: 2000,
+                timerProgressBar: true,
+                showConfirmButton: false
+            });
             limpiarFormulario();
         } catch (error) {
             console.error('Error:', error);
-            alert(`❌ Error al procesar la solicitud. ${error.message}`);
+            await Swal.fire({
+                icon: 'error',
+                title: 'Error al guardar',
+                text: error.message,
+                confirmButtonText: 'Entendido'
+            });
         } finally {
             if (saveBtn) {
                 saveBtn.textContent = originalText;
@@ -4083,7 +4170,15 @@
             const valor = parseInt(input.value);
             if (!isNaN(valor) && valor >= 0) { hasData = true; break; }
         }
-        if (!hasData) { alert('⚠️ Por favor, ingrese datos antes de guardar.'); return; }
+        if (!hasData) { 
+            await Swal.fire({
+                icon: 'warning',
+                title: 'Sin datos',
+                text: 'Por favor, ingrese datos antes de guardar.',
+                confirmButtonText: 'Entendido'
+            });
+            return; 
+        }
 
         // Filtros requeridos
         const periodo = document.getElementById('periodo').value;
@@ -4097,13 +4192,17 @@
             programa = '1';
         }
         if (!periodo || !programa || !semestre || !modalidad) {
-            alert('⚠️ Por favor, complete todos los filtros antes de guardar.');
+            await Swal.fire({
+                icon: 'warning',
+                title: 'Filtros incompletos',
+                text: 'Por favor, complete todos los filtros antes de guardar.',
+                confirmButtonText: 'Entendido'
+            });
             return;
         }
         
-        alert('Se guardaran solo los datos capturados en la matricula.');
         // Mostrar overlay
-        mostrarOverlayCarga('Guardando Matrícula...', 'Por favor espere');
+        mostrarOverlayCarga('Guardando Matrícula...', 'Por favor espere mientras se actualizan los datos');
 
         // Total de grupos del semestre (suma de todos los turnos)
         const totalGrupos = totalGruposPorSemestre[semestre] || 0;
@@ -4147,11 +4246,12 @@
         }
 
         try {
-            // 1) Guardar en Temp_Matricula por turno (SIN ejecutar aún el SP definitivo)
+            // 1) Guardar en Temp_Matricula por turno
             const turnosIds = Object.keys(datosPorTurno);
             if (turnosIds.length === 0) {
                 throw new Error('No se encontraron datos válidos para guardar.');
             }
+            console.log(`📊 Guardando datos en Temp_Matricula para ${turnosIds.length} turnos...`);
             for (const turnoId of turnosIds) {
                 const claveTurno = `${parseInt(semestre)}_${turnoId}`;
                 const totalGruposTurno = totalGruposPorSemestreYTurno[claveTurno] || 0;
@@ -4160,20 +4260,107 @@
                     total_grupos: totalGruposTurno,
                     datos_matricula: datosPorTurno[turnoId]
                 };
+                console.log(`💾 Guardando turno ${turnoId}:`, {
+                    periodo, programa, semestre, modalidad, turno: turnoId,
+                    total_grupos: totalGruposTurno,
+                    cantidad_registros: Object.keys(datosPorTurno[turnoId]).length
+                });
                 const r1 = await fetch('/matricula/guardar_captura_completa', {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
                 const d1 = await r1.json();
+                console.log(`✅ Respuesta guardar turno ${turnoId}:`, d1);
                 if (d1.error) throw new Error(d1.error);
-                if (!d1.mensaje) throw new Error('No se pudo guardar la captura temporal');
+                // d1.mensaje puede ser truthy o falsy según el backend (0 registros es válido);
+                // solo se corta si viene error explícito.
             }
 
-            // Pausa: solo se guarda en Temp_Matricula, sin ejecutar el SP aún
-            alert('✅ Datos guardados en Temp_Matricula. El SP de actualización NO se ha ejecutado todavía.');
+            // Ejecutar el SP de actualización definitiva
+            const semActual = parseInt(document.getElementById('semestre')?.value || '1');
+            const totalGruposActual = totalGruposPorSemestre[semActual] || 0;
+            console.log(`🚀 Ejecutando SP actualizar_matricula con:`, {
+                periodo, 
+                total_grupos: totalGruposActual
+            });
+            const r2 = await fetch('/matricula/actualizar_matricula', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ periodo, total_grupos: totalGruposActual })
+            });
+            const d2 = await r2.json();
+            console.log(`📥 Respuesta del SP:`, d2);
+            if (d2.error) throw new Error(d2.error);
+            
+            // **NUEVO: Mostrar información de diagnóstico**
+            let mensajeResultado = 'Matrícula guardada y actualizada correctamente.';
+            let detalles = '';
+            if (d2.diagnostico) {
+                const diag = d2.diagnostico;
+                detalles = `📊 Diagnóstico:<br>` +
+                    `• Registros antes: ${diag.registros_antes}<br>` +
+                    `• Registros después: ${diag.registros_despues}<br>` +
+                    `• Diferencia: ${diag.diferencia > 0 ? '+' : ''}${diag.diferencia}`;
+                
+                if (!diag.sp_hizo_cambios) {
+                    detalles += `<br><br>⚠️ ADVERTENCIA: El SP no hizo cambios en Matricula`;
+                } else if (diag.diferencia > 0) {
+                    detalles += `<br><br>✅ Se insertaron ${diag.diferencia} registros nuevos`;
+                } else {
+                    detalles += `<br><br>✅ Se actualizaron registros existentes`;
+                }
+            }
+            
+            await Swal.fire({
+                title: '¡Guardado!',
+                html: mensajeResultado + (detalles ? '<br><br>' + detalles : ''),
+                icon: 'success',
+                timer: 2000,
+                showConfirmButton: true
+            });
+
+            // Refrescar estado del semáforo desde el SP tras el guardado
+            try {
+                const reqSem = { periodo, programa, modalidad };
+                if (typeof esRolSuperior !== 'undefined' && esRolSuperior && window.contextoRolSuperior) {
+                    reqSem.id_unidad_academica = window.contextoRolSuperior.id_unidad_academica;
+                    reqSem.id_nivel = window.contextoRolSuperior.id_nivel;
+                }
+                const rSem = await fetch('/matricula/obtener_datos_existentes_sp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(reqSem)
+                });
+                const dSem = await rSem.json();
+                if (dSem.rows && dSem.rows.length > 0) {
+                    estadosSemaforoPorSemestre = {};
+                    procesarEstadosSemaforoDelSP(dSem.rows);
+                    actualizarColoresPestanas();
+                    aplicarBloqueoPorSemaforo();
+
+                    // ✅ Actualizar datos base SP con los valores recién guardados:
+                    // - lastRowsSp: usados en cada cambio de pestaña (renderMatriculaFromSP)
+                    // - procesarYGuardar: refresca datosContexto → hayCambiosLocalesPendientes=false
+                    // - renderMatriculaFromSP: re-dibuja la tabla actual con el estado correcto del SP
+                    lastRowsSp = dSem.rows;
+                    window.lastRowsSp = lastRowsSp;
+                    if (typeof procesarYGuardarDatosPorSemestre === 'function') {
+                        procesarYGuardarDatosPorSemestre(dSem.rows);
+                    }
+                    if (typeof renderMatriculaFromSP === 'function') {
+                        await renderMatriculaFromSP(dSem.rows, {});
+                    }
+                }
+            } catch (eSem) {
+                console.warn('⚠️ No se pudo refrescar el semáforo:', eSem);
+            }
         } catch (e) {
             console.error('Error en Guardar Matrícula unificado:', e);
-            alert(`❌ Error al guardar la matrícula: ${e.message}`);
+            await Swal.fire({
+                title: 'Error',
+                text: `Error al guardar la matrícula: ${e.message}`,
+                icon: 'error'
+            });
         } finally {
             ocultarOverlayCarga();
             if (btn) {
@@ -4415,23 +4602,26 @@
                 // lo que incluye reglas especiales de semestres para Tronco Común
                 // y programas Técnicos de nivel Medio Superior.
                 if (typeof renderMatriculaFromSP === 'function') {
-                    renderMatriculaFromSP(rowsInicialesSp, {});
+                    (async () => {
+                        await renderMatriculaFromSP(rowsInicialesSp, {});
+                        datosCompletosYaCargados = true;
+                        primerRenderCompleto = true;
+                        console.log('✅ Primer render completo - eventos de guardado activos');
+
+                        setTimeout(() => {
+                            aplicarTotalGruposParaSemestreYTurnoActual();
+                            aplicarBloqueoPorSemaforo();
+                            aplicarModoVista();
+                            calcularTotales();
+                            // Simular clic en el primer semestre para forzar render correcto de datos
+                            const primerTab = document.querySelector('.semestre-tab');
+                            if (primerTab) primerTab.click();
+                        }, 250);
+                    })();
                 } else {
                     console.error('❌ Función renderMatriculaFromSP no disponible');
                     generarTablaVacia(false);
                 }
-
-                datosCompletosYaCargados = true;
-
-                setTimeout(() => {
-                    aplicarTotalGruposParaSemestreYTurnoActual();
-                    aplicarBloqueoPorSemaforo();
-                    aplicarModoVista();
-                    calcularTotales();
-                    // Marcar que el primer render ya se completó
-                    primerRenderCompleto = true;
-                    console.log('✅ Primer render completo - eventos de guardado activos');
-                }, 250);
             } else {
                 console.log('⏸ Filtros incompletos al cargar: se pospone render de tabla hasta que se seleccione programa y modalidad');
             }
@@ -4451,7 +4641,7 @@
     });
 
     // Función para validar campos vacíos
-    function validarCamposVacios() {
+    async function validarCamposVacios() {
         const inputs = document.querySelectorAll('.input-matricula-nueva');
         let camposVacios = 0;
         
@@ -4462,7 +4652,18 @@
         });
         
         if (camposVacios > 0) {
-            if (confirm(`Se detectaron ${camposVacios} campos vacíos. ¿Desea llenarlos con ceros?`)) {
+            const confirmacion = await Swal.fire({
+                title: 'Campos vacíos detectados',
+                text: `Se detectaron ${camposVacios} campos vacíos. ¿Desea llenarlos con ceros?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, llenar',
+                cancelButtonText: 'No',
+                confirmButtonColor: '#28a745',
+                cancelButtonColor: '#dc3545'
+            });
+            
+            if (confirmacion.isConfirmed) {
                 inputs.forEach(input => {
                     if (!input.value || input.value.trim() === '') {
                         input.value = '0';
@@ -4471,10 +4672,24 @@
                     }
                 });
                 calcularTotales();
-                alert('Los campos vacíos se han llenado con ceros.');
+                await Swal.fire({
+                    icon: 'success',
+                    title: 'Campos completados',
+                    text: 'Los campos vacíos se han llenado con ceros.',
+                    timer: 2000,
+                    timerProgressBar: true,
+                    showConfirmButton: false
+                });
             }
         } else {
-            alert('✓ Todos los campos están completos.');
+            await Swal.fire({
+                icon: 'info',
+                title: 'Todo completo',
+                text: 'Todos los campos están completos.',
+                timer: 2000,
+                timerProgressBar: true,
+                showConfirmButton: false
+            });
         }
     }
 
@@ -4543,13 +4758,13 @@
         }
     }
     
-    // Reinicializar botón de validar
+    // Reinicializar botón de finalizar captura
     function reinicializarBotonValidar() {
-        const btnValidar = document.getElementById('btn-validar-matricula');
-        if (btnValidar) {
-            btnValidar.disabled = false;
-            btnValidar.classList.remove('input-disabled');
-            btnValidar.textContent = 'Validar Captura';
+        const btnFinalizar = document.getElementById('btn-finalizar-captura');
+        if (btnFinalizar) {
+            btnFinalizar.disabled = false;
+            btnFinalizar.classList.remove('input-disabled');
+            btnFinalizar.textContent = '🎯 Finalizar Semestre';
         }
     }
     
@@ -4620,7 +4835,12 @@
             
             if (resultado.error) {
                 console.error('❌ Error en el SP final:', resultado.error);
-                alert(`❌ Error al ejecutar el SP final:\n\n${resultado.error}`);
+                await Swal.fire({
+                    icon: 'error',
+                    title: 'Error en SP final',
+                    text: resultado.error,
+                    confirmButtonText: 'Entendido'
+                });
                 return;
             }
             
@@ -4680,12 +4900,18 @@
                     mensajeEstado = 'No se pudo confirmar el estado del semáforo';
                 }
                 
-                alert(`🎉 ¡SP FINAL EJECUTADO EXITOSAMENTE!\n\n` +
-                    `✅ ${semestreNombre} consolidado completamente\n` +
-                    `${mensajeEstado}\n\n` +
-                    `📊 Todos los turnos han sido procesados\n` +
-                    `🔒 El semestre está ahora bloqueado para edición\n\n` +
-                    `¡Proceso completado!`);
+                // Mostrar mensaje de éxito sin botón OK
+                Swal.fire({
+                    icon: 'success',
+                    title: '¡Semestre Finalizado!',
+                    html: `<strong>${semestreNombre}</strong> consolidado completamente<br><br>` +
+                          `${mensajeEstado}<br><br>` +
+                          `📊 Todos los turnos han sido procesados<br>` +
+                          `🔒 El semestre está ahora bloqueado para edición`,
+                    timer: 3000,
+                    timerProgressBar: true,
+                    showConfirmButton: false
+                });
                 
                 console.log('✅ SP final completado exitosamente');
                 
@@ -4705,8 +4931,33 @@
                     }, 1000); // Delay más largo para que el usuario vea el mensaje de éxito del semestre
                 } else if (semestreActualIdx === semestresDisponiblesSP.length - 1) {
                     console.log('🏁 Ya completaste el último semestre disponible');
+                    
+                    // Obtener información del programa y modalidad actuales
+                    const programaSelect = document.getElementById('programa');
+                    const modalidadSelect = document.getElementById('modalidad');
+                    const programaNombre = programaSelect?.selectedOptions[0]?.text || 'Programa actual';
+                    const modalidadNombre = modalidadSelect?.selectedOptions[0]?.text || 'Modalidad actual';
+                    
                     setTimeout(() => {
-                        alert('🏁 ¡FELICIDADES! Has completado TODOS los semestres disponibles.\n\n✅ Proceso de captura finalizado completamente.');
+                        Swal.fire({
+                            icon: 'success',
+                            title: '🎉 ¡FELICITACIONES!',
+                            html: '<div style="text-align: center;">' +
+                                  '<p style="font-size: 18px; font-weight: bold; margin: 20px 0;">¡Has completado TODOS los semestres!</p>' +
+                                  '<hr style="margin: 15px 0; border-color: #28a745;">' +
+                                  `<p><strong>📚 Programa:</strong> ${programaNombre}</p>` +
+                                  `<p><strong>🎓 Modalidad:</strong> ${modalidadNombre}</p>` +
+                                  `<p><strong>✅ Semestres completados:</strong> ${semestresDisponiblesSP.length}</p>` +
+                                  '<hr style="margin: 15px 0; border-color: #28a745;">' +
+                                  '<p style="color: #28a745; font-weight: bold;">🔒 Proceso de captura finalizado completamente</p>' +
+                                  '</div>',
+                            confirmButtonText: 'Entendido',
+                            confirmButtonColor: '#28a745',
+                            width: '600px',
+                            showClass: {
+                                popup: 'animate__animated animate__fadeInDown'
+                            }
+                        });
                     }, 2500);
                 } else {
                     console.log('⚠️ No se pudo determinar el siguiente semestre');
@@ -4714,12 +4965,22 @@
                 
             } else {
                 console.warn('⚠️ Respuesta inesperada del SP final');
-                alert('⚠️ No se pudo confirmar la ejecución del SP final.');
+                await Swal.fire({
+                    icon: 'warning',
+                    title: 'Respuesta inesperada',
+                    text: 'No se pudo confirmar la ejecución del SP final.',
+                    confirmButtonText: 'Entendido'
+                });
             }
             
         } catch (error) {
             console.error('❌ Error al ejecutar SP final:', error);
-            alert(`❌ Error al ejecutar el SP final:\n\n${error.message}`);
+            await Swal.fire({
+                icon: 'error',
+                title: 'Error en SP final',
+                text: error.message,
+                confirmButtonText: 'Entendido'
+            });
         }
     }
     
@@ -4728,18 +4989,26 @@
         console.log('🚀 === VALIDACIÓN MASIVA: TODOS LOS SEMESTRES ===');
         
         // Confirmación del usuario
-        const confirmar = confirm(
-            '🔄 VALIDACIÓN MASIVA DE TODOS LOS SEMESTRES\n\n' +
-            'Esta función validará TODOS los semestres y turnos de forma automática.\n\n' +
-            '⚠️ ADVERTENCIA:\n' +
-            '• Se procesarán TODOS los semestres disponibles\n' +
-            '• Se validarán TODOS los turnos de cada semestre\n' +
-            '• Los datos se guardarán y consolidarán automáticamente\n' +
-            '• Esta acción NO se puede deshacer\n\n' +
-            '¿Desea continuar con la validación masiva?'
-        );
+        const confirmacion = await Swal.fire({
+            title: '🔄 VALIDACIÓN MASIVA',
+            html: '<p><strong>Esta función validará TODOS los semestres y turnos de forma automática.</strong></p>' +
+                  '<br><p style="text-align: left; margin-left: 20px;">' +
+                  '⚠️ <strong>ADVERTENCIA:</strong><br>' +
+                  '• Se procesarán TODOS los semestres disponibles<br>' +
+                  '• Se validarán TODOS los turnos de cada semestre<br>' +
+                  '• Los datos se guardarán y consolidarán automáticamente<br>' +
+                  '• Esta acción NO se puede deshacer' +
+                  '</p>',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, continuar',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#28a745',
+            cancelButtonColor: '#dc3545',
+            width: '600px'
+        });
         
-        if (!confirmar) {
+        if (!confirmacion.isConfirmed) {
             console.log('❌ Usuario canceló la validación masiva');
             return;
         }
@@ -4758,7 +5027,12 @@
         }
         
         if (!periodo || !programa || !modalidad) {
-            alert('⚠️ Por favor, complete todos los filtros antes de continuar.');
+            await Swal.fire({
+                icon: 'warning',
+                title: 'Filtros incompletos',
+                text: 'Por favor, complete todos los filtros antes de continuar.',
+                confirmButtonText: 'Entendido'
+            });
             return;
         }
         
@@ -4932,7 +5206,13 @@
                 detallesProcesamiento.join('\n') +
                 `\n\n✅ Proceso de validación masiva finalizado.`;
             
-            alert(mensajeResumen);
+            await Swal.fire({
+                icon: 'success',
+                title: '✅ Validación Masiva Completada',
+                html: mensajeResumen.replace(/\n/g, '<br>'),
+                confirmButtonText: 'Entendido',
+                width: '600px'
+            });
             console.log('✅ VALIDACIÓN MASIVA COMPLETADA');
             
             // ===== EJECUTAR SP DE FINALIZAR CAPTURA MATRÍCULA =====
@@ -4960,19 +5240,36 @@
                     
                     if (resultadoFinalizacion.success) {
                         console.log('✅ SP_Finaliza_Captura_Matricula ejecutado exitosamente!');
-                        alert('🎉 ¡CAPTURA COMPLETA FINALIZADA!\n\n' +
-                            '✅ Todos los semestres validados\n' +
-                            `✅ ${resultadoFinalizacion.semestres_validados} semestres verificados\n` +
-                            '✅ SP_Finaliza_Captura_Matricula ejecutado\n' +
-                            '🚦 Semáforo actualizado a COMPLETADO\n\n' +
-                            '¡Proceso de captura de matrícula COMPLETADO!');
+                        await Swal.fire({
+                            icon: 'success',
+                            title: '🎉 ¡CAPTURA COMPLETA FINALIZADA!',
+                            html: '<strong>✅ Todos los semestres validados</strong><br>' +
+                                `✅ ${resultadoFinalizacion.semestres_validados} semestres verificados<br>` +
+                                '✅ SP_Finaliza_Captura_Matricula ejecutado<br>' +
+                                '🚦 Semáforo actualizado a COMPLETADO<br><br>' +
+                                '¡Proceso de captura de matrícula COMPLETADO!',
+                            confirmButtonText: 'Entendido',
+                            timer: 6000,
+                            timerProgressBar: true
+                        });
                     } else {
                         console.warn('⚠️ No se pudo ejecutar SP_Finaliza_Captura_Matricula:', resultadoFinalizacion.error);
-                        alert(`⚠️ Semestres validados correctamente, pero:\n\n${resultadoFinalizacion.error}\n\nPuede que el SP ya haya sido ejecutado previamente o falten semestres por validar.`);
+                        await Swal.fire({
+                            icon: 'warning',
+                            title: 'Validación completada con observaciones',
+                            html: `Semestres validados correctamente, pero:<br><br>${resultadoFinalizacion.error}<br><br>` +
+                                  'Puede que el SP ya haya sido ejecutado previamente o falten semestres por validar.',
+                            confirmButtonText: 'Entendido'
+                        });
                     }
                 } catch (error) {
                     console.error('❌ Error al ejecutar SP_Finaliza_Captura_Matricula:', error);
-                    alert(`⚠️ Semestres validados correctamente.\n\nError al ejecutar SP final:\n${error.message}\n\nVerifique el estado manualmente.`);
+                    await Swal.fire({
+                        icon: 'warning',
+                        title: 'Error en SP final',
+                        html: `Semestres validados correctamente.<br><br>Error al ejecutar SP final:<br>${error.message}<br><br>Verifique el estado manualmente.`,
+                        confirmButtonText: 'Entendido'
+                    });
                 }
             }
             
@@ -4986,7 +5283,12 @@
             
         } catch (error) {
             console.error('❌ Error en validación masiva:', error);
-            alert(`❌ Error durante la validación masiva:\n\n${error.message}`);
+            await Swal.fire({
+                icon: 'error',
+                title: 'Error en validación masiva',
+                text: error.message,
+                confirmButtonText: 'Entendido'
+            });
         } finally {
             btnValidarTodos.textContent = textoOriginal;
             btnValidarTodos.disabled = false;
@@ -5025,8 +5327,18 @@
             calcularTotales();
         }
         
-        const mensajePreparacion = 'Se llenaran con ceros los campos vacios y los cambios seran irreversibles. ¿Desea continuar?';
-        if (!confirm(mensajePreparacion)) {
+        const confirmacion = await Swal.fire({
+            title: '⚠️ Confirmación requerida',
+            html: 'Se llenarán con <strong>ceros</strong> los campos vacíos y los cambios serán <strong>irreversibles</strong>.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, continuar',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#28a745',
+            cancelButtonColor: '#dc3545'
+        });
+        
+        if (!confirmacion.isConfirmed) {
             return;
         }
         
@@ -5043,14 +5355,22 @@
         }
         
         if (!periodo || !programa || !modalidad || !semestre) {
-            alert('⚠️ Por favor, complete todos los filtros antes de validar.');
+            await Swal.fire({
+                icon: 'warning',
+                title: 'Filtros incompletos',
+                text: 'Por favor, complete todos los filtros antes de validar.',
+                confirmButtonText: 'Entendido'
+            });
             return;
         }
         
-        const btnValidar = event.target;
-        const textoOriginal = btnValidar.textContent;
-        btnValidar.textContent = '⏳ Validando semestre...';
-        btnValidar.disabled = true;
+        const btnValidar = document.getElementById('btn-finalizar-captura');
+        const textoOriginal = btnValidar ? btnValidar.textContent : '🎯 Finalizar Semestre';
+        if (btnValidar) {
+            btnValidar.textContent = '⏳ Finalizando semestre...';
+            btnValidar.disabled = true;
+        }
+        mostrarOverlayCarga('Finalizando semestre...', 'Guardando y procesando todos los turnos');
         
         try {
             totalGruposPorSemestre[semestreActual] = totalGruposSemestre;
@@ -5063,32 +5383,36 @@
                     const grupoEdad = input.getAttribute('data-grupo-edad');
                     const sexo = input.getAttribute('data-sexo');
                     const turnoId = parseInt(input.getAttribute('data-turno'));
-                    const inputValue = input.value ? input.value.trim() : '';
-                    const isAutoFilled = input.hasAttribute('data-auto-filled');
-                    const hasUserValue = inputValue !== '';
                     if (isNaN(turnoId)) return;
-                    if (hasUserValue || isAutoFilled) {
-                        const valor = parseInt(inputValue) || 0;
-                        if (valor >= 0) {
-                            const key = `${tipoIngreso}_${grupoEdad}_${sexo}`;
-                            if (!datosPorTurno[turnoId]) datosPorTurno[turnoId] = {};
-                            const claveTurno = `${parseInt(semestreActual)}_${turnoId}`;
-                            const totalGruposTurno = totalGruposPorSemestreYTurno[claveTurno] || 0;
-                            datosPorTurno[turnoId][key] = {
-                                tipo_ingreso: tipoIngreso,
-                                grupo_edad: grupoEdad,
-                                sexo: sexo,
-                                matricula: valor,
-                                salones: totalGruposTurno
-                            };
-                        }
+                    // Siempre incluir todos los inputs habilitados:
+                    // inputs vacíos se tratan como 0 para garantizar que queden
+                    // registrados en Temp_Matricula aunque no hayan sido llenados.
+                    const inputValue = (input.value ?? '').trim();
+                    const valor = inputValue !== '' ? (parseInt(inputValue) || 0) : 0;
+                    if (valor >= 0) {
+                        const key = `${tipoIngreso}_${grupoEdad}_${sexo}`;
+                        if (!datosPorTurno[turnoId]) datosPorTurno[turnoId] = {};
+                        const claveTurno = `${parseInt(semestreActual)}_${turnoId}`;
+                        const totalGruposTurno = totalGruposPorSemestreYTurno[claveTurno] || 0;
+                        datosPorTurno[turnoId][key] = {
+                            tipo_ingreso: tipoIngreso,
+                            grupo_edad: grupoEdad,
+                            sexo: sexo,
+                            matricula: valor,
+                            salones: totalGruposTurno
+                        };
                     }
                 }
             });
             
             const turnosIds = Object.keys(datosPorTurno);
             if (turnosIds.length === 0) {
-                alert('⚠️ No se encontraron datos válidos para validar.');
+                await Swal.fire({
+                    icon: 'warning',
+                    title: 'Sin datos',
+                    text: 'No se encontraron datos válidos para validar.',
+                    confirmButtonText: 'Entendido'
+                });
                 return;
             }
             
@@ -5117,7 +5441,8 @@
             }
             
             // Preparar turnos
-            btnValidar.textContent = '⏳ Preparando turnos...';
+            Swal.update({ title: 'Finalizando semestre...', text: 'Organizando datos por turno' });
+            if (btnValidar) btnValidar.textContent = '⏳ Finalizando semestre...';
             for (const turnoId of turnosIds) {
                 const claveTurnoPrep = `${parseInt(semestreActual)}_${turnoId}`;
                 const totalGruposTurnoPrep = totalGruposPorSemestreYTurno[claveTurnoPrep] || 0;
@@ -5152,23 +5477,32 @@
                 btnGuardar.classList.add('input-disabled');
             }
             
+            // Ejecutar el SP de actualización definitiva si todos los turnos están validados
             if (todosTurnosValidados(semestreActual)) {
                 await ejecutarSPFinalSemestre(semestreActual, periodo, programa, modalidad, semestre);
             }
             
-            btnValidar.disabled = true;
-            btnValidar.classList.add('input-disabled');
-            btnValidar.textContent = '✅ Semestre Validado';
-            
-            alert('✅ Concluido con exito.');
+            if (btnValidar) {
+                btnValidar.disabled = true;
+                btnValidar.classList.add('input-disabled');
+                btnValidar.textContent = '✅ Semestre Finalizado';
+            }
             
         } catch (error) {
             console.error('❌ Error en la validación del semestre:', error);
-            alert(`❌ Error al validar el semestre:\n\n${error.message}`);
+            await Swal.fire({
+                icon: 'error',
+                title: 'Error al finalizar',
+                text: error.message,
+                confirmButtonText: 'Entendido'
+            });
         } finally {
+            ocultarOverlayCarga();
             if (!todosTurnosValidados(semestreActual)) {
-                btnValidar.textContent = textoOriginal;
-                btnValidar.disabled = false;
+                if (btnValidar) {
+                    btnValidar.textContent = textoOriginal;
+                    btnValidar.disabled = false;
+                }
             }
         }
     }
@@ -5245,7 +5579,12 @@
         // Verificar si el botón está deshabilitado
         const btnValidar = document.getElementById('btn-validar-semestre');
         if (btnValidar.disabled) {
-            alert('Ya has validado o rechazado esta matrícula. No puedes realizar esta acción nuevamente.');
+            await Swal.fire({
+                icon: 'warning',
+                title: 'Acción no permitida',
+                text: 'Ya has validado o rechazado esta matrícula. No puedes realizar esta acción nuevamente.',
+                confirmButtonText: 'Entendido'
+            });
             return;
         }
         
@@ -5261,19 +5600,24 @@
         
         const semestreNombre = semestresMap[parseInt(semestre)] || `Semestre ${semestre}`;
         
-        const confirmar = confirm(
-            `¿Está seguro que desea VALIDAR?\n\n` +
-            `Esta acción marcará el semestre como aprobado y bloqueará cualquier modificación futura.\n\n` +
-            `¿Continuar?`
-        );
+        const confirmacion = await Swal.fire({
+            title: '¿Está seguro que desea VALIDAR?',
+            html: 'Esta acción marcará el semestre como <strong>aprobado</strong> y bloqueará cualquier modificación futura.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, validar',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#28a745',
+            cancelButtonColor: '#dc3545'
+        });
         
-        if (!confirmar) {
+        if (!confirmacion.isConfirmed) {
             console.log('❌ Usuario canceló la validación');
             return;
         }
         
         // Mostrar overlay
-        mostrarOverlayCarga('Validando Matrícula...', 'Procesando validación del semestre');
+        mostrarOverlayCarga('Validando Matrícula...', 'Procesando y finalizando el semestre');
         
         try {
             console.log('🔄 Enviando validación al servidor...');
@@ -5292,23 +5636,35 @@
             
             if (data.success) {
                 console.log('✅ Matrícula validada exitosamente:', data);
-                alert(
-                    `✅ ${data.mensaje}\n\n` +
-                    `Validado por: ${data.data.validado_por}\n` +
-                    `Unidad Académica: ${data.data.unidad_academica}\n` +
-                    `Periodo: ${data.data.periodo}\n` +
-                    `Fecha: ${new Date(data.data.fecha_validacion).toLocaleString()}\n\n` +
-                    `La matrícula ha sido aprobada completamente.`
-                );
+                await Swal.fire({
+                    title: '¡Validado!',
+                    html: `${data.mensaje}<br><br>` +
+                        `<b>Validado por:</b> ${data.data.validado_por}<br>` +
+                        `<b>Unidad Académica:</b> ${data.data.unidad_academica}<br>` +
+                        `<b>Periodo:</b> ${data.data.periodo}<br>` +
+                        `<b>Fecha:</b> ${new Date(data.data.fecha_validacion).toLocaleString()}<br><br>` +
+                        `La matrícula ha sido aprobada completamente.`,
+                    icon: 'success',
+                    timer: 2500,
+                    showConfirmButton: true
+                });
                 
-                location.reload(); // Recargar página para reflejar cambios (esto oculta el overlay automáticamente)
+                location.reload();
             } else {
-                alert(`❌ Error: ${data.error || 'No se pudo completar la validación'}`);
-                ocultarOverlayCarga();
+                await Swal.fire({
+                    title: 'Error',
+                    text: data.error || 'No se pudo completar la validación',
+                    icon: 'error'
+                });
             }
         } catch (error) {
             console.error('❌ Error en validarSemestre:', error);
-            alert(`❌ Error al validar: ${error.message}`);
+            await Swal.fire({
+                title: 'Error',
+                text: `Error al validar: ${error.message}`,
+                icon: 'error'
+            });
+        } finally {
             ocultarOverlayCarga();
         }
     }
@@ -5318,7 +5674,12 @@
         // Verificar si el botón está deshabilitado
         const btnRechazar = document.getElementById('btn-rechazar-semestre');
         if (btnRechazar.disabled) {
-            alert('Ya has validado o rechazado esta matrícula. No puedes realizar esta acción nuevamente.');
+            await Swal.fire({
+                icon: 'warning',
+                title: 'Acción no permitida',
+                text: 'Ya has validado o rechazado esta matrícula. No puedes realizar esta acción nuevamente.',
+                confirmButtonText: 'Entendido'
+            });
             return;
         }
         
@@ -5400,13 +5761,23 @@
         
         // Validar que hay motivo
         if (!motivo) {
-            alert('❌ Debe ingresar un motivo para el rechazo');
+            await Swal.fire({
+                icon: 'warning',
+                title: 'Motivo requerido',
+                text: 'Debe ingresar un motivo para el rechazo',
+                confirmButtonText: 'Entendido'
+            });
             textarea.focus();
             return;
         }
         
         if (motivo.length < 10) {
-            alert('❌ El motivo debe tener al menos 10 caracteres para ser descriptivo');
+            await Swal.fire({
+                icon: 'warning',
+                title: 'Motivo muy corto',
+                text: 'El motivo debe tener al menos 10 caracteres para ser descriptivo',
+                confirmButtonText: 'Entendido'
+            });
             textarea.focus();
             return;
         }
@@ -5433,15 +5804,19 @@
             if (data.success) {
                 // Cerrar panel
                 cerrarPanelRechazo();
-                alert(
-                    `✅ Matrícula Rechazada Exitosamente\n\n` +
-                    `Rechazado por: ${data.data.rechazado_por}\n` +
-                    `Unidad Académica: ${data.data.unidad_academica}\n` +
-                    `Periodo: ${data.data.periodo}\n` +
-                    `Motivo: ${data.data.motivo}\n` +
-                    `Fecha: ${new Date(data.data.fecha_rechazo).toLocaleString()}\n\n` +
-                    `El capturista será notificado para realizar las correcciones necesarias.`
-                );
+                await Swal.fire({
+                    icon: 'success',
+                    title: '✅ Matrícula Rechazada Exitosamente',
+                    html: `<strong>Rechazado por:</strong> ${data.data.rechazado_por}<br>` +
+                          `<strong>Unidad Académica:</strong> ${data.data.unidad_academica}<br>` +
+                          `<strong>Periodo:</strong> ${data.data.periodo}<br>` +
+                          `<strong>Motivo:</strong> ${data.data.motivo}<br>` +
+                          `<strong>Fecha:</strong> ${new Date(data.data.fecha_rechazo).toLocaleString()}<br><br>` +
+                          `El capturista será notificado para realizar las correcciones necesarias.`,
+                    confirmButtonText: 'Entendido',
+                    timer: 5000,
+                    timerProgressBar: true
+                });
                 
                 // Recargar la página para reflejar los cambios
                 setTimeout(() => {
@@ -5453,7 +5828,12 @@
             
         } catch (error) {
             console.error('❌ Error al rechazar la matrícula:', error);
-            alert(`❌ Error al rechazar la matrícula:\n\n${error.message}`);
+            await Swal.fire({
+                icon: 'error',
+                title: 'Error al rechazar',
+                text: error.message,
+                confirmButtonText: 'Entendido'
+            });
             
             // Rehabilitar botón en caso de error
             btnConfirmar.disabled = false;
@@ -5463,9 +5843,25 @@
 </script>
 <script>
     // Función para actualizar la matrícula definitiva usando el SP
-    function actualizarMatricula() {
+    async function actualizarMatricula() {
         // Confirmar la acción
-        if (!confirm('🔄 ¿Está seguro de que desea actualizar la matrícula definitiva?\n\n⚠️ Esta acción:\n• Transferirá todos los datos de la tabla temporal a la matrícula oficial\n• Limpiará la tabla temporal\n• No se puede deshacer\n\n¿Continuar?')) {
+        const confirmacion = await Swal.fire({
+            title: '🔄 ¿Actualizar matrícula definitiva?',
+            html: '<p><strong>⚠️ Esta acción:</strong></p>' +
+                  '<ul style="text-align: left; margin-left: 20px;">' +
+                  '<li>Transferirá todos los datos de la tabla temporal a la matrícula oficial</li>' +
+                  '<li>Limpiará la tabla temporal</li>' +
+                  '<li>No se puede deshacer</li>' +
+                  '</ul>',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, actualizar',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#28a745',
+            cancelButtonColor: '#dc3545'
+        });
+        
+        if (!confirmacion.isConfirmed) {
             return;
         }
 
@@ -5492,25 +5888,39 @@
                 throw new Error(data.error);
             }
             if (data.warning) {
-                alert(`⚠️ ${data.warning}`);
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Advertencia',
+                    text: data.warning,
+                    confirmButtonText: 'Entendido'
+                });
                 return;
             }
             
             // Mostrar mensaje de éxito detallado
-            let mensaje = `✅ ${data.mensaje}\n\n`;
-            mensaje += `📊 Registros procesados: ${data.registros_procesados}\n`;
-            mensaje += `🧹 Tabla temporal limpiada: ${data.temp_matricula_limpiada ? 'Sí' : 'No'}\n`;
-            mensaje += `👤 Usuario: ${data.usuario}\n`;
-            mensaje += `📅 Período: ${data.periodo}\n`;
-            mensaje += `⏰ Fecha: ${new Date(data.timestamp).toLocaleString()}`;
-            
-            alert(mensaje);
-            
-              location.reload();
+            Swal.fire({
+                icon: 'success',
+                title: '✅ ' + data.mensaje,
+                html: `<strong>📊 Registros procesados:</strong> ${data.registros_procesados}<br>` +
+                      `<strong>🧹 Tabla temporal limpiada:</strong> ${data.temp_matricula_limpiada ? 'Sí' : 'No'}<br>` +
+                      `<strong>👤 Usuario:</strong> ${data.usuario}<br>` +
+                      `<strong>📅 Período:</strong> ${data.periodo}<br>` +
+                      `<strong>⏰ Fecha:</strong> ${new Date(data.timestamp).toLocaleString()}`,
+                confirmButtonText: 'Entendido',
+                timer: 5000,
+                timerProgressBar: true
+            }).then(() => {
+                location.reload();
+            });
         })
         .catch(error => {
             console.error('Error al actualizar matrícula:', error);
-            alert(`❌ Error al actualizar la matrícula: ${error.message}`);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error al actualizar',
+                text: error.message,
+                confirmButtonText: 'Entendido'
+            });
         })
         .finally(() => {
             // Restaurar botón

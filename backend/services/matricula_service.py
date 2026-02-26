@@ -257,6 +257,10 @@ def execute_matricula_sp_with_context(
         print(error_msg)
         import traceback
         traceback.print_exc()
+        try:
+            db.rollback()
+        except Exception:
+            pass
         return [], {}, error_msg, None
 
 

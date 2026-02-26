@@ -1,8 +1,8 @@
 from backend.database.models.CatProgramas import CatProgramas
 from backend.database.models.ProgramaModalidad import ProgramaModalidad
 from backend.database.models.UnidadProgramaModalidad import CatUnidadProgramaModalidad
-
 from backend.database.models.CatNivel import CatNivel
+
 from backend.schemas.Nivel import NivelResponse
 from sqlalchemy.orm import Session
 

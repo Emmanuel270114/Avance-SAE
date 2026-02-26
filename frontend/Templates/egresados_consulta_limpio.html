@@ -233,8 +233,48 @@
     
     <h2>Captura de Egresados</h2>
 
-    <!-- Panel de Filtros para Roles Superiores (4-9) -->
-    {% if es_rol_director or es_rol_superior %}
+    <!-- Panel de Filtros para Roles 4-5: Periodo + Nivel (UA fija del usuario) -->
+    {% if es_rol_director %}
+    <div class="panel-filtros-superiores" id="panel-filtros-director">
+        <div class="panel-header">
+            <h3>🔍 Selección de Periodo y Nivel</h3>
+            <p>Seleccione el <strong>Periodo</strong> y el <strong>Nivel</strong> para consultar todos los programas de su <strong>Unidad Académica</strong>.</p>
+        </div>
+        
+        <div class="filtros-superiores-container" style="grid-template-columns: 1fr 1fr 300px;">
+            <div class="filtro-superior-item">
+                <label for="select-periodo-director"><strong>1. Periodo:</strong></label>
+                <select id="select-periodo-director" name="periodo_director" required>
+                    <option value="">-- Seleccione un Periodo --</option>
+                    {% for periodo in periodos %}
+                    <option value="{{ periodo.Id_Periodo }}" {% if periodo.Id_Periodo == periodo_default_id %}selected{% endif %}>
+                        {{ periodo.Periodo }}
+                        {% if periodo.Id_Estatus == 1 %}(Activo){% endif %}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="filtro-superior-item">
+                <label for="select-nivel-director"><strong>2. Nivel Académico:</strong></label>
+                <select id="select-nivel-director" name="nivel_director" required>
+                    <option value="">-- Seleccione un Nivel --</option>
+                    {% for nivel in niveles_disponibles %}
+                    <option value="{{ nivel.Id_Nivel }}">{{ nivel.Nivel }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="filtro-superior-accion">
+                <button type="button" id="btn-ver-resumen-director" class="btn-consultar-superior" disabled style="background: linear-gradient(135deg, #4da5ec, #4da5ec);">
+                    <span class="btn-icon">📈</span> Consultar Egresados
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Panel de Filtros para Roles 6-9: Periodo + Nivel + UA -->
+    {% elif es_rol_superior %}
     <div class="panel-filtros-superiores" id="panel-filtros-superiores">
         <div class="panel-header">
             <h3>🔍 Selección de Periodo, Unidad Académica y Nivel</h3>
@@ -325,7 +365,7 @@
         </div>
         <div class="banner-rechazo-content">
             <div class="banner-rechazo-header">
-                <h3>Matrícula Rechazada</h3>
+                <h3>Matrícula de Egresados Rechazada</h3>
                 <button class="btn-cerrar-banner" onclick="cerrarBannerRechazo()" title="Cerrar (Se puede volver a ver en notificaciones)">
                     ✕
                 </button>
@@ -343,7 +383,7 @@
             </div>
             <div class="banner-rechazo-footer">
                 <p style="margin: 0; font-size: 14px; color: #666;">
-                    ℹ️ Realice las correcciones necesarias y vuelva a validar la matrícula.
+                    ℹ️ Realice las correcciones necesarias y vuelva a validar la matrícula de egresados.
                 </p>
             </div>
         </div>
@@ -370,7 +410,7 @@
             <div class="filtro-item">
                 <label for="programa"> <strong>Programa Académico:</strong></label>
                 <select id="programa" name="programa" required>
-                    <option value="">-- Seleccione un Programa --</option>
+                    <option value="">-- Seleccione un Programa Académico --</option>
                     {% for programa in programas %}
                     <option value="{{ programa.id }}">{{ programa.nombre }}</option>
                     {% endfor %}
@@ -380,7 +420,7 @@
             <div class="filtro-item">
                 <label for="modalidad"> <strong>Modalidad:</strong></label>
                 <select id="modalidad" name="modalidad" required>
-                    <option value="">-- Primero seleccione un Programa --</option>
+                    <option value="">-- Primero seleccione un Programa Académico --</option>
                 </select>
             </div>
         </div>
@@ -503,13 +543,15 @@
                     style="padding: 12px 30px; background: #17a2b8; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: all 0.3s;">
                 💾 Guardar Avance
             </button>
-            <button id="btn-finalizar-captura" type="button" class="btn-success" onclick="finalizarCapturaEgresados()" 
-                    style="padding: 12px 30px; background: #28a745; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: all 0.3s;">
-                ✅ Finalizar Captura
-            </button>
+
             <button id="btn-limpiar-formulario" type="button" class="btn-secondary" onclick="limpiarFormulario()" 
                     style="padding: 12px 30px; background: #6c757d; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: all 0.3s;">
                 🧹 Limpiar Todo
+            </button>
+            
+            <button id="btn-finalizar-captura" type="button" class="btn-success" onclick="finalizarCapturaEgresados()" 
+                    style="padding: 12px 30px; background: #28a745; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: all 0.3s;">
+                ✅ Finalizar Captura
             </button>
             {% else %}
             <!-- Botones para roles de validación (ID 4, 5, 6, 7, 8) -->
@@ -776,7 +818,7 @@
         console.log('🔍 Programa seleccionado:', programaId);
         
         if (!programaId) {
-            selectModalidad.innerHTML = '<option value="">-- Primero seleccione un Programa --</option>';
+            selectModalidad.innerHTML = '<option value="">-- Primero seleccione un Programa Académico --</option>';
             selectModalidad.disabled = true;
             return;
         }
@@ -1077,13 +1119,17 @@
             // Limpiar selectores principales
             document.getElementById('programa').value = '';
             document.getElementById('modalidad').value = '';
-            document.getElementById('modalidad').innerHTML = '<option value="">-- Primero seleccione un Programa --</option>';
+            document.getElementById('modalidad').innerHTML = '<option value="">-- Primero seleccione un Programa Académico --</option>';
             document.getElementById('modalidad').disabled = true;
+            document.getElementById('filtro-turno').value = '';
             
             // Limpiar filtros de fila
             document.getElementById('filtro-boleta').value = '';
+            document.getElementById('filtro-boleta').innerHTML = '<option value="">-- Primero seleccione una Modalidad --</option>';
+            document.getElementById('filtro-boleta').disabled = true;
+
             document.getElementById('filtro-generacion').value = '';
-            
+
             // Limpiar selección de edades
             seleccionarTodasEdades(false);
             
@@ -1724,103 +1770,131 @@
             const todasUnidades = {{ unidades_disponibles | tojson }};
             const todosNiveles = {{ niveles_disponibles | tojson }};
             const nivelAUAs = {{ nivel_a_uas_json | safe }};  // Mapeo: nivel_id -> [ua_ids]
+            const uaFijaSiglaDirector = {{ (unidad_actual.Sigla if unidad_actual else '') | tojson }};
             
             console.log('🎯 Modo Rol 4-9 activado');
             console.log('📊 Unidades disponibles:', todasUnidades.length);
             console.log('📊 Niveles disponibles:', todosNiveles.length);
             console.log('🔗 Mapeo Nivel->UAs:', nivelAUAs);
-            
-            const selectPeriodoSuperior = document.getElementById('select-periodo-superior');
-            const selectNivelSuperior = document.getElementById('select-nivel-superior');
-            const selectUASuperior = document.getElementById('select-ua-superior');
-            const btnVerResumen = document.getElementById('btn-ver-resumen');
-            
-            // Función para filtrar UAs según el Nivel seleccionado
-            function filtrarUAsPorNivel() {
-                const nivelSeleccionado = selectNivelSuperior.value;
-                
-                if (!nivelSeleccionado) {
-                    // Sin Nivel seleccionado: deshabilitar UA
-                    selectUASuperior.disabled = true;
-                    selectUASuperior.innerHTML = '<option value="">-- Primero seleccione un Nivel --</option>';
-                    btnVerResumen.disabled = true;
-                    return;
+
+            if (esRolDirector) {
+                const selectPeriodoDirector = document.getElementById('select-periodo-director');
+                const selectNivelDirector = document.getElementById('select-nivel-director');
+                const btnVerResumenDirector = document.getElementById('btn-ver-resumen-director');
+
+                function verificarSeleccionDirector() {
+                    const todosSeleccionados = !!(selectPeriodoDirector.value && selectNivelDirector.value);
+                    btnVerResumenDirector.disabled = !todosSeleccionados;
                 }
-                
-                // Obtener IDs de UAs que tiene este Nivel
-                const uasDelNivel = nivelAUAs[nivelSeleccionado] || [];
-                console.log(`📊 Nivel ${nivelSeleccionado} tiene ${uasDelNivel.length} UAs disponibles:`, uasDelNivel);
-                
-                // Filtrar UAs que pertenecen a este Nivel
-                const uasFiltradas = todasUnidades.filter(ua => 
-                    uasDelNivel.includes(ua.Id_Unidad_Academica)
-                ).sort((a, b) => a.Nombre.localeCompare(b.Nombre));
-                
-                // Reconstruir selector de UA con UAs filtradas
-                selectUASuperior.innerHTML = '<option value="">-- Seleccione una Unidad Académica --</option>';
-                uasFiltradas.forEach(ua => {
-                    const option = document.createElement('option');
-                    option.value = ua.Id_Unidad_Academica;
-                    option.setAttribute('data-sigla', ua.Sigla);
-                    option.textContent = `${ua.Sigla} - ${ua.Nombre}`;
-                    selectUASuperior.appendChild(option);
+
+                selectPeriodoDirector.addEventListener('change', verificarSeleccionDirector);
+                selectNivelDirector.addEventListener('change', verificarSeleccionDirector);
+
+                btnVerResumenDirector.addEventListener('click', function() {
+                    const idNivel = selectNivelDirector.value;
+                    const idPeriodo = selectPeriodoDirector.value;
+
+                    if (!idNivel || !idPeriodo) {
+                        alert('Por favor, seleccione Periodo y Nivel');
+                        return;
+                    }
+
+                    if (!uaFijaSiglaDirector) {
+                        alert('No se pudo identificar la Unidad Académica del usuario');
+                        return;
+                    }
+
+                    const periodoTexto = selectPeriodoDirector.options[selectPeriodoDirector.selectedIndex].text.replace(' (Activo)', '').trim();
+                    const nivelTexto = selectNivelDirector.options[selectNivelDirector.selectedIndex].text;
+
+                    console.log(`📈 Abriendo resumen dinámico (Director) - Periodo: ${periodoTexto}, Nivel: ${nivelTexto}, UA fija: ${uaFijaSiglaDirector}`);
+
+                    const url = `/egresados/resumen-dinamico?periodo=${encodeURIComponent(periodoTexto)}&nivel=${encodeURIComponent(nivelTexto)}&unidad=${encodeURIComponent(uaFijaSiglaDirector)}`;
+                    window.location.href = url;
                 });
-                
-                // Habilitar selector si hay UAs disponibles
-                if (uasFiltradas.length > 0) {
-                    selectUASuperior.disabled = false;
-                    console.log(`✅ ${uasFiltradas.length} UAs disponibles para selección`);
-                } else {
-                    selectUASuperior.disabled = true;
-                    selectUASuperior.innerHTML = '<option value="">-- Este Nivel no tiene UAs con egresados --</option>';
-                    console.warn('⚠️ Este Nivel no tiene UAs disponibles');
+
+                verificarSeleccionDirector();
+            } else if (esRolSuperior) {
+                const selectPeriodoSuperior = document.getElementById('select-periodo-superior');
+                const selectNivelSuperior = document.getElementById('select-nivel-superior');
+                const selectUASuperior = document.getElementById('select-ua-superior');
+                const btnVerResumen = document.getElementById('btn-ver-resumen');
+
+                function filtrarUAsPorNivel() {
+                    const nivelSeleccionado = selectNivelSuperior.value;
+
+                    if (!nivelSeleccionado) {
+                        selectUASuperior.disabled = true;
+                        selectUASuperior.innerHTML = '<option value="">-- Primero seleccione un Nivel --</option>';
+                        btnVerResumen.disabled = true;
+                        return;
+                    }
+
+                    const uasDelNivel = nivelAUAs[nivelSeleccionado] || [];
+                    console.log(`📊 Nivel ${nivelSeleccionado} tiene ${uasDelNivel.length} UAs disponibles:`, uasDelNivel);
+
+                    const uasFiltradas = todasUnidades.filter(ua =>
+                        uasDelNivel.includes(ua.Id_Unidad_Academica)
+                    ).sort((a, b) => a.Nombre.localeCompare(b.Nombre));
+
+                    selectUASuperior.innerHTML = '<option value="">-- Seleccione una Unidad Académica --</option>';
+                    uasFiltradas.forEach(ua => {
+                        const option = document.createElement('option');
+                        option.value = ua.Id_Unidad_Academica;
+                        option.setAttribute('data-sigla', ua.Sigla);
+                        option.textContent = `${ua.Sigla} - ${ua.Nombre}`;
+                        selectUASuperior.appendChild(option);
+                    });
+
+                    if (uasFiltradas.length > 0) {
+                        selectUASuperior.disabled = false;
+                        console.log(`✅ ${uasFiltradas.length} UAs disponibles para selección`);
+                    } else {
+                        selectUASuperior.disabled = true;
+                        selectUASuperior.innerHTML = '<option value="">-- Este Nivel no tiene UAs con egresados --</option>';
+                        console.warn('⚠️ Este Nivel no tiene UAs disponibles');
+                    }
+
+                    btnVerResumen.disabled = true;
                 }
-                
-                // Reset botón
-                btnVerResumen.disabled = true;
-            }
-            
-            // Habilitar botón solo cuando todos los selectores tengan valor
-            function verificarSeleccion() {
-                const nivelSeleccionado = selectNivelSuperior.value;
-                const uaSeleccionada = selectUASuperior.value;
-                const periodoSeleccionado = selectPeriodoSuperior.value;
-                const todosSeleccionados = !!(nivelSeleccionado && uaSeleccionada && periodoSeleccionado);
-                btnVerResumen.disabled = !todosSeleccionados;
-            }
-            
-            // Event listeners
-            selectPeriodoSuperior.addEventListener('change', verificarSeleccion);
-            
-            selectNivelSuperior.addEventListener('change', function() {
-                filtrarUAsPorNivel();
-                verificarSeleccion();
-            });
-            
-            selectUASuperior.addEventListener('change', verificarSeleccion);
-            
-            // Manejar clic en botón consultar egresados
-            btnVerResumen.addEventListener('click', function() {
-                const idNivel = selectNivelSuperior.value;
-                const idUA = selectUASuperior.value;
-                const idPeriodo = selectPeriodoSuperior.value;
-                
-                if (!idNivel || !idUA || !idPeriodo) {
-                    alert('Por favor, seleccione Periodo, Nivel y Unidad Académica');
-                    return;
+
+                function verificarSeleccion() {
+                    const nivelSeleccionado = selectNivelSuperior.value;
+                    const uaSeleccionada = selectUASuperior.value;
+                    const periodoSeleccionado = selectPeriodoSuperior.value;
+                    const todosSeleccionados = !!(nivelSeleccionado && uaSeleccionada && periodoSeleccionado);
+                    btnVerResumen.disabled = !todosSeleccionados;
                 }
-                
-                // Obtener los textos/valores para el resumen dinámico
-                const periodoTexto = selectPeriodoSuperior.options[selectPeriodoSuperior.selectedIndex].text.replace(' (Activo)', '').trim();
-                const nivelTexto = selectNivelSuperior.options[selectNivelSuperior.selectedIndex].text;
-                const uaSigla = selectUASuperior.options[selectUASuperior.selectedIndex].getAttribute('data-sigla');
-                
-                console.log(`📈 Abriendo resumen dinámico - Periodo: ${periodoTexto}, Nivel: ${nivelTexto}, UA: ${uaSigla}`);
-                
-                // Redirigir al endpoint de resumen dinámico con parámetros en query string
-                const url = `/egresados/resumen-dinamico?periodo=${encodeURIComponent(periodoTexto)}&nivel=${encodeURIComponent(nivelTexto)}&unidad=${encodeURIComponent(uaSigla)}`;
-                window.location.href = url;
-            });
+
+                selectPeriodoSuperior.addEventListener('change', verificarSeleccion);
+
+                selectNivelSuperior.addEventListener('change', function() {
+                    filtrarUAsPorNivel();
+                    verificarSeleccion();
+                });
+
+                selectUASuperior.addEventListener('change', verificarSeleccion);
+
+                btnVerResumen.addEventListener('click', function() {
+                    const idNivel = selectNivelSuperior.value;
+                    const idUA = selectUASuperior.value;
+                    const idPeriodo = selectPeriodoSuperior.value;
+
+                    if (!idNivel || !idUA || !idPeriodo) {
+                        alert('Por favor, seleccione Periodo, Nivel y Unidad Académica');
+                        return;
+                    }
+
+                    const periodoTexto = selectPeriodoSuperior.options[selectPeriodoSuperior.selectedIndex].text.replace(' (Activo)', '').trim();
+                    const nivelTexto = selectNivelSuperior.options[selectNivelSuperior.selectedIndex].text;
+                    const uaSigla = selectUASuperior.options[selectUASuperior.selectedIndex].getAttribute('data-sigla');
+
+                    console.log(`📈 Abriendo resumen dinámico - Periodo: ${periodoTexto}, Nivel: ${nivelTexto}, UA: ${uaSigla}`);
+
+                    const url = `/egresados/resumen-dinamico?periodo=${encodeURIComponent(periodoTexto)}&nivel=${encodeURIComponent(nivelTexto)}&unidad=${encodeURIComponent(uaSigla)}`;
+                    window.location.href = url;
+                });
+            }
         }
         // === FIN LÓGICA ROLES 4-9 ===
         
@@ -1840,7 +1914,7 @@
                 if (selectPrograma.value) {
                     filtrarModalidadesPorPrograma();
                 } else {
-                    selectModalidad.innerHTML = '<option value="">-- Primero seleccione un Programa --</option>';
+                    selectModalidad.innerHTML = '<option value="">-- Primero seleccione un Programa Académico --</option>';
                     selectModalidad.disabled = true;
                 }
             }, 100);

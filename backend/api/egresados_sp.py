@@ -1505,13 +1505,31 @@ async def resumen_egresados_dinamico_view(
 
         print(f"📊 Total de registros del SP: {len(egresados_data)}")
 
+        def _get_row_value(row: dict, *keys, default=None):
+            """Obtiene un valor del row soportando variantes de nombre de columna."""
+            for key in keys:
+                if key in row and row[key] is not None and str(row[key]).strip() != "":
+                    return row[key]
+
+            normalized = {
+                ''.join(ch for ch in str(k).lower() if ch.isalnum()): v
+                for k, v in row.items()
+            }
+            for key in keys:
+                norm_key = ''.join(ch for ch in str(key).lower() if ch.isalnum())
+                value = normalized.get(norm_key)
+                if value is not None and str(value).strip() != "":
+                    return value
+
+            return default
+
         # === PROCESAR DATOS PARA EL RESUMEN DINÁMICO ===
         from collections import defaultdict
         
         # 1. Extraer generaciones únicas y ordenarlas
         generaciones_set = set()
         for row in egresados_data:
-            gen = row.get('Generacion')
+            gen = _get_row_value(row, 'Generacion', 'Generación')
             if gen:
                 generaciones_set.add(str(gen))
         
@@ -1536,14 +1554,16 @@ async def resumen_egresados_dinamico_view(
         
         # 3. Procesar cada registro del SP
         for row in egresados_data:
-            programa = row.get('Nombre_Programa', 'Sin Programa')
-            modalidad = row.get('Modalidad', 'Sin Modalidad')
-            generacion = str(row.get('Generacion', ''))
-            boleta_num = row.get('Boleta', 0)
-            boleta = str(boleta_num)  # Convertir a string para display
+            programa = str(_get_row_value(row, 'Nombre_Programa', 'Programa', default='Sin Programa')).strip() or 'Sin Programa'
+            modalidad = str(_get_row_value(row, 'Modalidad', default='Sin Modalidad')).strip() or 'Sin Modalidad'
+            generacion = str(_get_row_value(row, 'Generacion', 'Generación', default='Sin generación')).strip() or 'Sin generación'
+            boleta_raw = _get_row_value(row, 'Boleta', default='S/B')
+            boleta = str(boleta_raw).strip() if boleta_raw is not None else 'S/B'
+            if not boleta:
+                boleta = 'S/B'
             
             # Mapear Sexo: "HOMBRE" -> "H", "MUJER" -> "M"
-            sexo_raw = str(row.get('Sexo', 'M')).upper()
+            sexo_raw = str(_get_row_value(row, 'Sexo', default='M')).upper()
             if 'HOMBRE' in sexo_raw or sexo_raw == 'H':
                 sexo = 'H'
             elif 'MUJER' in sexo_raw or sexo_raw == 'M':
@@ -1551,15 +1571,11 @@ async def resumen_egresados_dinamico_view(
             else:
                 sexo = 'M'  # Default
             
-            # Solo procesar si Egresados NO es NULL (pero sí incluir 0)
-            egresados_raw = row.get('Egresados')
-            if egresados_raw is None:
-                continue  # Skip filas donde Egresados es NULL
-            
-            egresados = int(egresados_raw)
-            
-            if not programa or not modalidad or not generacion or not boleta:
-                continue
+            egresados_raw = _get_row_value(row, 'Egresados', default=0)
+            try:
+                egresados = int(float(egresados_raw)) if egresados_raw not in (None, '') else 0
+            except (TypeError, ValueError):
+                egresados = 0
             
             # Determinar si es Regular o Extemporáneo desde el campo Generacion
             # Si viene "Generación Regular" o contiene "Regular" -> regular
@@ -1573,7 +1589,7 @@ async def resumen_egresados_dinamico_view(
                 # Fallback: generación más reciente es regular
                 tipo_key = 'regular' if generacion == generacion_regular else 'extemporaneo'
             
-            print(f"  📝 {programa} | {modalidad} | Bol:{boleta} | Gen:{generacion} ({tipo_key}) | {sexo}: {egresados}")
+            #print(f"  📝 {programa} | {modalidad} | Bol:{boleta} | Gen:{generacion} ({tipo_key}) | {sexo}: {egresados}")
             
             # Acumular egresados por generación y tipo
             estructura[programa][modalidad][boleta]['generaciones'][generacion][tipo_key][sexo] += egresados
@@ -1590,7 +1606,10 @@ async def resumen_egresados_dinamico_view(
             for modalidad in sorted(estructura[programa].keys()):
                 # Obtener todas las boletas de esta modalidad y ordenarlas numéricamente
                 boletas_dict = estructura[programa][modalidad]
-                boletas_ordenadas = sorted(boletas_dict.keys(), key=lambda x: int(x) if x.isdigit() else 999)
+                boletas_ordenadas = sorted(
+                    boletas_dict.keys(),
+                    key=lambda x: (0, int(str(x))) if str(x).isdigit() else (1, str(x))
+                )
                 
                 for boleta in boletas_ordenadas:
                     datos_boleta = boletas_dict[boleta]

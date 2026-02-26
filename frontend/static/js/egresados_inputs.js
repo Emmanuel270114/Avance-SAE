@@ -919,14 +919,14 @@ async function consultarEgresadosRolSuperior() {
     }
     
     // Mostrar spinner
-    document.getElementById('mensaje-carga-superior').style.display = 'block';
+    mostrarSpinner();
     
     // Aquí deberías cargar los datos de egresados para esa UA
     // Similar a cargarDatosEgresados pero con los parámetros de rol superior
     
     // Ocultar spinner y mostrar contenedor
     setTimeout(() => {
-        document.getElementById('mensaje-carga-superior').style.display = 'none';
+        ocultarSpinner();
         document.getElementById('contenedor-egresados-principal').style.display = 'block';
     }, 1000);
 }

@@ -382,15 +382,15 @@ h2 {
 
 .tabla-header h3 {
     color: #ffffff;
-    font-size: 30px;
     font-weight: 600;
     margin: 0;
-    padding: 6px 0;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 32px; /* separación amplia entre Semestre, Programa y Modalidad */
-    min-width: 200px;
+    padding: 6px 12px;
+    display: block;
+    width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-align: center;
+    box-sizing: border-box;
 }
 
 .tabla-header .header-semestre,
@@ -400,7 +400,7 @@ h2 {
 }
 
 .tabla-header .header-separador {
-    font-size: 20px;
+    font-size: 0.7em;
     opacity: 0.9;
 }
 
@@ -468,16 +468,19 @@ h2 {
 }
 
 .col-edad {
-    width: 6%;
+    width: 80px !important;
+    min-width: 80px !important;
+    max-width: 80px !important;
     font-size: 13px;
-    min-width: 45px;
     padding: 2px 2px !important;
     text-align: center;
     vertical-align: middle;
+    overflow: hidden;
+    white-space: nowrap;
 }
 
 .col-sexo {
-    width: 6%;
+    width: auto;
     font-size: 12px;
 }
 
@@ -487,8 +490,7 @@ h2 {
 }
 
 .col-matutino, .col-vespertino, .col-mixto {
-    width: 110px;
-    max-width: 110px;
+    width: auto;
     font-size: 11px;
     padding: 8px 4px !important;
 }
@@ -787,6 +789,40 @@ td .matricula-pair { flex-wrap:nowrap; }
     opacity: 0.6;
     cursor: not-allowed;
     transform: none;
+}
+
+/* Botón Finalizar Semestre */
+.btn-finalizar {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    border: none;
+    padding: 12px 30px;
+    border-radius: 6px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    margin: 0 10px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(110, 3, 67, 0.4);
+    letter-spacing: 0.3px;
+}
+
+.btn-finalizar:hover:not(:disabled) {
+    background: linear-gradient(135deg, #55022f 0%, #7d0447 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(110, 3, 67, 0.55);
+}
+
+.btn-finalizar:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(110, 3, 67, 0.3);
+}
+
+.btn-finalizar:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
 }
 
 /* Alertas */

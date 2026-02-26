@@ -113,21 +113,23 @@
             margin-bottom: 30px;
             border-radius: 10px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e7d7df;
         }
         
         .tabla-resumen {
             width: 100%;
             border-collapse: collapse;
-            font-size: 0.85rem;
+            font-size: 0.84rem;
             background: white;
         }
         
         .tabla-resumen th,
         .tabla-resumen td {
             border: 1px solid #ddd;
-            padding: 10px 8px;
+            padding: 8px 6px;
             text-align: center;
             vertical-align: middle;
+            white-space: nowrap;
         }
         
         .tabla-resumen th {
@@ -162,7 +164,9 @@
             padding-left: 15px;
             position: sticky;
             left: 0;
-            z-index: 5;
+            z-index: 6;
+            min-width: 260px;
+            max-width: 320px;
         }
         
         .tabla-resumen .celda-modalidad {
@@ -171,18 +175,49 @@
             padding-left: 25px;
             font-weight: 600;
             position: sticky;
-            left: 0;
-            z-index: 5;
+            left: 260px;
+            z-index: 6;
+            min-width: 170px;
         }
         
         .tabla-resumen .celda-boletas {
             background: var(--naranja-claro);
             font-weight: bold;
+            position: sticky;
+            left: 430px;
+            z-index: 6;
+            min-width: 90px;
         }
         
         .tabla-resumen .celda-total {
             background: var(--verde-claro);
             font-weight: bold;
+        }
+
+        .tabla-resumen td.celda-genero-h,
+        .tabla-resumen td.celda-genero-m,
+        .tabla-resumen td.celda-genero-t,
+        .tabla-resumen td.celda-total {
+            min-width: 52px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .tabla-resumen thead th:nth-child(1) {
+            position: sticky;
+            left: 0;
+            z-index: 12;
+        }
+
+        .tabla-resumen thead th:nth-child(2) {
+            position: sticky;
+            left: 260px;
+            z-index: 12;
+        }
+
+        .tabla-resumen thead th:nth-child(3) {
+            position: sticky;
+            left: 430px;
+            z-index: 12;
         }
         
         .tabla-resumen .fila-total-general {

@@ -456,23 +456,31 @@ async def captura_matricula_sp_view(request: Request, db: Session = Depends(get_
     turnos_labels = metadata.get('turnos', [])
 
     # Mapear nombres a objetos de catálogo para obtener IDs
-    # Grupos de Edad
+    # Grupos de Edad - SOLO los que devuelve el SP
     grupos_edad_db = db.query(Grupo_Edad).all()
     grupos_edad_map = {str(g.Grupo_Edad): g for g in grupos_edad_db}
     grupos_edad_formatted = []
     for label in grupos_edad_labels:
         if label in grupos_edad_map:
             g = grupos_edad_map[label]
-            grupos_edad_formatted.append({'Id_Grupo_Edad': g.Id_Grupo_Edad, 'Grupo_Edad': g.Grupo_Edad})
+            grupos_edad_formatted.append({
+                'Id_Grupo_Edad': g.Id_Grupo_Edad,
+                'Grupo_Edad': g.Grupo_Edad
+            })
+    print(f"📊 DEBUG: Pasando {len(grupos_edad_formatted)} grupos de edad al frontend (solo del SP)")
     
-    # Tipos de Ingreso
+    # Tipos de Ingreso - SOLO los que devuelve el SP
     tipos_ingreso_db = db.query(Tipo_Ingreso).all()
     tipos_ingreso_map = {str(t.Tipo_de_Ingreso): t for t in tipos_ingreso_db}
     tipos_ingreso_formatted = []
     for label in tipos_ingreso_labels:
         if label in tipos_ingreso_map:
             t = tipos_ingreso_map[label]
-            tipos_ingreso_formatted.append({'Id_Tipo_Ingreso': t.Id_Tipo_Ingreso, 'Tipo_de_Ingreso': t.Tipo_de_Ingreso})
+            tipos_ingreso_formatted.append({
+                'Id_Tipo_Ingreso': t.Id_Tipo_Ingreso,
+                'Tipo_de_Ingreso': t.Tipo_de_Ingreso
+            })
+    print(f"📊 DEBUG: Pasando {len(tipos_ingreso_formatted)} tipos de ingreso al frontend (solo del SP)")
     
     # Programas
     programas_db = db.query(Programas).filter(Programas.Id_Nivel == id_nivel).all()
@@ -505,14 +513,18 @@ async def captura_matricula_sp_view(request: Request, db: Session = Depends(get_
             s = semestres_map_db[label]
             semestres_formatted.append({'Id_Semestre': s.Id_Semestre, 'Semestre': s.Semestre})
     
-    # Turnos
+    # Turnos - SOLO los que devuelve el SP
     turnos_db = db.query(Turno).all()
     turnos_map = {str(t.Turno): t for t in turnos_db}
     turnos_formatted = []
     for label in turnos_labels:
         if label in turnos_map:
             t = turnos_map[label]
-            turnos_formatted.append({'Id_Turno': t.Id_Turno, 'Turno': t.Turno})
+            turnos_formatted.append({
+                'Id_Turno': t.Id_Turno,
+                'Turno': t.Turno
+            })
+    print(f"📊 DEBUG: Pasando {len(turnos_formatted)} turnos al frontend (solo del SP)")
 
     # Construir un mapping simple para semestres
     semestres_map_json_dict = {s['Id_Semestre']: s['Semestre'] for s in semestres_formatted}
@@ -941,7 +953,7 @@ async def consultar_matricula_dinamica(
         semestres_db = db.query(Semestre).all()
         turnos_db = db.query(Turno).all()
         
-        # Mapear nombres a IDs
+        # Mapear SOLO los valores que devuelve el SP (no todos los del catálogo)
         def mapear_labels_a_objetos(labels, objetos_db, campo_label):
             mapa = {str(getattr(obj, campo_label)): obj for obj in objetos_db}
             resultado = []
@@ -950,36 +962,42 @@ async def consultar_matricula_dinamica(
                     resultado.append(mapa[label])
             return resultado
         
+        # Grupos de edad - solo del SP
         grupos_edad = mapear_labels_a_objetos(
             metadata_extraido.get('grupos_edad', []),
             grupos_edad_db,
             'Grupo_Edad'
         )
         
+        # Tipos de ingreso - solo del SP
         tipos_ingreso = mapear_labels_a_objetos(
             metadata_extraido.get('tipos_ingreso', []),
             tipos_ingreso_db,
             'Tipo_de_Ingreso'
         )
         
+        # Programas - solo del SP
         programas = mapear_labels_a_objetos(
             metadata_extraido.get('programas', []),
             programas_db,
             'Nombre_Programa'
         )
         
+        # Modalidades - solo del SP
         modalidades = mapear_labels_a_objetos(
             metadata_extraido.get('modalidades', []),
             modalidades_db,
             'Modalidad'
         )
         
+        # Semestres - solo del SP
         semestres = mapear_labels_a_objetos(
             metadata_extraido.get('semestres', []),
             semestres_db,
             'Semestre'
         )
         
+        # Turnos - solo del SP
         turnos = mapear_labels_a_objetos(
             metadata_extraido.get('turnos', []),
             turnos_db,
@@ -993,6 +1011,14 @@ async def consultar_matricula_dinamica(
         modalidades_json = [{'Id_Modalidad': m.Id_Modalidad, 'Modalidad': m.Modalidad} for m in modalidades]
         semestres_json = [{'Id_Semestre': s.Id_Semestre, 'Semestre': s.Semestre} for s in semestres]
         turnos_json = [{'Id_Turno': t.Id_Turno, 'Turno': t.Turno} for t in turnos]
+        
+        print(f"📊 DEBUG: Pasando metadatos al frontend (todos del SP):")
+        print(f"   - Grupos de edad: {len(grupos_edad_json)}")
+        print(f"   - Tipos de ingreso: {len(tipos_ingreso_json)}")
+        print(f"   - Turnos: {len(turnos_json)}")
+        print(f"   - Programas: {len(programas_json)}")
+        print(f"   - Modalidades: {len(modalidades_json)}")
+        print(f"   - Semestres: {len(semestres_json)}")
         
         semestres_map = {s['Id_Semestre']: s['Semestre'] for s in semestres_json}
         
@@ -1563,7 +1589,22 @@ async def guardar_captura_completa(request: Request, db: Session = Depends(get_d
         
         # Limpiar la sesión para evitar conflictos de identidad
         db.expunge_all()
-        
+
+        # Limpieza preventiva: eliminar TODOS los registros anteriores para este
+        # (Sigla, Periodo, Programa, Semestre, Turno) SIN importar la modalidad.
+        # Esto evita que el SP procese datos de guardados previos de otras modalidades.
+        if unidad_obj and programa_obj and semestre_obj and turno_obj:
+            eliminados_prev = db.query(Temp_Matricula).filter(
+                Temp_Matricula.Sigla       == unidad_obj.Sigla,
+                Temp_Matricula.Periodo     == periodo,
+                Temp_Matricula.Nombre_Programa == programa_obj.Nombre_Programa,
+                Temp_Matricula.Semestre    == semestre_obj.Semestre,
+                Temp_Matricula.Turno       == turno_obj.Turno,
+            ).delete(synchronize_session=False)
+            print(f"🧹 Pre-limpieza Temp_Matricula: {eliminados_prev} registros eliminados "
+                  f"(programa='{programa_obj.Nombre_Programa}', semestre='{semestre_obj.Semestre}', "
+                  f"turno='{turno_obj.Turno}') — solo se conservará la modalidad actual")
+
         # Obtener el semestre seleccionado como número
         semestre_numero = None
         if semestre_obj:
@@ -1860,6 +1901,11 @@ async def actualizar_matricula(request: Request, db: Session = Depends(get_db)):
         
         print(f"=================================")
         
+        # **NUEVO: Contar registros en Matricula ANTES del SP**
+        print(f"\n=== CONTEO ANTES DEL SP ===")
+        count_antes = db.query(Matricula).count()
+        print(f"Total registros en Matricula ANTES: {count_antes}")
+        
         print(f"\n=== PARÁMETROS DEL SP ===")
         print(f"@UUnidad_Academica = '{unidad_sigla}' (tipo: {type(unidad_sigla).__name__})")
         print(f"@SSalones = '{total_grupos}' (tipo: {type(total_grupos).__name__})")
@@ -1881,6 +1927,23 @@ async def actualizar_matricula(request: Request, db: Session = Depends(get_db)):
                 nivel=nivel,
             )
             print("SP ejecutado exitosamente")
+            
+            # **NUEVO: Contar registros en Matricula DESPUÉS del SP**
+            print(f"\n=== CONTEO DESPUÉS DEL SP ===")
+            count_despues = db.query(Matricula).count()
+            print(f"Total registros en Matricula DESPUÉS: {count_despues}")
+            print(f"Diferencia: {count_despues - count_antes} registros")
+            
+            if count_despues == count_antes:
+                print(f"⚠️ WARNING: El SP no insertó ni actualizó registros en Matricula")
+                print(f"⚠️ Posibles causas:")
+                print(f"   1. No había datos en Temp_Matricula para procesar")
+                print(f"   2. Los datos en Temp_Matricula no coinciden con catálogos")
+                print(f"   3. El SP tiene un problema interno")
+            elif count_despues > count_antes:
+                print(f"✅ El SP insertó {count_despues - count_antes} registros nuevos")
+            else:
+                print(f"⚠️ El SP eliminó {count_antes - count_despues} registros (esto no debería pasar)")
             
             # LIMPIAR VALIDACIONES PREVIAS cuando el capturista hace cambios
             # Esto permite que los validadores vuelvan a validar/rechazar
@@ -1920,7 +1983,14 @@ async def actualizar_matricula(request: Request, db: Session = Depends(get_db)):
             "temp_matricula_limpiada": temp_count_after == 0,
             "usuario": usuario_sp,
             "periodo": periodo,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
+            # **NUEVO: Información de diagnóstico**
+            "diagnostico": {
+                "registros_antes": count_antes,
+                "registros_despues": count_despues,
+                "diferencia": count_despues - count_antes,
+                "sp_hizo_cambios": count_despues != count_antes
+            }
         }
         
     except Exception as e:
@@ -2180,23 +2250,13 @@ async def preparar_turno(request: Request, db: Session = Depends(get_db)):
         turno_obj = db.query(Turno).filter(Turno.Id_Turno == int(turno)).first()
         turno_nombre = turno_obj.Turno if turno_obj else f"Turno {turno}"
         
-        print(f"\n📋 Ejecutando SP_Actualiza_Matricula_Por_Unidad_Academica")
+        print(f"\n📋 Turno validado - datos guardados en Temp_Matricula")
         print(f"   Unidad: {unidad_sigla}")
         print(f"   Nivel: {nivel_nombre}")
         print(f"   Período: {periodo_literal}")
+        print(f"   ⚠️  SP_Actualiza_Matricula_Por_Unidad_Academica NO se ejecuta aquí (solo preparar_turno)")
         
-        # Ejecutar SP de Unidad Académica (igual que Guardar Avance)
-        rows_list = execute_sp_actualiza_matricula_por_unidad_academica(
-            db,
-            unidad_sigla=unidad_sigla,
-            salones=0,
-            usuario=usuario_sp,
-            periodo=periodo_literal,
-            host=host_sp,
-            nivel=nivel_nombre
-        )
-        
-        print(f"\n✅ SP_Actualiza_Matricula_Por_Unidad_Academica ejecutado exitosamente")
+        print(f"\n✅ Turno preparado exitosamente (datos permanecen en Temp_Matricula)")
         print(f"📋 Semestre: {semestre_nombre}")
         print(f"🕐 Turno: {turno_nombre}")
         print(f"⏭️  El SP_Actualiza_Matricula_Por_Semestre_AU se ejecutará cuando todos los turnos estén validados")
@@ -2204,12 +2264,11 @@ async def preparar_turno(request: Request, db: Session = Depends(get_db)):
         # Retornar éxito
         return {
             "success": True,
-            "mensaje": f"Turno {turno_nombre} del {semestre_nombre} validado exitosamente",
+            "mensaje": f"Turno {turno_nombre} del {semestre_nombre} preparado exitosamente. Datos guardados en Temp_Matricula.",
             "turno_validado": turno_nombre,
             "semestre": semestre_nombre,
             "fase": "turno_individual",
-            "sp_ejecutado": "SP_Actualiza_Matricula_Por_Unidad_Academica",
-            "rows": rows_list,
+            "sp_ejecutado": "ninguno (datos en Temp_Matricula)",
             "nota": "El turno está bloqueado. El SP final se ejecutará cuando todos los turnos estén completos"
         }
         
@@ -3065,10 +3124,21 @@ async def resumen_matricula_seleccion_view(request: Request, db: Session = Depen
             "redirect_url": "/mod_principal/"
         })
 
+    # Determinar tipo de rol para la vista diferenciada
+    # Roles 4-5 (Director/Subdirector de UA): solo ven su propia UA, sin selector de UA
+    # Roles 6-9 (Superiores): pueden ver y filtrar por cualquier UA
+    es_rol_director_nivel = id_rol in [4, 5]
+    es_rol_superior = id_rol in [1, 6, 7, 8, 9]
+
+    # Leer datos de la UA del usuario logueado (guardados en cookies al hacer login)
+    id_unidad_academica_usuario = int(request.cookies.get("id_unidad_academica", 0))
+    sigla_unidad_academica_usuario = request.cookies.get("sigla_unidad_academica", "")
+
     print(f"\n{'='*60}")
     print(f"VISTA DE SELECCIÓN - RESUMEN DINÁMICO DE MATRÍCULA")
     print(f"Usuario: {nombre_completo}")
-    print(f"Rol: {nombre_rol} (ID: {id_rol})")
+    print(f"Rol: {nombre_rol} (ID: {id_rol}) | es_rol_director_nivel={es_rol_director_nivel}")
+    print(f"UA del usuario: {sigla_unidad_academica_usuario} (ID: {id_unidad_academica_usuario})")
     print(f"{'='*60}")
 
     # Obtener periodo activo o, en su defecto, el último
@@ -3079,11 +3149,7 @@ async def resumen_matricula_seleccion_view(request: Request, db: Session = Depen
     # Obtener todos los periodos disponibles
     periodos = db.query(Periodo).filter(Periodo.Id_Estatus == 1).order_by(Periodo.Id_Periodo.desc()).all()
 
-    # Obtener todos los niveles
-    niveles = db.query(Nivel).filter(Nivel.Id_Estatus == 1).order_by(Nivel.Id_Nivel).all()
-
     # Obtener todas las unidades académicas con su nivel desde SemaforoUnidadAcademica
-    # Esto asegura que solo obtengamos UAs que tienen configuración de nivel
     from sqlalchemy import distinct
     unidades_con_nivel = db.query(
         Unidad_Academica,
@@ -3101,7 +3167,7 @@ async def resumen_matricula_seleccion_view(request: Request, db: Session = Depen
         if ua.Id_Unidad_Academica not in unidades_dict:
             unidades_dict[ua.Id_Unidad_Academica] = {
                 'Id_Unidad_Academica': ua.Id_Unidad_Academica,
-                'Siglas': ua.Sigla,  # El modelo usa 'Sigla' singular
+                'Siglas': ua.Sigla,
                 'Nombre_Unidad_Academica': ua.Nombre,
                 'niveles': []
             }
@@ -3110,6 +3176,25 @@ async def resumen_matricula_seleccion_view(request: Request, db: Session = Depen
 
     # Convertir a lista y ordenar alfabéticamente por nombre
     unidades = sorted(unidades_dict.values(), key=lambda x: x['Nombre_Unidad_Academica'])
+
+    # Para roles 4-5: filtrar niveles a solo los que corresponden a su UA
+    if es_rol_director_nivel and id_unidad_academica_usuario:
+        id_niveles_mi_ua = []
+        mi_ua_info = unidades_dict.get(id_unidad_academica_usuario)
+        if mi_ua_info:
+            id_niveles_mi_ua = mi_ua_info['niveles']
+
+        niveles = db.query(Nivel).filter(
+            Nivel.Id_Estatus == 1,
+            Nivel.Id_Nivel.in_(id_niveles_mi_ua)
+        ).order_by(Nivel.Id_Nivel).all()
+
+        mi_unidad_nombre = mi_ua_info['Nombre_Unidad_Academica'] if mi_ua_info else sigla_unidad_academica_usuario
+        print(f"✅ Roles 4-5: niveles filtrados a UA '{sigla_unidad_academica_usuario}' → {len(niveles)} niveles disponibles")
+    else:
+        # Roles 6-9 y admin: todos los niveles
+        niveles = db.query(Nivel).filter(Nivel.Id_Estatus == 1).order_by(Nivel.Id_Nivel).all()
+        mi_unidad_nombre = ""
 
     print(f"✅ Cargadas {len(unidades)} unidades académicas")
     print(f"✅ Cargados {len(niveles)} niveles")
@@ -3122,7 +3207,13 @@ async def resumen_matricula_seleccion_view(request: Request, db: Session = Depen
         "periodo_activo_id": periodo_activo_id,
         "periodo_activo_literal": periodo_activo_literal,
         "niveles": niveles,
-        "unidades": unidades
+        "unidades": unidades,
+        # Flags de rol para la vista diferenciada
+        "es_rol_director_nivel": es_rol_director_nivel,
+        "es_rol_superior": es_rol_superior,
+        # Datos de la UA del usuario (usados solo para roles 4-5)
+        "mi_unidad_sigla": sigla_unidad_academica_usuario,
+        "mi_unidad_nombre": mi_unidad_nombre,
     })
 
 
