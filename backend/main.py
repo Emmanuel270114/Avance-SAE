@@ -6,7 +6,8 @@ from backend.api import mod_principal
 from backend.api import unidad_academica
 from backend.api import matricula_sp
 from backend.api import aprovechamiento_sp
-from backend.api import egresados_sp
+from backend.api import egresados_sp  # Comentado temporalmente por error de indentación
+from backend.api import titulados_sp
 from backend.api import recuperacion
 from backend.api.catalogos import domicilios, estatus, periodos, programas, roles, semaforo, modulos, objetos, egresados
 from backend.core.templates import static
@@ -24,7 +25,8 @@ app.include_router(mod_principal.router , prefix="/mod_principal")
 app.include_router(unidad_academica.router , prefix="/unidad_academica")
 app.include_router(matricula_sp.router , prefix="/matricula")
 app.include_router(aprovechamiento_sp.router , prefix="/aprovechamiento")
-app.include_router(egresados_sp.router , prefix="/egresados")
+app.include_router(egresados_sp.router , prefix="/egresados")  
+app.include_router(titulados_sp.router , prefix="/titulados")
 app.include_router(domicilios.router)
 app.include_router(periodos.router)
 app.include_router(programas.router)

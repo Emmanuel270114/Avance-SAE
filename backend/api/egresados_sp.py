@@ -223,11 +223,18 @@ async def captura_egresados_sp_view(request: Request, db: Session = Depends(get_
     # Validar que el usuario tenga uno de los roles permitidos
     roles_permitidos = [1, 3, 4, 5, 6, 7, 8, 9]  #1=Admin, 3=Capturista, 4-9=Roles de validación/rechazo
     if id_rol not in roles_permitidos:
-        return templates.TemplateResponse("error.html", {
-            "request": request,
-            "error_message": f"Acceso denegado: Su rol ({nombre_rol}) no tiene permisos para acceder a esta funcionalidad.",
-            "redirect_url": "/mod_principal/"
-        })
+        if id_rol != 0:
+            return templates.TemplateResponse("error.html", {
+                "request": request,
+                "error_message": f"Acceso denegado: Su rol ({nombre_rol}) no tiene permisos para acceder a esta funcionalidad.",
+                "redirect_url": "/mod_principal/"
+            })
+        else:
+            return templates.TemplateResponse("error.html", {
+                "request": request,
+                "error_message": "Acceso denegado: No se ha identificado un rol válido. Por favor, inicie sesión.",
+                "redirect_url": "/login/"
+            })
     
     # Determinar el modo de vista según el rol
     es_capturista = (id_rol == 3)

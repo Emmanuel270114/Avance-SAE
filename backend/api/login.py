@@ -1,4 +1,5 @@
 # routers/login.py
+import re
 from backend.database.connection import get_db
 from backend.services.usuario_service import validacion_usuario
 from backend.schemas.Usuario import UsuarioLogin, UsuarioResponse
@@ -51,6 +52,7 @@ async def login(
             nombre_rol = rol.Rol if rol else "Usuario"
             nombre_nivel = nivel.Nivel if nivel else "No definido"
             sigla_unidad = unidad.Sigla if unidad else ""
+            nombre_unidad = unidad.Nombre if unidad else ""
             
             print(f"DEBUG LOGIN: Usuario {user.Usuario}")
             print(f"DEBUG LOGIN: ID Rol: {id_rol}, Nombre Rol: {nombre_rol}")
@@ -82,6 +84,7 @@ async def login(
                 response.set_cookie(key="id_usuario", value=str(id_usuario), httponly=True)
             response.set_cookie(key="usuario", value=user.Usuario or "", httponly=True)  # LOGIN del usuario
             response.set_cookie(key="id_unidad_academica", value=str(id_unidad), httponly=True)
+            response.set_cookie(key="unidad_academica", value= nombre_unidad, httponly=True)
             response.set_cookie(key="sigla_unidad_academica", value=sigla_unidad, httponly=True)
             response.set_cookie(key="nombre_usuario", value=user.Nombre or "", httponly=True)
             response.set_cookie(key="apellidoP_usuario", value=user.Paterno or "", httponly=True)

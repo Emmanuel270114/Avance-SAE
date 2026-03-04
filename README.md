@@ -10,8 +10,10 @@ Sistema web desarrollado con FastAPI y Jinja2 para la gestión de usuarios acad�
 
 ## Instalación
 1. Clonar repositorio
-2. Crear entorno virtual: `python -m venv venv`
-3. Activar entorno: `venv\Scripts\activate`
+2. Crear entorno virtual: `python3 -m venv venv`
+3. Activar entorno: 
+   - **macOS/Linux**: `source venv/bin/activate`
+   - **Windows**: `venv\Scripts\activate`
 4. Instalar dependencias: `pip install -r requirements.txt`
 5. Configurar variables de entorno (.env)
 6. Ejecutar: `python -m uvicorn backend.main:app --reload`
