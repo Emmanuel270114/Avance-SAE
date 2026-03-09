@@ -9,7 +9,7 @@ from backend.core.templates import templates
 from backend.schemas import Nivel
 from backend.services.titulados_service import obtener_titulados
 from backend.services.periodo_service import get_ultimo_periodo
-
+from backend.database.models.CatBoleta import CatBoleta as Boleta
 
 router = APIRouter()
 
@@ -19,6 +19,9 @@ async def consulta_titulados(
     request: Request,
     db: Session = Depends(get_db)
 ):
+    
+    contexto = {}
+    filas = []
     
     # Identificar la vista para usuarios (Quitar los default ya que conecte a la base)
     id_rol = int(request.cookies.get("id_rol",0))
@@ -81,6 +84,8 @@ async def consulta_titulados(
 
 
     try:
+        
+        print(f"Obteniendo titulados para UA: {sigla_unidad_academica}, Periodo: {periodo_default_literal}, Nivel: {nombre_nivel}, Usuario: {usuario}")
         contexto, filas = obtener_titulados(
             db=db,
             unidad_academica=sigla_unidad_academica,
@@ -90,15 +95,21 @@ async def consulta_titulados(
             host=host
         )
 
+        boleta = contexto.get("Boleta", "N/A")
+        boletas = list(range(boleta + 1, boleta - 11, -1)) if boleta else []
+        print(f"Boletas obtenida: {boletas}")
 
-        #error = None
+        
+    
     
 
     except ValueError as ve:
         return templates.TemplateResponse("titulados_consulta.html", {"request": request, "error": str(ve)})
     except Exception as e:
         return templates.TemplateResponse("titulados_consulta.html", {"request": request, "error": f"Error al obtener datos: {e}"})
-                                          
+    
+   
+   # print(f"Contexto final: {contexto}")                
     return templates.TemplateResponse(
             "titulados_consulta.html", 
             {"request": request,
@@ -108,6 +119,7 @@ async def consulta_titulados(
              "nombre_rol": nombre_rol,
              "nivel_acceso" : nivel_acceso,
              "contexto": contexto,
+             "boletas": boletas,
              "filas": filas,
              "acceso_restringido" : False}
              )

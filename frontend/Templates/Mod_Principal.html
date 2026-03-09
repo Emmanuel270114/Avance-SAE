@@ -22,6 +22,7 @@
             <button id="Btn_Matricula" class="btn-menu">Matrícula</button>
             <button id="Btn_Aprovechamiento" class="btn-menu">Aprovechamiento Académico</button>
             <button id="Btn_Egresados" class="btn-menu">Egresados</button>
+            <button id="Btn_Titulados" class="btn-menu">Titulados</button>
             <button id="Btn_Dashboard" class="btn-menu">DashBoard SAE</button>
         </div>
         <script>
@@ -42,6 +43,11 @@
             //Navegar a la página de egresados
             document.getElementById('Btn_Egresados').addEventListener('click', function() {
                 window.location.href = '/egresados/consulta';
+            });
+
+            // Navegar a la página de titulados
+            document.getElementById('Btn_Titulados').addEventListener('click', function() {
+                window.location.href = '/titulados/consulta';
             });
 
             // Navegar al dashboard embebido de Power BI

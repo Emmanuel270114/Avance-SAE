@@ -260,9 +260,6 @@
                     <label for="modalidad"> <strong>Modalidad:</strong></label>
                     <select id="modalidad" name="modalidad" required>
                         <option value="">-- Primero seleccione un Programa Académico --</option>
-                        {% for modalidad in filas | unique(attribute='Modalidad') %}
-                        <option value = "{{ modalidad.Modalidad }}">{{ modalidad.Modalidad }}</option>
-                        {% endfor %}
                     </select>
                 </div>
             </div>
@@ -280,9 +277,6 @@
                     <label for="filtro-boleta"><strong>Boleta:</strong></label>
                     <select id="filtro-boleta" name="filtro_boleta">
                         <option value="">-- Seleccione Boleta --</option>
-                        {% for boleta in filas | unique(attribute='Boleta') %}
-                        <option value="{{ boleta.Boleta }}">{{ boleta.Boleta }}</option>
-                        {% endfor %}
                     </select>
                 </div>
                 
@@ -290,9 +284,6 @@
                     <label for="filtro-generacion"><strong>Tipo de Titulación:</strong></label>
                     <select id="filtro-generacion" name="filtro_generacion">
                         <option value="">-- Seleccione Tipo de Titulación --</option>
-                        {% for tipoTitulacion in filas | unique(attribute='Tipo_Titulacion') %}
-                        <option value="{{ tipoTitulacion.Tipo_Titulacion }}">{{ tipoTitulacion.Tipo_Titulacion }}</option>
-                        {% endfor %}
                     </select>
                 </div>
                 
@@ -300,9 +291,6 @@
                     <label for="filtro-turno"><strong>Turno:</strong></label>
                     <select id="filtro-turno" name="filtro_turno">
                         <option value="">-- Seleccione Turno --</option>
-                        {% for turno in filas |  unique(attribute='Turno') %}
-                        <option value="{{ turno.Turno}}">{{ turno.Turno }}</option>
-                        {% endfor %}
                     </select>
                 </div>
             </div>
@@ -361,7 +349,7 @@
                     <thead>
                         <tr style="background: linear-gradient(135deg, #6e0343 0%, #8b2635 100%); color: white;">
                             <th style="padding: 15px; text-align: center; font-weight: 600; font-size: 14px;">Boleta</th>
-                            <th style="padding: 15px; text-align: center; font-weight: 600; font-size: 14px;">Generación</th>
+                            <th style="padding: 15px; text-align: center; font-weight: 600; font-size: 14px;">Tipo de Titulación</th>
                             <th style="padding: 15px; text-align: center; font-weight: 600; font-size: 14px;">Edad</th>
                             <th style="padding: 15px; text-align: center; font-weight: 600; font-size: 14px;">Hombres</th>
                             <th style="padding: 15px; text-align: center; font-weight: 600; font-size: 14px;">Mujeres</th>
@@ -473,3 +461,11 @@
 </div>
 {% endblock %}
 
+{% block scripts %}
+<script>
+    const datosFilas = JSON.parse('{{ filas | tojson | safe }}');
+    const boletas = JSON.parse('{{ boletas | tojson | safe }}');
+</script>
+<script src="/static/js/titulados_mapeo.js"></script>
+<script src="/static/js/titulados_consulta.js"></script>
+{% endblock %}
