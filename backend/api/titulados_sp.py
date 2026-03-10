@@ -121,5 +121,6 @@ async def consulta_titulados(
              "contexto": contexto,
              "boletas": boletas,
              "filas": filas,
+             "es_capturista": es_capturista,
              "acceso_restringido" : False}
              )

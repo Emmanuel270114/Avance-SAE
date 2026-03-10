@@ -18,17 +18,6 @@ function actualizarContadorEdades() {
     }
 }
 
-function obtenerValorOrdenEdad(edad) {
-    const str = String(edad).trim();
-    
-    if (str.startsWith('<=')) {
-        return parseInt(str.replace('<=', '')) - 0.5; 
-    }
-    if (str.startsWith('>=')) {
-        return parseInt(str.replace('>=', '')) + 0.5; 
-    }
-    return parseInt(str) || 0; 
-}
 
 function agregarFilasEgresados() {
     // Obtener valores de los filtros
@@ -177,7 +166,7 @@ function renderizarTablaEgresados() {
         return;
     }
     console.log('Total de filas a renderizar:', filasEgresados.length);
-    filasEgresados.sort
+    //filasEgresados.sort
     tbody.innerHTML = '';
     filasEgresados.forEach((fila, index) => {
         const tr = document.createElement('tr');
@@ -240,4 +229,11 @@ function limpiarTabla() {
     }
 }
 
+function eliminarFilaEgresado(id) {
+    if (confirm('¿Está seguro de eliminar este registro?')) {
+        filasEgresados = filasEgresados.filter(f => f.id !== id);
+        renderizarTablaEgresados();
+        console.log(`🗑️ Fila eliminada: ${id}`);
+    }
+}
 
