@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Request, Depends
 from fastapi.responses import HTMLResponse, JSONResponse
 from backend.core.templates import templates
+from backend.core.auth import get_current_session
 from backend.database.connection import get_db
 from sqlalchemy.orm import Session
 from sqlalchemy import join
@@ -14,13 +15,13 @@ from backend.database.models.CatNivel import CatNivel
 router = APIRouter()
 
 @router.get("/", response_class=HTMLResponse)
-async def programas_view(request: Request, db: Session = Depends(get_db)):
+async def programas_view(request: Request, sess=Depends(get_current_session), db: Session = Depends(get_db)):
     # Obtener datos del usuario logueado desde las cookies
-    id_unidad_academica = int(request.cookies.get("id_unidad_academica", 1))
-    id_rol = int(request.cookies.get("id_rol", 2))
-    nombre_usuario = request.cookies.get("nombre_usuario", "")
-    apellidoP_usuario = request.cookies.get("apellidoP_usuario", "")
-    apellidoM_usuario = request.cookies.get("apellidoM_usuario", "")
+    id_unidad_academica = int(sess.id_unidad_academica)
+    id_rol = int(sess.id_rol)
+    nombre_usuario = sess.nombre_usuario
+    apellidoP_usuario = sess.apellidoP_usuario
+    apellidoM_usuario = sess.apellidoM_usuario
     
     # Verificar si es super admin
     es_super_admin = (nombre_usuario.strip().lower() == 'admin' and
@@ -73,10 +74,10 @@ async def programas_view(request: Request, db: Session = Depends(get_db)):
 
 # Endpoint para obtener programas de una UA específica (solo superadmin)
 @router.get("/por-ua/{id_ua}", response_class=JSONResponse)
-async def programas_por_ua(id_ua: int, request: Request, db: Session = Depends(get_db)):
-    nombre_usuario = request.cookies.get("nombre_usuario", "")
-    apellidoP_usuario = request.cookies.get("apellidoP_usuario", "")
-    apellidoM_usuario = request.cookies.get("apellidoM_usuario", "")
+async def programas_por_ua(id_ua: int, request: Request, sess=Depends(get_current_session), db: Session = Depends(get_db)):
+    nombre_usuario = sess.nombre_usuario
+    apellidoP_usuario = sess.apellidoP_usuario
+    apellidoM_usuario = sess.apellidoM_usuario
     es_super_admin = (nombre_usuario.strip().lower() == 'admin' and
                      apellidoP_usuario.strip().lower() == 'admin' and
                      apellidoM_usuario.strip().lower() == 'admin')

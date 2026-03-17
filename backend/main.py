@@ -11,9 +11,10 @@ from backend.api import recuperacion
 from backend.api.catalogos import domicilios, estatus, periodos, programas, roles, semaforo, modulos, objetos, egresados
 from backend.core.templates import static
 
-from fastapi import FastAPI
-from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse
+from fastapi import FastAPI, Request
+from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse, JSONResponse
 import os
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 app = FastAPI()
 app.mount("/static", static)
@@ -38,6 +39,15 @@ app.include_router(roles.router)
 
 
 app.include_router(recuperacion.router)
+
+
+@app.exception_handler(StarletteHTTPException)
+async def _http_exception_handler(request: Request, exc: StarletteHTTPException):
+    # For browser requests, redirect to login on 401.
+    accept = (request.headers.get("accept") or "").lower()
+    if exc.status_code == 401 and "text/html" in accept:
+        return RedirectResponse(url="/login", status_code=303)
+    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
 
 @app.get("/favicon.ico")
 async def favicon():

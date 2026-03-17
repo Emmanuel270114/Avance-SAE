@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from typing import Optional
 from backend.database.connection import get_db
 from backend.core.templates import templates
+from backend.core.auth import get_current_session
 from backend.services.usuario_service import get_username_by_email, reset_password, change_password
 from backend.services.bitacora_service import registrar_bitacora
 from backend.services.periodo_service import get_ultimo_periodo
@@ -12,7 +13,7 @@ from backend.services.usuario_service import is_super_admin
 router = APIRouter(prefix="/recuperacion", tags=["recuperacion"])
 
 @router.get("/usuario", response_class=HTMLResponse)
-async def recuperar_usuario_view(request: Request):
+async def recuperar_usuario_view(request: Request, sess=Depends(get_current_session)):
     return templates.TemplateResponse("recuperar_usuario.html", {"request": request})
 
 @router.post("/usuario", response_class=JSONResponse)
@@ -27,14 +28,14 @@ async def recuperar_usuario(email: str = Form(...), db: Session = Depends(get_db
         db.close()
 
 @router.get("/password", response_class=HTMLResponse)
-async def recuperar_password_view(request: Request):
+async def recuperar_password_view(request: Request, sess=Depends(get_current_session)):
     return templates.TemplateResponse("recuperar_password.html", {"request": request})
 
 @router.post("/password", response_class=JSONResponse)
 async def recuperar_password(
     username: str = Form(...), 
     email: str = Form(...), 
-    request: Request = None, 
+    request: Request = None, sess=Depends(get_current_session), 
     db: Session = Depends(get_db)
 ):
     # Pasar el objeto request directamente a la función
@@ -63,14 +64,14 @@ async def recuperar_password(
     return JSONResponse(status_code=400, content={"mensaje": "No se pudo completar la operación."})
 
 @router.get("/cambiar", response_class=HTMLResponse)
-async def cambiar_password_view(request: Request):
+async def cambiar_password_view(request: Request, sess=Depends(get_current_session)):
     return templates.TemplateResponse("cambiar_password.html", {"request": request})
 
 @router.post("/cambiar", response_class=JSONResponse)
 async def cambiar_password(
     new_password: str = Form(...),
     new_password2: str = Form(...),
-    request: Request = None,
+    request: Request = None, sess=Depends(get_current_session),
     db: Session = Depends(get_db)
 ):
     # Validar que las dos contraseñas nuevas coincidan
@@ -81,13 +82,8 @@ async def cambiar_password(
     if len(new_password) < 6:
         return JSONResponse(status_code=400, content={"mensaje": "La contraseña debe tener al menos 6 caracteres."})
     
-    # Obtener el usuario logueado desde las cookies
-    id_usuario = request.cookies.get("id_usuario") if request else None
-    try:
-        id_usuario_int = int(id_usuario) if id_usuario else 0
-    except (TypeError, ValueError):
-        id_usuario_int = 0
-    
+    # Obtener el usuario logueado desde la sesión server-side
+    id_usuario_int = int(getattr(sess, 'id_usuario', 0) or 0)
     if id_usuario_int <= 0:
         return JSONResponse(status_code=401, content={"mensaje": "Sesión no válida."})
     
@@ -116,7 +112,7 @@ async def cambiar_password(
         # Limpiar cookie de requerir cambio
         resp = JSONResponse(content={"mensaje": "Contraseña actualizada exitosamente."})
         try:
-            resp.delete_cookie("requiere_cambio_password")
+            pass  # flag legacy removido; la sesión manda
         except Exception:
             pass
         return resp

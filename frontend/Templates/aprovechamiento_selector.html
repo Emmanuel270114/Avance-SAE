@@ -1,0 +1,371 @@
+{% extends 'base.html' %}
+
+{% block title %}Consulta de Aprovechamiento - Selección de Filtros{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="/static/css/components/header.css">
+<link rel="stylesheet" href="/static/css/components/matricula_consulta.css">
+<style>
+    .submenu-categorias-box {
+        display: none !important;
+    }
+
+    .panel-filtros-superiores {
+        background: linear-gradient(135deg, #6e0343 0%, #8b1155 100%);
+        padding: 30px;
+        border-radius: 16px;
+        margin: 20px 0;
+        box-shadow: 0 8px 32px rgba(110, 3, 67, 0.3);
+    }
+
+    .panel-header h3 {
+        color: white;
+        margin: 0 0 8px 0;
+        font-size: 22px;
+        font-weight: 700;
+    }
+
+    .panel-header p {
+        margin: 0;
+        opacity: 0.95;
+        font-size: 14px;
+        color: white;
+    }
+
+    .filtros-superiores-container {
+        display: grid;
+        gap: 20px;
+        margin-top: 20px;
+        align-items: end;
+    }
+
+    .filtro-superior-item label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: white;
+        font-size: 14px;
+    }
+
+    .filtro-superior-item select {
+        width: 100%;
+        padding: 12px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 8px;
+        font-size: 14px;
+        background: white;
+        color: #333;
+        transition: all 0.3s ease;
+    }
+
+    .filtro-superior-item select:focus {
+        outline: none;
+        border-color: #ffd700;
+        box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.3);
+    }
+
+    .btn-consultar-superior {
+        width: 100%;
+        padding: 14px 24px;
+        background: linear-gradient(135deg, #4da5ec, #4da5ec);
+        color: #ffffff;
+        border: 2px solid #ffffff;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .btn-consultar-superior:hover:not(:disabled) {
+        background: linear-gradient(135deg, #3a8ed3, #3a8ed3);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .btn-consultar-superior:disabled {
+        background: #999;
+        cursor: not-allowed;
+        opacity: 0.6;
+    }
+
+    .btn-icon {
+        font-size: 18px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="header-usuarios">
+        <div class="bienvenido">Bienvenido: <strong>{{ nombre_usuario }}</strong>
+            {% if periodo_activo_literal %}
+            &nbsp;|&nbsp; Periodo: <strong>{{ periodo_activo_literal }}</strong>
+            {% endif %}
+            {% if rol %}
+            &nbsp;|&nbsp; Rol: <strong>{{ rol }}</strong>
+            {% endif %}
+        </div>
+        <form action="/mod_principal" method="get">
+            <button type="submit" class="btn-volver">Regresar</button>
+        </form>
+    </div>
+
+    <h2>Consulta de Aprovechamiento Escolar</h2>
+
+    {% if rol == 'CEGET' or rol == 'Titular' %}
+    <!-- ── ROLES 4-5: Solo Periodo + Nivel ── -->
+    <div class="panel-filtros-superiores" id="panel-filtros-director">
+        <div class="panel-header">
+            <h3>🔍 Selección de Periodo y Nivel</h3>
+            <p>Consulta los datos de aprovechamiento escolar de <strong>{{ unidad_academica }}</strong>. Seleccione el
+                <strong>Periodo</strong> y el <strong>Nivel</strong> a consultar.
+            </p>
+        </div>
+        {% if periodo_activo_literal != "" %}
+        <div class="filtros-superiores-container" style="grid-template-columns: 1fr 1fr 300px;">
+            <div class="filtro-superior-item">
+                <label for="select-periodo-director"><strong>1. Periodo:</strong></label>
+                <select id="select-periodo-director" name="periodo_director" required>
+                    <option value="{{ periodo_activo_literal }}">{{ periodo_activo_literal }}</option>
+                </select>
+            </div>
+
+            <div class="filtro-superior-item">
+                <label for="select-nivel-director"><strong>2. Nivel Académico:</strong></label>
+                <select id="select-nivel-director" name="nivel_director" required>
+                    {% if niveles|length == 1 %}
+                    <option value="{{ niveles[0].Nivel }}">{{ niveles[0].Nivel }}</option>
+                    {% else %}
+                    <option value="">-- Seleccione un Nivel --</option>
+                    {% for nivel in niveles %}
+                    <option value="{{ nivel.Nivel }}">{{ nivel.Nivel }}</option>
+                    {% endfor %}
+                    {% endif %}
+                </select>
+            </div>
+
+            <div class="filtro-superior-accion">
+                <button type="button" id="btn-ver-resumen-director" class="btn-consultar-superior" disabled>
+                    <span class="btn-icon">📈</span> Consultar Aprovechamiento
+                </button>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    {% else %}
+    <!-- ── ROLES 6-9: Periodo + Nivel + UA ── -->
+    <div class="panel-filtros-superiores" id="panel-filtros-superiores">
+        <div class="panel-header">
+            <h3>🔍 Selección de Periodo, Unidad Académica y Nivel</h3>
+            <p>Seleccione el <strong>Periodo</strong>, luego el <strong>Nivel</strong> y finalmente la <strong>Unidad
+                    Académica</strong> a consultar</p>
+        </div>
+
+        <div class="filtros-superiores-container" style="grid-template-columns: 1fr 1fr 1fr 300px;">
+            <div class="filtro-superior-item">
+                <label for="select-periodo-superior"><strong>1. Periodo:</strong></label>
+                <select id="select-periodo-superior" name="periodo_superior" required>
+                    <option value="">-- Seleccione un Periodo --</option>
+                    {% for periodo in periodos %}
+                    <option value="{{ periodo.Id_Periodo }}" {% if periodo.Id_Periodo==periodo_activo_id %}selected{%
+                        endif %}>
+                        {{ periodo.Periodo }}
+                        {% if periodo.Id_Estatus == 1 %}(Activo){% endif %}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="filtro-superior-item">
+                <label for="select-nivel-superior"><strong>2. Nivel Académico:</strong></label>
+                <select id="select-nivel-superior" name="nivel_superior" required>
+                    <option value="">-- Seleccione un Nivel --</option>
+                    {% for nivel in niveles %}
+                    <option value="{{ nivel.Nivel }}">{{ nivel.Nivel }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="filtro-superior-item">
+                <label for="select-ua-superior"><strong>3. Unidad Académica:</strong></label>
+                <select id="select-ua-superior" name="ua_superior" required disabled>
+                    <option value="">-- Primero seleccione un Nivel --</option>
+                </select>
+            </div>
+
+            <div class="filtro-superior-accion">
+                <button type="button" id="btn-ver-resumen" class="btn-consultar-superior" disabled>
+                    <span class="btn-icon">📈</span> Consultar Aprovechamiento
+                </button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    // ── Fix: al regresar con botón del navegador cerrar Swal y rehabilitar botones ──
+    window.addEventListener('pageshow', function (e) {
+        if (e.persisted || (performance.getEntriesByType('navigation')[0] && performance.getEntriesByType('navigation')[0].type === 'back_forward')) {
+            Swal.close();
+            document.querySelectorAll('.btn-consultar-superior').forEach(btn => btn.disabled = false);
+            if (typeof verificarSeleccionDirector === 'function') verificarSeleccionDirector();
+            if (typeof verificarSeleccion === 'function') verificarSeleccion();
+        }
+    });
+
+    {% if rol == 'CEGET' or rol == 'Titular' %}
+    // ========================================================
+    // LÓGICA ROLES 4-5: Solo Periodo + Nivel (UA = la propia)
+    // ========================================================
+    const miUnidadSigla = "{{ mi_unidad_sigla }}";
+
+    const selectPeriodoDirector = document.getElementById('select-periodo-director');
+    const selectNivelDirector = document.getElementById('select-nivel-director');
+    const btnDirector = document.getElementById('btn-ver-resumen-director');
+
+    function verificarSeleccionDirector() {
+        const ok = selectPeriodoDirector.value && selectNivelDirector.value;
+        btnDirector.disabled = !ok;
+    }
+
+    selectPeriodoDirector.addEventListener('change', verificarSeleccionDirector);
+    selectNivelDirector.addEventListener('change', verificarSeleccionDirector);
+
+    // ▶ Verificar al cargar: si periodo tiene valor fijo y nivel solo tiene 1 opción,
+    //   el botón debe habilitarse sin esperar el evento change.
+    document.addEventListener('DOMContentLoaded', verificarSeleccionDirector);
+
+    btnDirector.addEventListener('click', async function () {
+        const periodoValor = selectPeriodoDirector.value;
+        const nivelValor = selectNivelDirector.value;
+
+        if (!periodoValor || !nivelValor) {
+            Swal.fire({ icon: 'warning', title: 'Campos incompletos', text: 'Por favor seleccione Periodo y Nivel.', confirmButtonColor: '#6e0343' });
+            return;
+        }
+
+        // Pantalla de carga
+        Swal.fire({
+            title: 'Cargando información...',
+            html: 'Consultando datos de aprovechamiento.<br>Por favor espere.',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showConfirmButton: false,
+            didOpen: () => { Swal.showLoading(); }
+        });
+
+        btnDirector.disabled = true;
+
+        const periodoTexto = selectPeriodoDirector.options[selectPeriodoDirector.selectedIndex].text.replace('(Activo)', '').trim();
+        const url = `/aprovechamiento/resumen-dinamico?periodo=${encodeURIComponent(periodoTexto)}&nivel=${encodeURIComponent(nivelValor)}&unidad=${encodeURIComponent(miUnidadSigla)}`;
+        window.location.href = url;
+    });
+
+    {% else %}
+    // ========================================================
+    // LÓGICA ROLES 6-9: Periodo + Nivel + UA (todas las UAs)
+    // ========================================================
+    const unidadesPorNivel = {
+        {% for nivel in niveles %}
+    "{{ nivel.Nivel }}": [
+        {% for unidad in unidades %}
+    {% if nivel.Id_Nivel in unidad.niveles %}
+    { "siglas": "{{ unidad.Sigla }}", "nombre": "{{ unidad.Nombre_Unidad_Academica }}" },
+    {% endif %}
+    {% endfor %}
+        ],
+    {% endfor %}
+    };
+
+    const selectPeriodoSuperior = document.getElementById('select-periodo-superior');
+    const selectNivelSuperior = document.getElementById('select-nivel-superior');
+    const selectUASuperior = document.getElementById('select-ua-superior');
+    const btnVerResumen = document.getElementById('btn-ver-resumen');
+
+    function actualizarUAsPorNivel() {
+        const nivelSeleccionado = selectNivelSuperior.value;
+
+        if (!nivelSeleccionado) {
+            selectUASuperior.disabled = true;
+            selectUASuperior.innerHTML = '<option value="">-- Primero seleccione un Nivel --</option>';
+            btnVerResumen.disabled = true;
+            return;
+        }
+
+        const unidades = (unidadesPorNivel[nivelSeleccionado] || []).slice();
+        unidades.sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+
+        selectUASuperior.disabled = unidades.length === 0;
+        selectUASuperior.innerHTML = unidades.length === 0
+            ? '<option value="">-- Este Nivel no tiene UAs --</option>'
+            : '<option value="">-- Seleccione una Unidad Académica --</option>';
+
+        unidades.forEach(u => {
+            const opt = document.createElement('option');
+            opt.value = u.siglas;
+            opt.textContent = `${u.siglas} - ${u.nombre}`;
+            selectUASuperior.appendChild(opt);
+        });
+
+        verificarSeleccion();
+    }
+
+    function verificarSeleccion() {
+        btnVerResumen.disabled = !(
+            selectPeriodoSuperior.value &&
+            selectNivelSuperior.value &&
+            selectUASuperior.value
+        );
+    }
+
+    selectPeriodoSuperior.addEventListener('change', verificarSeleccion);
+    selectNivelSuperior.addEventListener('change', function () {
+        actualizarUAsPorNivel();
+    });
+    selectUASuperior.addEventListener('change', verificarSeleccion);
+
+    // ▶ Si el periodo activo ya viene preseleccionado, disparar verificación inicial
+    document.addEventListener('DOMContentLoaded', verificarSeleccion);
+
+    btnVerResumen.addEventListener('click', async function () {
+        const periodoValor = selectPeriodoSuperior.value;
+        const nivelValor = selectNivelSuperior.value;
+        const uaValor = selectUASuperior.value;
+
+        if (!periodoValor || !nivelValor || !uaValor) {
+            Swal.fire({ icon: 'warning', title: 'Campos incompletos', text: 'Por favor seleccione Periodo, Nivel y Unidad Académica.', confirmButtonColor: '#6e0343' });
+            return;
+        }
+
+        // Pantalla de carga
+        Swal.fire({
+            title: 'Cargando información...',
+            html: 'Consultando datos de aprovechamiento.<br>Por favor espere.',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showConfirmButton: false,
+            didOpen: () => { Swal.showLoading(); }
+        });
+
+        btnVerResumen.disabled = true;
+
+        const periodoTexto = selectPeriodoSuperior.options[selectPeriodoSuperior.selectedIndex].text.replace('(Activo)', '').trim();
+        const url = `/aprovechamiento/resumen-dinamico?periodo=${encodeURIComponent(periodoTexto)}&nivel=${encodeURIComponent(nivelValor)}&unidad=${encodeURIComponent(uaValor)}`;
+        window.location.href = url;
+    });
+    {% endif %}
+</script>
+{% endblock %}

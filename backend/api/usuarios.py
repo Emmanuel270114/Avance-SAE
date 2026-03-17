@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Request, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from backend.core.templates import templates
+from backend.core.auth import get_current_session
 from backend.database.connection import get_db
 from backend.database.models.Usuario import Usuario
 from backend.services.usuario_service import (
@@ -40,17 +41,17 @@ PERMISOS_CREACION_ROLES = {
 # Vista unificada: registro y lista de usuarios
 @router.get("/", response_class=HTMLResponse)
 async def usuarios_view(
-    request: Request,
+    request: Request, sess=Depends(get_current_session),
     db: Session = Depends(get_db),
 ):
     # Datos del usuario logueado
-    id_unidad_academica = int(request.cookies.get("id_unidad_academica", 1))
-    id_rol = int(request.cookies.get("id_rol", 2))
-    id_usuario_logueado = int(request.cookies.get("id_usuario", 0))
-    Rol = str(request.cookies.get("nombre_rol",""))
-    nombre_usuario = request.cookies.get("nombre_usuario", "")
-    apellidoP_usuario = request.cookies.get("apellidoP_usuario", "")
-    apellidoM_usuario = request.cookies.get("apellidoM_usuario", "")
+    id_unidad_academica = int(sess.id_unidad_academica)
+    id_rol = int(sess.id_rol)
+    id_usuario_logueado = int(sess.id_usuario)
+    Rol = str(sess.nombre_rol)
+    nombre_usuario = sess.nombre_usuario
+    apellidoP_usuario = sess.apellidoP_usuario
+    apellidoM_usuario = sess.apellidoM_usuario
     nombre_completo = " ".join(filter(None, [nombre_usuario, apellidoP_usuario, apellidoM_usuario]))
     
     # Verificar si es super admin
@@ -121,7 +122,7 @@ async def usuarios_view(
 # Endpoint para registrar usuario desde la misma página
 @router.post("/registrar", response_class=JSONResponse)
 async def registrar_usuario_view(
-    request: Request,
+    request: Request, sess=Depends(get_current_session),
     db: Session = Depends(get_db),
 ):
     data = await request.json()
@@ -129,10 +130,10 @@ async def registrar_usuario_view(
         user = UsuarioCreate(**data)
         
         # Obtener datos del usuario que está registrando
-        id_rol_registrador = int(request.cookies.get("id_rol", 2))
-        nombre_usuario = request.cookies.get("nombre_usuario", "")
-        apellidoP_usuario = request.cookies.get("apellidoP_usuario", "")
-        apellidoM_usuario = request.cookies.get("apellidoM_usuario", "")
+        id_rol_registrador = int(sess.id_rol)
+        nombre_usuario = sess.nombre_usuario
+        apellidoP_usuario = sess.apellidoP_usuario
+        apellidoM_usuario = sess.apellidoM_usuario
         es_super_admin = is_super_admin(nombre_usuario, apellidoP_usuario, apellidoM_usuario)
         
         # VALIDACIÓN 1: Verificar que el usuario tenga permiso para crear este rol
@@ -190,7 +191,7 @@ async def registrar_usuario_view(
         
         # Registro en la tabla Bitacora de la DB
         # Tomar el ID del usuario logueado desde la cookie
-        id_usuario_log = request.cookies.get("id_usuario")
+        id_usuario_log = sess.id_usuario
         try:
             id_usuario_log = int(id_usuario_log) if id_usuario_log is not None else 0
         except (TypeError, ValueError):
@@ -232,13 +233,13 @@ async def registrar_usuario_view(
 @router.post("/editar/{id_usuario}", response_class=JSONResponse)
 async def editar_usuario_ajax(
     id_usuario: int,
-    request: Request,
+    request: Request, sess=Depends(get_current_session),
     db: Session = Depends(get_db),
 ):
     # Validar superadmin
-    nombre_usuario = request.cookies.get("nombre_usuario", "")
-    apellidoP_usuario = request.cookies.get("apellidoP_usuario", "")
-    apellidoM_usuario = request.cookies.get("apellidoM_usuario", "")
+    nombre_usuario = sess.nombre_usuario
+    apellidoP_usuario = sess.apellidoP_usuario
+    apellidoM_usuario = sess.apellidoM_usuario
     if not is_super_admin(nombre_usuario, apellidoP_usuario, apellidoM_usuario):
         return JSONResponse(content={"mensaje": "No te puedes modificar a ti mismo."}, status_code=403)
     try:
@@ -247,10 +248,10 @@ async def editar_usuario_ajax(
         nueva_id_unidad = data.get("Id_Unidad_Academica")
         
         # Obtener datos del usuario que está editando
-        id_rol_editor = int(request.cookies.get("id_rol", 2))
-        nombre_usuario = request.cookies.get("nombre_usuario", "")
-        apellidoP_usuario = request.cookies.get("apellidoP_usuario", "")
-        apellidoM_usuario = request.cookies.get("apellidoM_usuario", "")
+        id_rol_editor = int(sess.id_rol)
+        nombre_usuario = sess.nombre_usuario
+        apellidoP_usuario = sess.apellidoP_usuario
+        apellidoM_usuario = sess.apellidoM_usuario
         es_super_admin = is_super_admin(nombre_usuario, apellidoP_usuario, apellidoM_usuario)
         
         # Obtener el usuario actual para comparar
@@ -329,7 +330,7 @@ async def editar_usuario_ajax(
         )
         # Registro en la tabla Bitacora de la DB
         # Tomar el ID del usuario logueado desde la cookie (no el modificado)
-        id_usuario_log = request.cookies.get("id_usuario")
+        id_usuario_log = sess.id_usuario
         try:
             id_usuario_log = int(id_usuario_log) if id_usuario_log is not None else 0
         except (TypeError, ValueError):
@@ -366,7 +367,7 @@ async def editar_usuario_ajax(
 @router.post("/eliminar/{id_usuario}", response_class=JSONResponse)
 async def eliminar_usuario(
     id_usuario: int,
-    request: Request,
+    request: Request, sess=Depends(get_current_session),
     db: Session = Depends(get_db),
 ):
     try:
@@ -375,7 +376,7 @@ async def eliminar_usuario(
             return JSONResponse(content={"mensaje": "Usuario no encontrado"}, status_code=404)
 
         # Bitácora: quién elimina a quién
-        id_usuario_log = request.cookies.get("id_usuario")
+        id_usuario_log = sess.id_usuario
         try:
             id_usuario_log = int(id_usuario_log) if id_usuario_log is not None else 0
         except (TypeError, ValueError):

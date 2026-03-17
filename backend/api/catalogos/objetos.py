@@ -5,17 +5,18 @@ from sqlalchemy import text
 
 from backend.database.connection import get_db
 from backend.core.templates import templates
+from backend.core.auth import get_current_session
 
 router = APIRouter()
 
 
 @router.get("/objetos", response_class=HTMLResponse)
 def objetos_view(
-    request: Request,
+    request: Request, sess=Depends(get_current_session),
     db: Session = Depends(get_db)
 ):
 
-    Rol = str(request.cookies.get("nombre_rol",""))
+    Rol = str(sess.nombre_rol)
 
 
     try:

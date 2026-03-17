@@ -191,6 +191,7 @@ async function cargarDatosEgresados() {
     try {
         const periodo = document.getElementById('periodo')?.value;
         const unidad = document.getElementById('unidad_academica')?.value;
+        const nivel = document.getElementById('nivel')?.value;
         const programa = document.getElementById('programa')?.value;
         const modalidad = document.getElementById('modalidad')?.value;
         
@@ -205,6 +206,7 @@ async function cargarDatosEgresados() {
             body: JSON.stringify({
                 id_periodo: parseInt(periodo),
                 id_unidad_academica: parseInt(unidad),
+                id_nivel: nivel ? parseInt(nivel) : null,
                 id_programa: parseInt(programa),
                 id_modalidad: parseInt(modalidad)
             })

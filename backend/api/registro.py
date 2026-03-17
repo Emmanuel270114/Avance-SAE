@@ -9,19 +9,20 @@ from backend.services.usuario_service import register_usuario
 from backend.services.nivel_service import get_all_niveles, get_niveles_by_unidad_academica
 from backend.schemas.Usuario import UsuarioCreate, UsuarioResponse
 from backend.core.templates import templates
+from backend.core.auth import get_current_session
 from backend.database.models.Usuario import Usuario
 
 
 router = APIRouter()
 
 @router.get("/", response_class=HTMLResponse)
-async def registro_view(request: Request, db: Session = Depends(get_db)):
+async def registro_view(request: Request, sess=Depends(get_current_session), db: Session = Depends(get_db)):
     try:
         unidades_academicas = get_all_units(db)
         niveles = get_all_niveles(db)
         
         # Intentar leer el rol del usuario logueado desde cookie
-        id_rol_cookie = request.cookies.get("id_rol")
+        id_rol_cookie = sess.id_rol
         if id_rol_cookie and str(id_rol_cookie).isdigit():
             roles = get_roles_for_user_group(db, int(id_rol_cookie))
         else:

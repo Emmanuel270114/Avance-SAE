@@ -8,6 +8,7 @@ from fastapi import HTTPException
 from datetime import datetime
 
 from backend.core.templates import templates
+from backend.core.auth import get_current_session
 from backend.database.connection import get_db
 from backend.database.models.Matricula import Matricula
 from backend.database.models.CatPeriodo import CatPeriodo as Periodo
@@ -45,7 +46,7 @@ router = APIRouter()
 
 
 @router.get('/consulta')
-async def captura_matricula_sp_view(request: Request, db: Session = Depends(get_db)):
+async def captura_matricula_sp_view(request: Request, sess=Depends(get_current_session), db: Session = Depends(get_db)):
     """
     Endpoint principal para la visualización/captura de matrícula usando EXCLUSIVAMENTE Stored Procedures.
     Accesible para:
@@ -54,20 +55,16 @@ async def captura_matricula_sp_view(request: Request, db: Session = Depends(get_
     TODA la información viene del SP, NO de los modelos ORM.
     """
     # Obtener datos del usuario logueado desde las cookies
-    id_unidad_academica = int(request.cookies.get("id_unidad_academica", 0))
+    id_unidad_academica = int(sess.id_unidad_academica)
     
     # Manejar id_nivel que puede ser None para usuarios sin nivel (ej: directores)
-    id_nivel_cookie = request.cookies.get("id_nivel", "0")
-    if id_nivel_cookie == "None" or id_nivel_cookie is None or id_nivel_cookie == "":
-        id_nivel = 0  # Valor por defecto para usuarios sin nivel
-    else:
-        id_nivel = int(id_nivel_cookie)
+    id_nivel = int(getattr(sess, 'id_nivel', 0) or 0)
     
-    id_rol = int(request.cookies.get("id_rol", 0))
-    nombre_rol = request.cookies.get("nombre_rol", "")
-    nombre_usuario = request.cookies.get("nombre_usuario", "")
-    apellidoP_usuario = request.cookies.get("apellidoP_usuario", "")
-    apellidoM_usuario = request.cookies.get("apellidoM_usuario", "")
+    id_rol = int(sess.id_rol)
+    nombre_rol = sess.nombre_rol
+    nombre_usuario = sess.nombre_usuario
+    apellidoP_usuario = sess.apellidoP_usuario
+    apellidoM_usuario = sess.apellidoM_usuario
     nombre_completo = " ".join(filter(None, [nombre_usuario, apellidoP_usuario, apellidoM_usuario]))
 
     # Validar que el usuario tenga uno de los roles permitidos
@@ -664,7 +661,7 @@ async def captura_matricula_sp_view(request: Request, db: Session = Depends(get_
             usuario_ya_rechazo = False
         
         # Verificar si el usuario rechazó (esto sí necesita verificarse en la tabla Validacion)
-        id_usuario_actual = int(request.cookies.get("id_usuario", 0))
+        id_usuario_actual = int(sess.id_usuario)
         validacion_rechazo = db.query(Validacion).filter(
             Validacion.Id_Periodo == periodo_default_id,
             Validacion.Id_Usuario == id_usuario_actual,
@@ -755,7 +752,7 @@ async def captura_matricula_sp_view(request: Request, db: Session = Depends(get_
 # Endpoint para obtener datos existentes usando SP
 @router.post("/obtener_datos_existentes_sp")
 async def obtener_datos_existentes_sp(
-    request: Request,
+    request: Request, sess=Depends(get_current_session),
     db: Session = Depends(get_db)
 ):
     """
@@ -806,14 +803,14 @@ async def obtener_datos_existentes_sp(
         
         if id_unidad_academica is None:
             # No viene en JSON, usar cookie (roles 3-5)
-            id_unidad_academica = int(request.cookies.get("id_unidad_academica", 0))
+            id_unidad_academica = int(sess.id_unidad_academica)
         else:
             # Viene en JSON (roles 6-9), convertir a int
             id_unidad_academica = int(id_unidad_academica)
         
         if id_nivel is None:
             # No viene en JSON, usar cookie (roles 3-5)
-            id_nivel_cookie = request.cookies.get("id_nivel", "0")
+            id_nivel_cookie = sess.id_nivel
             if id_nivel_cookie == "None" or id_nivel_cookie is None or id_nivel_cookie == "":
                 id_nivel = 0  # Valor por defecto
             else:
@@ -822,9 +819,9 @@ async def obtener_datos_existentes_sp(
             # Viene en JSON (roles 6-9), convertir a int
             id_nivel = int(id_nivel)
         
-        nombre_usuario = request.cookies.get("nombre_usuario", "")
-        apellidoP_usuario = request.cookies.get("apellidoP_usuario", "")
-        apellidoM_usuario = request.cookies.get("apellidoM_usuario", "")
+        nombre_usuario = sess.nombre_usuario
+        apellidoP_usuario = sess.apellidoP_usuario
+        apellidoM_usuario = sess.apellidoM_usuario
         nombre_completo = " ".join(filter(None, [nombre_usuario, apellidoP_usuario, apellidoM_usuario]))
 
         print(f"ID Unidad Académica: {id_unidad_academica} (de {'JSON' if data.get('id_unidad_academica') else 'cookie'})")
@@ -871,7 +868,7 @@ async def obtener_datos_existentes_sp(
 # Endpoint para consulta dinámica de matrícula (roles superiores 6-9)
 @router.post("/consultar_matricula_dinamica")
 async def consultar_matricula_dinamica(
-    request: Request,
+    request: Request, sess=Depends(get_current_session),
     db: Session = Depends(get_db)
 ):
     """
@@ -906,14 +903,14 @@ async def consultar_matricula_dinamica(
             print(f"⚠️ Periodo no especificado, usando periodo activo/último: {periodo}")
         
         # Validar rol del usuario (debe ser 4-9)
-        id_rol = int(request.cookies.get("id_rol", 0))
+        id_rol = int(sess.id_rol)
         if id_rol not in [4, 5, 6, 7, 8, 9]:
             return {"error": "Acceso denegado. Solo roles de validación (4-9) pueden usar esta función."}
         
         # Obtener datos del usuario para auditoría
-        nombre_usuario = request.cookies.get("nombre_usuario", "")
-        apellidoP_usuario = request.cookies.get("apellidoP_usuario", "")
-        apellidoM_usuario = request.cookies.get("apellidoM_usuario", "")
+        nombre_usuario = sess.nombre_usuario
+        apellidoP_usuario = sess.apellidoP_usuario
+        apellidoM_usuario = sess.apellidoM_usuario
         nombre_completo = " ".join(filter(None, [nombre_usuario, apellidoP_usuario, apellidoM_usuario]))
         usuario_sp = nombre_completo or 'sistema'
         host_sp = get_request_host(request)
@@ -1035,7 +1032,7 @@ async def consultar_matricula_dinamica(
             if not periodo_id:
                 periodo_id = 1  # Fallback solo si no hay periodos
         
-        id_usuario_actual = int(request.cookies.get("id_usuario", 0))
+        id_usuario_actual = int(sess.id_usuario)
         
         print(f"\n🔍 Verificando estado de validación para usuario {id_usuario_actual}...")
         
@@ -1164,23 +1161,23 @@ async def consultar_matricula_dinamica(
 
 # Endpoint para vista de resumen ejecutivo (roles superiores 6-9)
 @router.get('/resumen')
-async def resumen_matricula_roles_superiores(request: Request, db: Session = Depends(get_db)):
+async def resumen_matricula_roles_superiores(request: Request, sess=Depends(get_current_session), db: Session = Depends(get_db)):
     """
     Vista de resumen ejecutivo de matrícula para roles superiores (6-9).
     Muestra tablas consolidadas por programa académico con todas las dimensiones.
     """
     try:
         # Validar que el usuario sea rol validador o superior (4-9)
-        id_rol = int(request.cookies.get("id_rol", 0))
+        id_rol = int(sess.id_rol)
         if id_rol not in [4, 5, 6, 7, 8, 9]:
             raise HTTPException(status_code=403, detail="Acceso denegado. Solo roles de validación y superiores (4-9) pueden ver esta vista.")
         
         # Obtener datos del usuario
-        nombre_usuario = request.cookies.get("nombre_usuario", "")
-        apellidoP_usuario = request.cookies.get("apellidoP_usuario", "")
-        apellidoM_usuario = request.cookies.get("apellidoM_usuario", "")
+        nombre_usuario = sess.nombre_usuario
+        apellidoP_usuario = sess.apellidoP_usuario
+        apellidoM_usuario = sess.apellidoM_usuario
         nombre_completo = " ".join(filter(None, [nombre_usuario, apellidoP_usuario, apellidoM_usuario]))
-        nombre_rol = request.cookies.get("nombre_rol", "")
+        nombre_rol = sess.nombre_rol
         
         # Obtener parámetros de consulta
         id_unidad_academica = request.query_params.get('ua')
@@ -1379,7 +1376,7 @@ async def resumen_matricula_roles_superiores(request: Request, db: Session = Dep
                     print(f"⚠️ No se encontró semáforo para esta UA/Periodo")
                 
                 # Verificar si el usuario rechazó
-                id_usuario_actual = int(request.cookies.get("id_usuario", 0))
+                id_usuario_actual = int(sess.id_usuario)
                 validacion_rechazo = db.query(Validacion).filter(
                     Validacion.Id_Periodo == periodo_id,
                     Validacion.Id_Usuario == id_usuario_actual,
@@ -1423,14 +1420,14 @@ async def resumen_matricula_roles_superiores(request: Request, db: Session = Dep
 
 # Endpoint de depuración detallada del SP
 @router.get('/debug_sp')
-async def debug_sp(request: Request, db: Session = Depends(get_db)):
+async def debug_sp(request: Request, sess=Depends(get_current_session), db: Session = Depends(get_db)):
     """Endpoint de depuración que usa el servicio (sin SQL crudo aquí)."""
     try:
-        id_unidad_academica = int(request.cookies.get("id_unidad_academica", 0))
-        id_nivel = int(request.cookies.get("id_nivel", 0))
-        nombre_usuario = request.cookies.get("nombre_usuario", "")
-        apellidoP_usuario = request.cookies.get("apellidoP_usuario", "")
-        apellidoM_usuario = request.cookies.get("apellidoM_usuario", "")
+        id_unidad_academica = int(sess.id_unidad_academica)
+        id_nivel = int(sess.id_nivel)
+        nombre_usuario = sess.nombre_usuario
+        apellidoP_usuario = sess.apellidoP_usuario
+        apellidoM_usuario = sess.apellidoM_usuario
         nombre_completo = " ".join(filter(None, [nombre_usuario, apellidoP_usuario, apellidoM_usuario]))
         usuario_sp = nombre_completo or 'sistema'
         host_sp = get_request_host(request)
@@ -1471,7 +1468,7 @@ async def semestres_map_sp(db: Session = Depends(get_db)):
         return {"error": str(e)}
 
 @router.post("/guardar_captura_completa")
-async def guardar_captura_completa(request: Request, db: Session = Depends(get_db)):
+async def guardar_captura_completa(request: Request, sess=Depends(get_current_session), db: Session = Depends(get_db)):
     """
     Guardar la captura completa de matrícula enviada desde el frontend.
     Convierte el formato del frontend al modelo Temp_Matricula.
@@ -1482,9 +1479,9 @@ async def guardar_captura_completa(request: Request, db: Session = Depends(get_d
         print(f"Datos recibidos: {data}")
         
         # Obtener datos del usuario desde cookies
-        nombre_usuario = request.cookies.get("nombre_usuario", "")
-        apellidoP_usuario = request.cookies.get("apellidoP_usuario", "")
-        apellidoM_usuario = request.cookies.get("apellidoM_usuario", "")
+        nombre_usuario = sess.nombre_usuario
+        apellidoP_usuario = sess.apellidoP_usuario
+        apellidoM_usuario = sess.apellidoM_usuario
         nombre_completo = " ".join(filter(None, [nombre_usuario, apellidoP_usuario, apellidoM_usuario]))
         
         # Obtener usuario y host
@@ -1568,8 +1565,8 @@ async def guardar_captura_completa(request: Request, db: Session = Depends(get_d
                 print(f"⚠️ Rama 'Ingeniería y Ciencias Físico Matemáticas' no encontrada en BD")
 
         # Obtener sigla de la unidad académica y nivel desde cookies
-        id_unidad_academica = int(request.cookies.get("id_unidad_academica", 0))
-        id_nivel = int(request.cookies.get("id_nivel", 0))
+        id_unidad_academica = int(sess.id_unidad_academica)
+        id_nivel = int(sess.id_nivel)
         
         unidad_obj = db.query(Unidad_Academica).filter(
             Unidad_Academica.Id_Unidad_Academica == id_unidad_academica
@@ -1691,6 +1688,12 @@ async def guardar_captura_completa(request: Request, db: Session = Depends(get_d
 
                 # Insertar el nuevo registro con la matrícula y salones actuales
                 temp_matricula = Temp_Matricula(**filtered)
+                
+
+                #Descomentar en dado caso de querer guardar solo en Temp_Matrícula
+                #print(f"\n📊 DATOS A GUARDAR EN Temp_Matricula: {filtered}")
+                #input("⏸️  PAUSA - Presiona Enter para continuar...")
+                
                 db.add(temp_matricula)
 
                 registros_insertados += 1
@@ -1763,23 +1766,23 @@ def guardar_progreso(datos: List[Dict[str, Any]], db: Session = Depends(get_db))
         raise HTTPException(status_code=500, detail=f"Error al guardar el progreso: {str(e)}")
 
 @router.post("/actualizar_matricula")
-async def actualizar_matricula(request: Request, db: Session = Depends(get_db)):
+async def actualizar_matricula(request: Request, sess=Depends(get_current_session), db: Session = Depends(get_db)):
     """
     Ejecuta el SP SP_Actualiza_Matricula_Por_Unidad_Academica para actualizar 
     la tabla Matricula con los datos de Temp_Matricula y luego limpiar la tabla temporal.
     """
     try:
         # Obtener datos del usuario desde cookies
-        nombre_usuario = request.cookies.get("nombre_usuario", "")
-        apellidoP_usuario = request.cookies.get("apellidoP_usuario", "")
-        apellidoM_usuario = request.cookies.get("apellidoM_usuario", "")
+        nombre_usuario = sess.nombre_usuario
+        apellidoP_usuario = sess.apellidoP_usuario
+        apellidoM_usuario = sess.apellidoM_usuario
         nombre_completo = " ".join(filter(None, [nombre_usuario, apellidoP_usuario, apellidoM_usuario]))
         
         # Obtener unidad académica desde cookies (si no está, resolver vía Id_Unidad_Academica)
         unidad_sigla = request.cookies.get("unidad_sigla", "")
         if not unidad_sigla:
             try:
-                id_unidad_cookie = int(request.cookies.get("id_unidad_academica", 0))
+                id_unidad_cookie = int(sess.id_unidad_academica)
             except Exception:
                 id_unidad_cookie = 0
             if id_unidad_cookie:
@@ -1827,7 +1830,32 @@ async def actualizar_matricula(request: Request, db: Session = Depends(get_db)):
                 raise HTTPException(status_code=400, detail="No se pudo obtener un periodo válido")
             print(f"📌 Usando último período: '{periodo}'")
             
-        nivel = request.cookies.get("nombre_nivel", "")  # Obtener el nombre del nivel desde cookies
+        # Obtener y validar el nivel desde la sesión
+        nivel = sess.nombre_nivel
+        
+        # Validar que el nivel existe y es válido
+        if not nivel or not str(nivel).strip():
+            raise HTTPException(
+                status_code=400, 
+                detail="Nivel no disponible en la sesión. Por favor, vuelva a iniciar sesión."
+            )
+        
+        # Limpiar el nivel (quitar espacios, normalizar)
+        nivel = str(nivel).strip()
+        
+        # Verificar que el nivel existe en la BD
+        nivel_obj = db.query(Nivel).filter(
+            Nivel.Nivel == nivel,
+            Nivel.Id_Estatus == 1
+        ).first()
+        
+        if not nivel_obj:
+            raise HTTPException(
+                status_code=400,
+                detail=f"El nivel '{nivel}' no existe o está inactivo en la base de datos."
+            )
+        
+        print(f"✅ Nivel validado: '{nivel}' (ID: {nivel_obj.Id_Nivel})")
         
         if not periodo:
             raise HTTPException(status_code=400, detail="Período es requerido para actualizar la matrícula")
@@ -1909,12 +1937,12 @@ async def actualizar_matricula(request: Request, db: Session = Depends(get_db)):
         print(f"\n=== PARÁMETROS DEL SP ===")
         print(f"@UUnidad_Academica = '{unidad_sigla}' (tipo: {type(unidad_sigla).__name__})")
         print(f"@SSalones = '{total_grupos}' (tipo: {type(total_grupos).__name__})")
-        print(f"@UUsuario = '{usuario_sp}' (tipo: {type(usuario_sp).__name__})")
+        print(f"@UUsuario = '{sess.id_usuario}' (tipo: {type(usuario_sp).__name__})")
         print(f"@PPeriodo = '{periodo}' (tipo: {type(periodo).__name__})")
         print(f"@HHost = '{host_sp}' (tipo: {type(host_sp).__name__})")
         print(f"@NNivel = '{nivel}' (tipo: {type(nivel).__name__})")
         print(f"========================")
-        
+                    
         # Ejecutar el stored procedure (centralizado en el servicio)
         try:
             execute_sp_actualiza_matricula_por_unidad_academica(
@@ -1948,7 +1976,7 @@ async def actualizar_matricula(request: Request, db: Session = Depends(get_db)):
             # LIMPIAR VALIDACIONES PREVIAS cuando el capturista hace cambios
             # Esto permite que los validadores vuelvan a validar/rechazar
             print(f"\n🔄 Limpiando validaciones previas del periodo...")
-            id_unidad_academica = int(request.cookies.get("id_unidad_academica", 0))
+            id_unidad_academica = int(sess.id_unidad_academica)
             
             # Obtener el ID del periodo
             periodo_obj = db.query(Periodo).filter(Periodo.Periodo == periodo).first()
@@ -2001,7 +2029,7 @@ async def actualizar_matricula(request: Request, db: Session = Depends(get_db)):
         raise HTTPException(status_code=500, detail=f"Error al actualizar la matrícula: {str(e)}")
 
 @router.get("/diagnostico_sp")
-async def diagnostico_sp(request: Request, db: Session = Depends(get_db)):
+async def diagnostico_sp(request: Request, sess=Depends(get_current_session), db: Session = Depends(get_db)):
     """
     Endpoint de diagnóstico para analizar por qué no se actualiza la matrícula.
     Simula los JOINs del SP sin hacer cambios.
@@ -2157,7 +2185,7 @@ async def limpiar_temp_matricula(db: Session = Depends(get_db)):
 
 
 @router.post("/preparar_turno")
-async def preparar_turno(request: Request, db: Session = Depends(get_db)):
+async def preparar_turno(request: Request, sess=Depends(get_current_session), db: Session = Depends(get_db)):
     """
     Endpoint para VALIDAR un turno individual (Fase 1 del nuevo sistema).
     Este endpoint:
@@ -2181,14 +2209,14 @@ async def preparar_turno(request: Request, db: Session = Depends(get_db)):
         turno = data.get('turno')
         
         # Obtener datos del usuario desde cookies
-        id_unidad_academica = int(request.cookies.get("id_unidad_academica", 0))
-        id_nivel = int(request.cookies.get("id_nivel", 0))
-        nombre_usuario = request.cookies.get("nombre_usuario", "")
-        apellidoP_usuario = request.cookies.get("apellidoP_usuario", "")
-        apellidoM_usuario = request.cookies.get("apellidoM_usuario", "")
+        id_unidad_academica = int(sess.id_unidad_academica)
+        id_nivel = int(sess.id_nivel)
+        nombre_usuario = sess.nombre_usuario
+        apellidoP_usuario = sess.apellidoP_usuario
+        apellidoM_usuario = sess.apellidoM_usuario
 
         # Login del usuario (el SPs esperan el login, no el nombre completo)
-        usuario_login = request.cookies.get("usuario", "") or request.cookies.get("Usuario", "")
+        usuario_login = sess.usuario or request.cookies.get("Usuario", "")
         # Mantener nombre completo solo para mensajes
         nombre_completo = f"{nombre_usuario} {apellidoP_usuario} {apellidoM_usuario}".strip()
         usuario_sp = usuario_login or 'sistema'
@@ -2285,7 +2313,7 @@ async def preparar_turno(request: Request, db: Session = Depends(get_db)):
 
 
 @router.post("/validar_captura_semestre")
-async def validar_captura_semestre(request: Request, db: Session = Depends(get_db)):
+async def validar_captura_semestre(request: Request, sess=Depends(get_current_session), db: Session = Depends(get_db)):
     """
     Endpoint para validar y finalizar TODOS LOS TURNOS de un semestre (Fase 2 - SP FINAL).
     Este endpoint:
@@ -2307,11 +2335,11 @@ async def validar_captura_semestre(request: Request, db: Session = Depends(get_d
         semestre = data.get('semestre')
         
         # Obtener datos del usuario desde cookies
-        id_unidad_academica = int(request.cookies.get("id_unidad_academica", 0))
-        id_nivel = int(request.cookies.get("id_nivel", 0))
-        nombre_usuario = request.cookies.get("nombre_usuario", "")
-        apellidoP_usuario = request.cookies.get("apellidoP_usuario", "")
-        apellidoM_usuario = request.cookies.get("apellidoM_usuario", "")
+        id_unidad_academica = int(sess.id_unidad_academica)
+        id_nivel = int(sess.id_nivel)
+        nombre_usuario = sess.nombre_usuario
+        apellidoP_usuario = sess.apellidoP_usuario
+        apellidoM_usuario = sess.apellidoM_usuario
         
         # Construir nombre completo del usuario
         nombre_completo = f"{nombre_usuario} {apellidoP_usuario} {apellidoM_usuario}".strip()
@@ -2616,23 +2644,23 @@ async def validar_captura_semestre(request: Request, db: Session = Depends(get_d
 
 
 @router.post("/validar_semestre_rol")
-async def validar_semestre_rol(request: Request, db: Session = Depends(get_db)):
+async def validar_semestre_rol(request: Request, sess=Depends(get_current_session), db: Session = Depends(get_db)):
     """
     Endpoint para que roles de validación (ID 4, 5, 6, 7, 8) aprueben la matrícula completa.
     Ejecuta SP_Valida_Matricula para marcar como validada.
     """
     try:
         # Obtener datos del usuario desde cookies
-        usuario = request.cookies.get("usuario", "")  # Login del usuario
-        nombre_usuario = request.cookies.get("nombre_usuario", "")
-        apellidoP_usuario = request.cookies.get("apellidoP_usuario", "")
-        apellidoM_usuario = request.cookies.get("apellidoM_usuario", "")
-        id_usuario = int(request.cookies.get("id_usuario", 0))
-        id_rol = int(request.cookies.get("id_rol", 0))
-        id_unidad_academica = int(request.cookies.get("id_unidad_academica", 0))
+        usuario = sess.usuario  # Login del usuario
+        nombre_usuario = sess.nombre_usuario
+        apellidoP_usuario = sess.apellidoP_usuario
+        apellidoM_usuario = sess.apellidoM_usuario
+        id_usuario = int(sess.id_usuario)
+        id_rol = int(sess.id_rol)
+        id_unidad_academica = int(sess.id_unidad_academica)
         # Asegurar lectura de nivel ANTES de cualquier uso/log
         try:
-            id_nivel = int(request.cookies.get("id_nivel", 0))
+            id_nivel = int(sess.id_nivel)
         except Exception:
             id_nivel = 0
         
@@ -2791,7 +2819,7 @@ async def validar_semestre_rol(request: Request, db: Session = Depends(get_db)):
 
 
 @router.post("/ejecutar_sp_finalizar_captura")
-async def ejecutar_sp_finalizar_captura(request: Request, db: Session = Depends(get_db)):
+async def ejecutar_sp_finalizar_captura(request: Request, sess=Depends(get_current_session), db: Session = Depends(get_db)):
     """
     Endpoint para ejecutar SP_Finaliza_Captura_Matricula después de validar todos los semestres.
     Verifica que TODOS los semestres de TODAS las combinaciones Programa-Modalidad
@@ -2804,9 +2832,9 @@ async def ejecutar_sp_finalizar_captura(request: Request, db: Session = Depends(
         # Ya no se requiere filtrar por programa/modalidad para final global
         
         # Obtener datos del usuario desde cookies
-        id_unidad_academica = int(request.cookies.get("id_unidad_academica", 0))
-        id_nivel = int(request.cookies.get("id_nivel", 0))
-        usuario = request.cookies.get("usuario", "Usuario")
+        id_unidad_academica = int(sess.id_unidad_academica)
+        id_nivel = int(sess.id_nivel)
+        usuario = sess.usuario
         host = request.headers.get("host", "localhost")
 
         print(f"\n{'='*60}")
@@ -2942,7 +2970,7 @@ async def ejecutar_sp_finalizar_captura(request: Request, db: Session = Depends(
 
 
 @router.post("/rechazar_semestre_rol")
-async def rechazar_semestre_rol(request: Request, db: Session = Depends(get_db)):
+async def rechazar_semestre_rol(request: Request, sess=Depends(get_current_session), db: Session = Depends(get_db)):
     """
     Endpoint para que roles de validación (ID 4, 5, 6, 7, 8) rechacen la matrícula.
     Ejecuta SP_Rechaza_Matricula y devuelve al capturista para correcciones.
@@ -2952,7 +2980,7 @@ async def rechazar_semestre_rol(request: Request, db: Session = Depends(get_db))
         print(f"\n🔍 DEBUG: Verificando cookies disponibles...")
         print(f"Todas las cookies: {list(request.cookies.keys())}")
         
-        usuario = request.cookies.get("usuario", "")  # Login del usuario
+        usuario = sess.usuario  # Login del usuario
         print(f"Cookie 'usuario': '{usuario}'")
         
         # Si no hay cookie 'usuario', intentar con otras variantes
@@ -2964,12 +2992,12 @@ async def rechazar_semestre_rol(request: Request, db: Session = Depends(get_db))
             usuario = request.cookies.get("username", "")  # Otro nombre posible
             print(f"Cookie 'username': '{usuario}'")
         
-        nombre_usuario = request.cookies.get("nombre_usuario", "")
-        apellidoP_usuario = request.cookies.get("apellidoP_usuario", "")
-        apellidoM_usuario = request.cookies.get("apellidoM_usuario", "")
-        id_usuario = int(request.cookies.get("id_usuario", 0))
-        id_rol = int(request.cookies.get("id_rol", 0))
-        id_unidad_academica = int(request.cookies.get("id_unidad_academica", 0))
+        nombre_usuario = sess.nombre_usuario
+        apellidoP_usuario = sess.apellidoP_usuario
+        apellidoM_usuario = sess.apellidoM_usuario
+        id_usuario = int(sess.id_usuario)
+        id_rol = int(sess.id_rol)
+        id_unidad_academica = int(sess.id_unidad_academica)
         
         print(f"Usuario extraído: '{usuario}'")
         print(f"Nombre: {nombre_usuario} {apellidoP_usuario} {apellidoM_usuario}")
@@ -3101,18 +3129,18 @@ async def rechazar_semestre_rol(request: Request, db: Session = Depends(get_db))
 
 
 @router.get('/resumen-seleccion')
-async def resumen_matricula_seleccion_view(request: Request, db: Session = Depends(get_db)):
+async def resumen_matricula_seleccion_view(request: Request, sess=Depends(get_current_session), db: Session = Depends(get_db)):
     """
     Vista de selección de filtros para el resumen dinámico de matrícula.
     Permite seleccionar: Periodo, Nivel y Unidad Académica.
     Accesible para roles superiores (6, 7, 8, 9).
     """
     # Obtener datos del usuario logueado
-    id_rol = int(request.cookies.get("id_rol", 0))
-    nombre_rol = request.cookies.get("nombre_rol", "")
-    nombre_usuario = request.cookies.get("nombre_usuario", "")
-    apellidoP_usuario = request.cookies.get("apellidoP_usuario", "")
-    apellidoM_usuario = request.cookies.get("apellidoM_usuario", "")
+    id_rol = int(sess.id_rol)
+    nombre_rol = sess.nombre_rol
+    nombre_usuario = sess.nombre_usuario
+    apellidoP_usuario = sess.apellidoP_usuario
+    apellidoM_usuario = sess.apellidoM_usuario
     nombre_completo = " ".join(filter(None, [nombre_usuario, apellidoP_usuario, apellidoM_usuario]))
 
     # Validar que el usuario tenga rol superior
@@ -3131,8 +3159,8 @@ async def resumen_matricula_seleccion_view(request: Request, db: Session = Depen
     es_rol_superior = id_rol in [1, 6, 7, 8, 9]
 
     # Leer datos de la UA del usuario logueado (guardados en cookies al hacer login)
-    id_unidad_academica_usuario = int(request.cookies.get("id_unidad_academica", 0))
-    sigla_unidad_academica_usuario = request.cookies.get("sigla_unidad_academica", "")
+    id_unidad_academica_usuario = int(sess.id_unidad_academica)
+    sigla_unidad_academica_usuario = sess.sigla_unidad_academica
 
     print(f"\n{'='*60}")
     print(f"VISTA DE SELECCIÓN - RESUMEN DINÁMICO DE MATRÍCULA")
@@ -3222,7 +3250,7 @@ async def resumen_matricula_dinamico_view(
     request: Request, 
     periodo: str,
     nivel: str,
-    unidad: str,
+    unidad: str, sess=Depends(get_current_session),
     db: Session = Depends(get_db)
 ):
     """
@@ -3232,11 +3260,11 @@ async def resumen_matricula_dinamico_view(
     - Semestres 2+: Reingreso + Repetidores
     """
     # Obtener datos del usuario logueado
-    id_rol = int(request.cookies.get("id_rol", 0))
-    nombre_rol = request.cookies.get("nombre_rol", "")
-    nombre_usuario = request.cookies.get("nombre_usuario", "")
-    apellidoP_usuario = request.cookies.get("apellidoP_usuario", "")
-    apellidoM_usuario = request.cookies.get("apellidoM_usuario", "")
+    id_rol = int(sess.id_rol)
+    nombre_rol = sess.nombre_rol
+    nombre_usuario = sess.nombre_usuario
+    apellidoP_usuario = sess.apellidoP_usuario
+    apellidoM_usuario = sess.apellidoM_usuario
     nombre_completo = " ".join(filter(None, [nombre_usuario, apellidoP_usuario, apellidoM_usuario]))
 
     # Validar que el usuario tenga rol superior
@@ -3256,7 +3284,7 @@ async def resumen_matricula_dinamico_view(
     try:
         # Obtener datos del SP
         host = get_request_host(request)
-        usuario_login = request.cookies.get("usuario", "sistema")
+        usuario_login = sess.usuario
         
         from backend.crud.Matricula import execute_sp_consulta_matricula
         rows, columns, nota_rechazo = execute_sp_consulta_matricula(
@@ -3273,6 +3301,10 @@ async def resumen_matricula_dinamico_view(
                 "unidad": unidad,
                 "datos_resumen": [],
                 "max_semestres": 0,
+                "datos_edad_turno": [],
+                "turnos_ordenados": [],
+                "subtotales_modalidad": [],
+                "subtotales_turno": [],
                 "error_message": "No hay datos disponibles para los filtros seleccionados"
             })
 
@@ -3467,16 +3499,187 @@ async def resumen_matricula_dinamico_view(
         # Ordenar por programa y modalidad
         datos_resumen.sort(key=lambda x: (x['programa'], x['modalidad']))
 
-        print(f"✅ Resumen procesado: {len(datos_resumen)} filas")
+        print(f"✅ Resumen procesado (Tabla 1 - Programa x Modalidad): {len(datos_resumen)} filas")
+
+        # ========================================
+        # PROCESAR TABLA 2: PROGRAMA X EDAD X TURNO
+        # ========================================
+        print(f"\n{'='*60}")
+        print(f"PROCESANDO TABLA 2: PROGRAMA X EDAD X TURNO")
+        print(f"{'='*60}")
+        
+        # Crear estructura anidada: programa → edad → turno → H/M/T
+        estructura_programa_edad = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: {'H': 0, 'M': 0, 'T': 0})))
+        programas_set = set()
+        edades_set = set()
+        turnos_set = set()
+        
+        filas_edad_procesadas = 0
+        filas_edad_descartadas = 0
+        
+        for row in rows:
+            # Obtener programa (igual que en Tabla 1)
+            programa = (row.get('Programa') or 
+                       row.get('Nombre_Programa') or 
+                       row.get('Programa_Academico') or 
+                       row.get('Nombre') or 
+                       'Sin Programa')
+            
+            if not programa or (isinstance(programa, str) and programa.strip() == ''):
+                programa = 'Sin Programa'
+            
+            edad_raw = row.get('Grupo_Edad', None)
+            turno_raw = row.get('Turno', None)
+            sexo = row.get('Sexo', '')
+            
+            # Manejar valores None en campos numéricos
+            matricula_value = row.get('Matricula', 0)
+            matricula = int(matricula_value) if matricula_value is not None else 0
+            
+            # Solo procesar filas que tengan programa, edad Y turno definidos
+            if not programa or not edad_raw or not turno_raw:
+                filas_edad_descartadas += 1
+                continue
+            
+            edad = str(edad_raw).strip()
+            turno = str(turno_raw).strip()
+            
+            # Verificar que no sean strings vacíos después del strip
+            if not edad or not turno:
+                filas_edad_descartadas += 1
+                continue
+            
+            filas_edad_procesadas += 1
+            programas_set.add(programa)
+            edades_set.add(edad)
+            turnos_set.add(turno)
+            
+            # Acumular datos por turno
+            if sexo == 'Hombre':
+                estructura_programa_edad[programa][edad][turno]['H'] += matricula
+            elif sexo == 'Mujer':
+                estructura_programa_edad[programa][edad][turno]['M'] += matricula
+            
+            estructura_programa_edad[programa][edad][turno]['T'] += matricula
+        
+        print(f"✅ Filas procesadas (Tabla 2): {filas_edad_procesadas}")
+        print(f"⚠️ Filas descartadas (Tabla 2): {filas_edad_descartadas}")
+        print(f"📊 Programas únicos: {len(programas_set)} - {sorted(list(programas_set))}")
+        print(f"📊 Edades únicas: {len(edades_set)} - {sorted(list(edades_set))}")
+        print(f"📊 Turnos únicos: {len(turnos_set)} - {sorted(list(turnos_set))}")
+        
+        # Ordenar programas, edades y turnos
+        programas_ordenados = sorted(list(programas_set))
+        edades_ordenadas = sorted(list(edades_set))
+        turnos_ordenados = sorted(list(turnos_set))
+        
+        # Convertir estructura a lista para el template
+        # Formato: [{programa, edad, turnos: [{turno, H, M, T}], total_h, total_m, total_t}]
+        datos_edad_turno = []
+        
+        if programas_ordenados and edades_ordenadas and turnos_ordenados:
+            for programa in programas_ordenados:
+                for edad in edades_ordenadas:
+                    # Construir datos de turnos para esta combinación programa-edad
+                    turnos_data = []
+                    total_h = 0
+                    total_m = 0
+                    total_t = 0
+                    
+                    for turno in turnos_ordenados:
+                        datos_turno = estructura_programa_edad[programa][edad].get(turno, {'H': 0, 'M': 0, 'T': 0})
+                        turnos_data.append({
+                            'turno': turno,
+                            'H': datos_turno['H'],
+                            'M': datos_turno['M'],
+                            'T': datos_turno['T']
+                        })
+                        total_h += datos_turno['H']
+                        total_m += datos_turno['M']
+                        total_t += datos_turno['T']
+                    
+                    # Solo agregar si hay datos (al menos un turno con matrícula > 0)
+                    if total_t > 0:
+                        datos_edad_turno.append({
+                            'programa': programa,
+                            'edad': edad,
+                            'turnos': turnos_data,
+                            'total_h': total_h,
+                            'total_m': total_m,
+                            'total_t': total_t
+                        })
+        
+        print(f"✅ Tabla 2 procesada: {len(datos_edad_turno)} filas (programa × edad)")
+
+        # ========================================
+        # CALCULAR SUBTOTALES POR MODALIDAD (TABLA 1)
+        # ========================================
+        print(f"\n{'='*60}")
+        print(f"CALCULANDO SUBTOTALES POR MODALIDAD")
+        print(f"{'='*60}")
+        
+        subtotales_modalidad = defaultdict(lambda: {'H': 0, 'M': 0, 'T': 0})
+        modalidades_tabla1 = set()
+        
+        for dato in datos_resumen:
+            modalidad = dato['modalidad']
+            modalidades_tabla1.add(modalidad)
+            subtotales_modalidad[modalidad]['H'] += dato['total_h']
+            subtotales_modalidad[modalidad]['M'] += dato['total_m']
+            subtotales_modalidad[modalidad]['T'] += dato['total_t']
+        
+        # Convertir a lista ordenada
+        subtotales_modalidad_lista = []
+        for modalidad in sorted(list(modalidades_tabla1)):
+            subtotales_modalidad_lista.append({
+                'modalidad': modalidad,
+                'H': subtotales_modalidad[modalidad]['H'],
+                'M': subtotales_modalidad[modalidad]['M'],
+                'T': subtotales_modalidad[modalidad]['T']
+            })
+        
+        print(f"✅ Subtotales calculados para {len(subtotales_modalidad_lista)} modalidades")
+
+        # ========================================
+        # CALCULAR SUBTOTALES POR TURNO (TABLA 2)
+        # ========================================
+        print(f"\n{'='*60}")
+        print(f"CALCULANDO SUBTOTALES POR TURNO")
+        print(f"{'='*60}")
+        
+        subtotales_turno = []
+        if turnos_ordenados:
+            for turno in turnos_ordenados:
+                total_h = 0
+                total_m = 0
+                total_t = 0
+                
+                # Sumar todos los valores de este turno a través de todos los programas y edades
+                for programa in programas_ordenados:
+                    for edad in edades_ordenadas:
+                        datos_turno = estructura_programa_edad[programa][edad].get(turno, {'H': 0, 'M': 0, 'T': 0})
+                        total_h += datos_turno['H']
+                        total_m += datos_turno['M']
+                        total_t += datos_turno['T']
+                
+                subtotales_turno.append({
+                    'turno': turno,
+                    'H': total_h,
+                    'M': total_m,
+                    'T': total_t
+                })
+        
+        print(f"✅ Subtotales calculados para {len(subtotales_turno)} turnos")
 
         # ========================================
         # VERIFICAR ESTADO DE VALIDACIÓN DEL USUARIO (solo para roles 4-5)
         # ========================================
         usuario_ya_valido = False
         usuario_ya_rechazo = False
-        puede_validar = True
+        puede_validar = False
+        esperando_por_rol = None
         
-        if id_rol in [4, 5]:
+        if id_rol in [4, 5, 6, 7, 8, 9]:
             # Obtener ID del periodo
             periodo_obj = db.query(Periodo).filter(Periodo.Periodo == periodo).first()
             if periodo_obj:
@@ -3498,7 +3701,7 @@ async def resumen_matricula_dinamico_view(
             nivel_obj = db.query(Nivel).filter(Nivel.Nivel == nivel).first()
             id_nivel = nivel_obj.Id_Nivel if nivel_obj else 0
             
-            id_usuario_actual = int(request.cookies.get("id_usuario", 0))
+            id_usuario_actual = int(sess.id_usuario)
             
             print(f"\n🔍 Verificando estado de validación para usuario {id_usuario_actual}...")
             print(f"   Periodo ID: {periodo_id}, UA ID: {id_unidad_academica}, Nivel ID: {id_nivel}")
@@ -3528,8 +3731,19 @@ async def resumen_matricula_dinamico_view(
                     print(f"   🔒 Usuario YA validó (semáforo >= {id_rol})")
                 else:
                     puede_validar = False
+                    try:
+                        # Semáforo 1-2 siempre esperan por Capturista
+                        if estado_semaforo in [1, 2]:
+                            esperando_por_rol = "Capturista"
+                        else:
+                            rol_esperado_id = int(estado_semaforo) + 1
+                            rol_obj = db.query(CatRoles).filter(CatRoles.Id_Rol == rol_esperado_id).first()
+                            esperando_por_rol = rol_obj.Rol if rol_obj else "Capturista"
+                    except Exception:
+                        esperando_por_rol = "Capturista"
                     print(f"   ⏳ Usuario debe esperar (semáforo en nivel {estado_semaforo})")
             else:
+                esperando_por_rol = "Capturista"
                 print(f"   ⚠️ No se encontró semáforo para esta UA/Nivel/Periodo")
             
             # Verificar si el usuario rechazó esta matrícula
@@ -3562,10 +3776,15 @@ async def resumen_matricula_dinamico_view(
             "datos_resumen": datos_resumen,
             "max_semestres": max_semestres,
             "total_grupos_ua": total_grupos_ua,
+            "datos_edad_turno": datos_edad_turno,
+            "turnos_ordenados": turnos_ordenados,
+            "subtotales_modalidad": subtotales_modalidad_lista,
+            "subtotales_turno": subtotales_turno,
             "error_message": None,
             "puede_validar": puede_validar,
             "usuario_ya_valido": usuario_ya_valido,
-            "usuario_ya_rechazo": usuario_ya_rechazo
+            "usuario_ya_rechazo": usuario_ya_rechazo,
+            "esperando_por_rol": esperando_por_rol
         })
 
     except Exception as e:
@@ -3582,5 +3801,11 @@ async def resumen_matricula_dinamico_view(
             "unidad": unidad,
             "datos_resumen": [],
             "max_semestres": 0,
+            "datos_edad_turno": [],
+            "turnos_ordenados": [],
+            "totales_edad_turno": {},
+            "subtotales_modalidad": [],
+            "subtotales_edad": [],
             "error_message": f"Error al procesar el resumen: {str(e)}"
         })
+

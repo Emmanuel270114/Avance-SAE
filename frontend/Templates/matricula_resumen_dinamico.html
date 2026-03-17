@@ -124,7 +124,6 @@
         .tabla-resumen .celda-programa {
             background-color: var(--azul-claro) !important;
             font-weight: bold;
-            text-align: left;
             padding-left: 15px;
             position: sticky;
             left: 0;
@@ -132,7 +131,6 @@
         }
         .tabla-resumen .celda-modalidad {
             background-color: #daeeff !important;
-            text-align: left;
             padding-left: 10px;
             font-weight: 600;
             position: sticky;
@@ -503,6 +501,134 @@
             color: #856404;
             border: 2px solid #ffeeba;
         }
+
+        /* ============================================
+           ESTILOS PARA MINI-TABLAS DE SUBTOTALES
+           ============================================ */
+        
+        .mini-tablas-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        
+        .mini-tabla-card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .mini-tabla-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        }
+        
+        .mini-tabla-header {
+            padding: 15px;
+            color: white;
+            font-weight: 600;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .mini-tabla-header i {
+            font-size: 1.4rem;
+        }
+        
+        .mini-tabla-header.modalidad {
+            background: linear-gradient(135deg, var(--rosa-principal) 0%, var(--rosa-secundario) 100%);
+        }
+        
+        .mini-tabla-header.edad {
+            background: linear-gradient(135deg, #6e0343 0%, #721c24 100%);
+        }
+        
+        .mini-tabla {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+        
+        .mini-tabla thead th {
+            background: linear-gradient(135deg, #fce4ec 0%, #f8bbd0 100%);
+            color: #6e0343;
+            font-weight: 600;
+            padding: 10px;
+            text-align: left;
+            border-bottom: 2px solid #f48fb1;
+        }
+        
+        .mini-tabla thead th:last-child {
+            text-align: center;
+        }
+        
+        .mini-tabla tbody tr {
+            border-bottom: 1px solid #f5f5f5;
+            transition: background 0.2s;
+        }
+        
+        .mini-tabla tbody tr:hover {
+            background: #fce4ec;
+        }
+        
+        .mini-tabla tbody td {
+            padding: 10px;
+        }
+        
+        .mini-tabla tbody td:first-child {
+            font-weight: 500;
+            color: #ffffff;
+        }
+        
+        .mini-tabla tbody td:nth-child(2),
+        .mini-tabla tbody td:nth-child(3),
+        .mini-tabla tbody td:nth-child(4) {
+            text-align: center;
+        }
+        
+        .mini-tabla .mini-total-row {
+            background: linear-gradient(135deg, #f8bbd0 0%, #f48fb1 100%);
+            font-weight: 700;
+        }
+        
+        .mini-tabla .mini-total-row td {
+            color: #ffffff;
+            padding: 12px 10px;
+            border-top: 2px solid #f48fb1;
+        }
+        
+        .mini-tabla .mini-total {
+            background: linear-gradient(135deg, var(--rosa-secundario) 0%, var(--rosa-principal) 100%);
+            color: white;
+            font-weight: 700;
+            text-align: center;
+        }
+        
+        
+        .separador-tablas {
+            margin: 50px 0;
+            border-top: 3px solid var(--rosa-principal);
+            padding-top: 30px;
+        }
+        
+        .titulo-tabla {
+            font-size: 1.5rem;
+            color: var(--rosa-principal);
+            font-weight: 700;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .titulo-tabla i {
+            font-size: 1.8rem;
+        }
     </style>
 {% endblock %}
 
@@ -557,8 +683,8 @@
             </div>
 
 
-            <!-- Botones de validación/rechazo para roles 4-5 -->
-            {% if id_rol in [4, 5] and datos_resumen %}
+            <!-- Botones de validación/rechazo para roles 4-9 -->
+            {% if id_rol in [4, 5, 6, 7, 8, 9] and datos_resumen %}
             <div class="contenedor-botones-validacion" id="contenedor-botones-validacion">
                 <button class="btn-validar" id="btn-validar" onclick="validarMatricula()">
                     <i class="fas fa-check-circle"></i>
@@ -747,6 +873,192 @@
                     </tbody>
                 </table>
             </div>
+
+            <!-- Mini-tablas de subtotales por Modalidad (Tabla 1) -->
+            {% if subtotales_modalidad and subtotales_modalidad|length > 0 %}
+            <h3 class="titulo-tabla">
+                <i class="fas fa-chart-pie"></i>
+                Subtotales por Modalidad
+            </h3>
+            <div class="mini-tablas-container">
+                {% for subtotal in subtotales_modalidad %}
+                <div class="mini-tabla-card">
+                    <div class="mini-tabla-header modalidad">
+                        <i class="fas fa-graduation-cap"></i>
+                        {{ subtotal.modalidad }}
+                    </div>
+                    <table class="mini-tabla">
+                        <thead>
+                            <tr>
+                                <th>Modalidad</th>
+                                <th>H</th>
+                                <th>M</th>
+                                <th>T</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="mini-total-row">
+                                <td class="mini-total">Total</td>
+                                <td class="mini-total">{{ subtotal.H }}</td>
+                                <td class="mini-total">{{ subtotal.M }}</td>
+                                <td class="mini-total">{{ subtotal.T }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Separador y Tabla 2: Programa x Edad x Turno -->
+            <div class="separador-tablas"></div>
+            
+            <h3 class="titulo-tabla">
+                <i class="fas fa-users-cog"></i>
+                Tabla 2: Matrícula por Programa, Edad y Turno
+            </h3>
+
+            <div class="contenedor-tabla">
+                <table class="tabla-resumen">
+                    <thead>
+                        <!-- Fila 1: Encabezado principal con turnos -->
+                        <tr>
+                            <th rowspan="2" class="encabezado-nivel-1 th-programa">Programa Académico</th>
+                            <th rowspan="2" class="encabezado-nivel-1 th-modalidad">Grupo de Edad</th>
+                            
+                            {% for turno in turnos_ordenados %}
+                                <th colspan="3" class="encabezado-nivel-1">{{ turno }}</th>
+                            {% endfor %}
+                            
+                            <th colspan="3" class="encabezado-nivel-1 th-totales">Totales Matrícula</th>
+                        </tr>
+                        
+                        <!-- Fila 2: Género (H/M/T) -->
+                        <tr>
+                            {% for turno in turnos_ordenados %}
+                                <th class="encabezado-nivel-3">H</th>
+                                <th class="encabezado-nivel-3">M</th>
+                                <th class="encabezado-nivel-3">T</th>
+                            {% endfor %}
+                            
+                            <th class="encabezado-nivel-3 th-totales" style="right:92px;">H</th>
+                            <th class="encabezado-nivel-3 th-totales" style="right:46px;">M</th>
+                            <th class="encabezado-nivel-3 th-totales" style="right:0;">T</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% set programa_actual = None %}
+                        {% set datos_por_programa = {} %}
+                        
+                        {# Agrupar datos por programa #}
+                        {% for dato in datos_edad_turno %}
+                            {% if dato.programa not in datos_por_programa %}
+                                {% set _ = datos_por_programa.__setitem__(dato.programa, []) %}
+                            {% endif %}
+                            {% set _ = datos_por_programa[dato.programa].append(dato) %}
+                        {% endfor %}
+                        
+                        {# Renderizar por programa con edades #}
+                        {% for programa, edades_list in datos_por_programa.items() %}
+                            {% for i in range(edades_list|length) %}
+                                {% set dato = edades_list[i] %}
+                                <tr>
+                                    {# Programa (solo en primera fila de cada programa) #}
+                                    {% if i == 0 %}
+                                        <td class="celda-programa" rowspan="{{ edades_list|length }}">
+                                            {{ programa }}
+                                        </td>
+                                    {% endif %}
+                                    
+                                    {# Edad #}
+                                    <td class="celda-modalidad">{{ dato.edad }}</td>
+                                    
+                                    {# Datos por turno #}
+                                    {% for turno_data in dato.turnos %}
+                                        <td class="celda-genero-h">{{ turno_data.H }}</td>
+                                        <td class="celda-genero-m">{{ turno_data.M }}</td>
+                                        <td class="celda-genero-t">{{ turno_data.T }}</td>
+                                    {% endfor %}
+                                    
+                                    {# Total matrícula #}
+                                    <td class="celda-total-h">{{ dato.total_h }}</td>
+                                    <td class="celda-total-m">{{ dato.total_m }}</td>
+                                    <td class="celda-total-t">{{ dato.total_t }}</td>
+                                </tr>
+                            {% endfor %}
+                        {% endfor %}
+                        
+                        {# Fila de totales generales #}
+                        {% set ns_gen = namespace(h=0, m=0, t=0) %}
+                        {% for dato in datos_edad_turno %}
+                            {% set ns_gen.h = ns_gen.h + dato.total_h %}
+                            {% set ns_gen.m = ns_gen.m + dato.total_m %}
+                            {% set ns_gen.t = ns_gen.t + dato.total_t %}
+                        {% endfor %}
+                        
+                        <tr class="fila-total-general">
+                            <td colspan="2" class="td-total-label">TOTAL GENERAL</td>
+                            
+                            {# Calcular totales por turno #}
+                            {% for turno_idx in range(turnos_ordenados|length) %}
+                                {% set ns = namespace(h=0, m=0, t=0) %}
+                                {% for dato in datos_edad_turno %}
+                                    {% if dato.turnos|length > turno_idx %}
+                                        {% set turno_data = dato.turnos[turno_idx] %}
+                                        {% set ns.h = ns.h + turno_data.H %}
+                                        {% set ns.m = ns.m + turno_data.M %}
+                                        {% set ns.t = ns.t + turno_data.T %}
+                                    {% endif %}
+                                {% endfor %}
+                                <td>{{ ns.h }}</td>
+                                <td>{{ ns.m }}</td>
+                                <td>{{ ns.t }}</td>
+                            {% endfor %}
+                            
+                            <td class="celda-total-h">{{ ns_gen.h }}</td>
+                            <td class="celda-total-m">{{ ns_gen.m }}</td>
+                            <td class="celda-total-t">{{ ns_gen.t }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Mini-tablas de subtotales por Turno (Tabla 2) -->
+            {% if subtotales_turno and subtotales_turno|length > 0 %}
+            <h3 class="titulo-tabla">
+                <i class="fas fa-clock"></i>
+                Subtotales por Turno
+            </h3>
+            <div class="mini-tablas-container">
+                {% for subtotal in subtotales_turno %}
+                <div class="mini-tabla-card">
+                    <div class="mini-tabla-header edad">
+                        <i class="fas fa-clock"></i>
+                        {{ subtotal.turno }}
+                    </div>
+                    <table class="mini-tabla">
+                        <thead>
+                            <tr>
+                                <th>Turno</th>
+                                <th>H</th>
+                                <th>M</th>
+                                <th>T</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="mini-total-row">
+                                <td class="mini-total">Total</td>
+                                <td class="mini-total">{{ subtotal.H }}</td>
+                                <td class="mini-total">{{ subtotal.M }}</td>
+                                <td class="mini-total">{{ subtotal.T }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
             {% endif %}
 
 </div><!-- /container -->
@@ -754,6 +1066,7 @@
 
 {% block scripts %}
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="/static/js/validacion_rechazo.js"></script>
     <script>
         // Variables del backend
         const idRol = {{ id_rol }};
@@ -829,91 +1142,11 @@
             });
         }
 
-        // Al cargar la página, verificar estado de validación
+        // Al cargar la página, aplicar sticky (la lógica de validación/rechazo es común)
         document.addEventListener('DOMContentLoaded', function() {
             aplicarStickyDinamico();
-            if (idRol === 4 || idRol === 5) {
-                verificarEstadoValidacion();
-            }
         });
         
-        function verificarEstadoValidacion() {
-            const btnValidar = document.getElementById('btn-validar');
-            const btnRechazar = document.getElementById('btn-rechazar');
-            const contenedorBotones = document.getElementById('contenedor-botones-validacion');
-            let mensajeValidacion = document.getElementById('mensaje-validacion');
-            
-            if (!btnValidar || !btnRechazar) return;
-            
-            console.log('🔍 Verificando estado de validación...');
-            console.log(`   puede_validar: ${puedeValidar}`);
-            console.log(`   usuario_ya_valido: ${usuarioYaValido}`);
-            console.log(`   usuario_ya_rechazo: ${usuarioYaRechazo}`);
-            
-            if (usuarioYaValido || usuarioYaRechazo) {
-                // Usuario ya validó o rechazó - OCULTAR botones y MOSTRAR mensaje
-                if (contenedorBotones) {
-                    contenedorBotones.style.display = 'none';
-                }
-                
-                // Crear o actualizar mensaje
-                if (!mensajeValidacion) {
-                    mensajeValidacion = document.createElement('div');
-                    mensajeValidacion.id = 'mensaje-validacion';
-                    mensajeValidacion.className = 'mensaje-validacion';
-                    // Insertar antes del contenedor de botones o donde corresponda
-                    if (contenedorBotones && contenedorBotones.parentNode) {
-                        contenedorBotones.parentNode.insertBefore(mensajeValidacion, contenedorBotones);
-                    }
-                }
-                
-                mensajeValidacion.style.display = 'block';
-                if (usuarioYaValido) {
-                    mensajeValidacion.className = 'mensaje-validacion validada';
-                    mensajeValidacion.innerHTML = '<span style=\"font-size: 24px;\">✅</span> <strong>Ya has validado esta matrícula previamente.</strong>';
-                } else {
-                    mensajeValidacion.className = 'mensaje-validacion rechazada';
-                    mensajeValidacion.innerHTML = '<span style=\"font-size: 24px;\">❌</span> <strong>Ya has rechazado esta matrícula previamente.</strong>';
-                }
-                
-                console.log('   🔒 Botones OCULTOS (usuario ya actuó)');
-            } else if (!puedeValidar) {
-                // Usuario no puede validar aún - OCULTAR botones y MOSTRAR mensaje de espera
-                if (contenedorBotones) {
-                    contenedorBotones.style.display = 'none';
-                }
-                
-                if (!mensajeValidacion) {
-                    mensajeValidacion = document.createElement('div');
-                    mensajeValidacion.id = 'mensaje-validacion';
-                    mensajeValidacion.className = 'mensaje-validacion esperando';
-                    if (contenedorBotones && contenedorBotones.parentNode) {
-                        contenedorBotones.parentNode.insertBefore(mensajeValidacion, contenedorBotones);
-                    }
-                }
-                
-                mensajeValidacion.style.display = 'block';
-                mensajeValidacion.className = 'mensaje-validacion esperando';
-                mensajeValidacion.innerHTML = '<span style=\"font-size: 24px;\">⏳</span> <strong>Esperando validación de nivel anterior.</strong>';
-                
-                console.log('   ⏳ Botones OCULTOS (esperando validación previa)');
-            } else {
-                // Usuario puede validar - MOSTRAR botones y HABILITAR
-                if (contenedorBotones) {
-                    contenedorBotones.style.display = 'flex';
-                }
-                
-                btnValidar.disabled = false;
-                btnRechazar.disabled = false;
-                
-                // Ocultar mensaje si existe
-                if (mensajeValidacion) {
-                    mensajeValidacion.style.display = 'none';
-                }
-                
-                console.log('   ✅ Botones VISIBLES y habilitados (puede validar)');
-            }
-        }
         
         function exportarExcel() {
             // Obtener la tabla
@@ -932,254 +1165,116 @@
         }
         
         // ============================================
-        // FUNCIONES DE VALIDACIÓN Y RECHAZO
+        // VALIDACIÓN/RECHAZO (común)
         // ============================================
-        
-        async function validarMatricula() {
-            const btnValidar = document.getElementById('btn-validar');
-            
-            // Verificar si el botón está deshabilitado
-            if (btnValidar.disabled) {
-                alert('Ya has validado o rechazado esta matrícula. No puedes realizar esta acción nuevamente.');
-                return;
-            }
-            
-            const confirmar = confirm(
-                `¿Está seguro que desea VALIDAR esta matrícula?\n\n` +
-                `Periodo: ${periodo}\n` +
-                `Nivel: ${nivel}\n` +
-                `Unidad: ${unidad}\n\n` +
-                `Esta acción marcará la matrícula como aprobada y bloqueará cualquier modificación futura.\n\n` +
-                `¿Continuar?`
-            );
-            
-            if (!confirmar) {
-                console.log('❌ Usuario canceló la validación');
-                return;
-            }
-            
-            // Mostrar overlay de carga
-            btnValidar.disabled = true;
-            
-            Swal.fire({
-                title: 'Validando matrícula...',
-                text: 'Procesando y finalizando el semestre',
-                allowOutsideClick: false,
-                allowEscapeKey: false,
-                didOpen: () => {
-                    Swal.showLoading();
+
+        initValidacionRechazo({
+            rolesPermitidos: [4,5,6,7,8,9],
+            idRol,
+            puedeValidar,
+            usuarioYaValido,
+            usuarioYaRechazo,
+            endpoints: {
+                validar: '/matricula/validar_semestre_rol',
+                rechazar: '/matricula/rechazar_semestre_rol'
+            },
+            buildValidarPayload: () => ({ periodo }),
+            buildRechazarPayload: (motivo) => ({ periodo, motivo }),
+            htmlNoTurno: '<span style="font-size: 24px;">⏳</span> <strong>Esperando ser validado por: {{ esperando_por_rol if esperando_por_rol is not none else "Capturista" }}</strong>',
+            htmlYaValido: '<span style="font-size: 24px;">✅</span> <strong>Ya has validado esta matrícula previamente.</strong>',
+            htmlYaRechazo: '<span style="font-size: 24px;">❌</span> <strong>Ya has rechazado esta matrícula previamente.</strong>',
+            tooltipNoTurno: '⏳ Esperando validación de nivel anterior.',
+            msgValidarBloqueado: '⏳ Aún no es tu turno de validación.',
+            beforeValidar: async () => {
+                const confirmar = confirm(
+                    `¿Está seguro que desea VALIDAR esta matrícula?\n\n` +
+                    `Periodo: ${periodo}\n` +
+                    `Nivel: ${nivel}\n` +
+                    `Unidad: ${unidad}\n\n` +
+                    `Esta acción marcará la matrícula como aprobada y bloqueará cualquier modificación futura.\n\n` +
+                    `¿Continuar?`
+                );
+                if (!confirmar) return false;
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        title: 'Validando matrícula...',
+                        text: 'Procesando y finalizando el semestre',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        didOpen: () => Swal.showLoading()
+                    });
                 }
-            });
-            
-            try {
-                console.log('🔄 Enviando validación al servidor...');
-                
-                const response = await fetch('/matricula/validar_semestre_rol', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        periodo: periodo
-                    })
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    console.log('✅ Matrícula validada exitosamente:', data);
-                    
+                return true;
+            },
+            onValidado: async (data) => {
+                if (typeof Swal === 'undefined') return;
+                if (data?.success) {
                     await Swal.fire({
                         title: '¡Validado!',
                         html: `${data.mensaje}<br><br>` +
-                            `<b>Validado por:</b> ${data.data.validado_por}<br>` +
-                            `<b>Unidad Académica:</b> ${data.data.unidad_academica}<br>` +
-                            `<b>Periodo:</b> ${data.data.periodo}<br>` +
-                            `<b>Fecha:</b> ${new Date(data.data.fecha_validacion).toLocaleString()}<br><br>` +
+                            `<b>Validado por:</b> ${data.data?.validado_por || ''}<br>` +
+                            `<b>Unidad Académica:</b> ${data.data?.unidad_academica || ''}<br>` +
+                            `<b>Periodo:</b> ${data.data?.periodo || ''}<br>` +
+                            `<b>Fecha:</b> ${data.data?.fecha_validacion ? new Date(data.data.fecha_validacion).toLocaleString() : ''}<br><br>` +
                             `La matrícula ha sido aprobada completamente.`,
                         icon: 'success',
                         timer: 2500,
                         showConfirmButton: true
                     });
-                    
-                    location.reload();
-                } else {
-                    await Swal.fire({
-                        title: 'Error',
-                        text: data.error || 'No se pudo completar la validación',
-                        icon: 'error'
+                }
+            },
+            beforeRechazar: async (motivo) => {
+                if (!motivo || motivo.length < 10) {
+                    _notify('warning', '⚠️ Por favor, ingrese un motivo de rechazo (mínimo 10 caracteres).');
+                    return false;
+                }
+                const confirmar = confirm(
+                    `¿Está seguro que desea RECHAZAR esta matrícula?\n\n` +
+                    `Periodo: ${periodo}\n` +
+                    `Nivel: ${nivel}\n` +
+                    `Unidad: ${unidad}\n\n` +
+                    `Motivo: ${motivo.substring(0, 100)}${motivo.length > 100 ? '...' : ''}\n\n` +
+                    `Esta acción devolverá la matrícula para correcciones.\n\n` +
+                    `¿Continuar?`
+                );
+                if (!confirmar) return false;
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        title: 'Procesando rechazo...',
+                        text: 'Enviando notificación al capturista',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        didOpen: () => Swal.showLoading()
                     });
-                    btnValidar.disabled = false;
                 }
-            } catch (error) {
-                console.error('❌ Error en validarMatricula:', error);
-                
-                await Swal.fire({
-                    title: 'Error',
-                    text: `Error al validar: ${error.message}`,
-                    icon: 'error'
-                });
-                
-                btnValidar.disabled = false;
-            }
-        }
-        
-        function rechazarMatricula() {
-            const btnRechazar = document.getElementById('btn-rechazar');
-            
-            // Verificar si el botón está deshabilitado
-            if (btnRechazar.disabled) {
-                alert('Ya has validado o rechazado esta matrícula. No puedes realizar esta acción nuevamente.');
-                return;
-            }
-            
-            const panel = document.getElementById('panel-rechazo');
-            const textarea = document.getElementById('motivo-rechazo');
-            const contador = document.getElementById('contador-caracteres');
-            
-            // Toggle: si ya está abierto, cerrarlo
-            if (panel.style.display === 'block') {
-                cerrarPanelRechazo();
-                return;
-            }
-            
-            // Limpiar textarea y reiniciar contador
-            textarea.value = '';
-            contador.textContent = '0';
-            
-            // Mostrar panel con animación
-            panel.style.display = 'block';
-            setTimeout(() => {
-                panel.classList.add('panel-abierto');
-            }, 10);
-            
-            // Focus en el textarea
-            setTimeout(() => textarea.focus(), 300);
-            
-            // Scroll suave hacia el panel
-            setTimeout(() => {
-                panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            }, 350);
-        }
-        
-        function cerrarPanelRechazo() {
-            const panel = document.getElementById('panel-rechazo');
-            const textarea = document.getElementById('motivo-rechazo');
-            
-            panel.classList.remove('panel-abierto');
-            setTimeout(() => {
-                panel.style.display = 'none';
-                textarea.value = '';
-            }, 300);
-        }
-        
-        function actualizarContador() {
-            const textarea = document.getElementById('motivo-rechazo');
-            const contador = document.getElementById('contador-caracteres');
-            contador.textContent = textarea.value.length;
-            
-            // Cambiar color si se acerca al límite
-            if (textarea.value.length > 230) {
-                contador.style.color = '#dc3545';
-                contador.style.fontWeight = 'bold';
-            } else {
-                contador.style.color = '#666';
-                contador.style.fontWeight = 'normal';
-            }
-        }
-        
-        async function confirmarRechazo() {
-            const textarea = document.getElementById('motivo-rechazo');
-            const motivo = textarea.value.trim();
-            
-            // Validar que se haya ingresado un motivo
-            if (!motivo || motivo.length < 10) {
-                alert('⚠️ Por favor, ingrese un motivo de rechazo (mínimo 10 caracteres).');
-                textarea.focus();
-                return;
-            }
-            
-            const confirmar = confirm(
-                `¿Está seguro que desea RECHAZAR esta matrícula?\n\n` +
-                `Periodo: ${periodo}\n` +
-                `Nivel: ${nivel}\n` +
-                `Unidad: ${unidad}\n\n` +
-                `Motivo: ${motivo.substring(0, 100)}${motivo.length > 100 ? '...' : ''}\n\n` +
-                `Esta acción devolverá la matrícula para correcciones.\n\n` +
-                `¿Continuar?`
-            );
-            
-            if (!confirmar) {
-                console.log('❌ Usuario canceló el rechazo');
-                return;
-            }
-            
-            const btnConfirmar = event.target;
-            btnConfirmar.disabled = true;
-            
-            Swal.fire({
-                title: 'Procesando rechazo...',
-                text: 'Enviando notificación al capturista',
-                allowOutsideClick: false,
-                allowEscapeKey: false,
-                didOpen: () => {
-                    Swal.showLoading();
-                }
-            });
-            
-            try {
-                console.log('🔄 Enviando rechazo al servidor...');
-                
-                const response = await fetch('/matricula/rechazar_semestre_rol', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        periodo: periodo,
-                        motivo: motivo
-                    })
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    console.log('✅ Matrícula rechazada exitosamente:', data);
-                    
+                return true;
+            },
+            onRechazado: async (data) => {
+                if (typeof Swal === 'undefined') return;
+                if (data?.success) {
+                    const motivo = (document.getElementById('motivo-rechazo')?.value || '').trim();
                     await Swal.fire({
                         title: '¡Rechazado!',
                         html: `${data.mensaje}<br><br>` +
-                            `<b>Rechazado por:</b> ${data.data.rechazado_por}<br>` +
-                            `<b>Unidad Académica:</b> ${data.data.unidad_academica}<br>` +
-                            `<b>Periodo:</b> ${data.data.periodo}<br>` +
+                            `<b>Rechazado por:</b> ${data.data?.rechazado_por || ''}<br>` +
+                            `<b>Unidad Académica:</b> ${data.data?.unidad_academica || ''}<br>` +
+                            `<b>Periodo:</b> ${data.data?.periodo || ''}<br>` +
                             `<b>Motivo:</b> ${motivo}<br>` +
-                            `<b>Fecha:</b> ${new Date(data.data.fecha_rechazo).toLocaleString()}<br><br>` +
+                            `<b>Fecha:</b> ${data.data?.fecha_rechazo ? new Date(data.data.fecha_rechazo).toLocaleString() : ''}<br><br>` +
                             `La matrícula ha sido devuelta para correcciones.`,
                         icon: 'success',
                         timer: 2500,
                         showConfirmButton: true
                     });
-                    
-                    location.reload();
-                } else {
-                    await Swal.fire({
-                        title: 'Error',
-                        text: data.error || 'No se pudo completar el rechazo',
-                        icon: 'error'
-                    });
-                    btnConfirmar.disabled = false;
                 }
-            } catch (error) {
-                console.error('❌ Error en confirmarRechazo:', error);
-                
-                await Swal.fire({
-                    title: 'Error',
-                    text: `Error al rechazar: ${error.message}`,
-                    icon: 'error'
-                });
-                
-                btnConfirmar.disabled = false;
             }
-        }
+        });
+
+        // Wrappers para los onclick del HTML
+        function validarMatricula() { window.__validacionRechazo?.ejecutarValidacion(); }
+        function rechazarMatricula() { window.__validacionRechazo?.abrirPanelRechazo(); }
+        function cerrarPanelRechazo() { window.__validacionRechazo?.cerrarPanelRechazo(); }
+        function actualizarContador() { window.__validacionRechazo?.actualizarContador(); }
+        function confirmarRechazo() { window.__validacionRechazo?.ejecutarRechazo(); }
     </script>
 {% endblock %}

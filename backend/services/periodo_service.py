@@ -2,7 +2,7 @@
 Servicio para gestionar operaciones relacionadas con Periodos.
 """
 from sqlalchemy.orm import Session
-from typing import Optional, Tuple
+from typing import Optional, Tuple, List, Dict, Any
 from backend.database.models.CatPeriodo import CatPeriodo
 
 
@@ -119,3 +119,31 @@ def get_periodo_anterior_al_ultimo(db: Session) -> Tuple[Optional[int], Optional
     except Exception as e:
         print(f"Error al obtener el periodo anterior al último: {e}")
         return None, None
+    
+def get_todos_los_periodos(db: Session) -> List[Dict[str, Any]]:
+    """
+    Obtiene la lista completa de periodos indicando su estado de activación.
+    
+    Args:
+        db: Sesión de base de datos
+        
+    Returns:
+        List[Dict[str, Any]]: Lista de diccionarios con la estructura:
+        [{'id': 1, 'periodo': '2024-2025/1', 'esta_activo': True}, ...]
+    """
+    try:
+        # Consultamos todos los periodos ordenados del más reciente al más antiguo
+        periodos = db.query(CatPeriodo).order_by(CatPeriodo.Id_Periodo.desc()).all()
+        
+        return [
+            {
+                "Id_Periodo": p.Id_Periodo,
+                "Periodo": p.Periodo,
+                "Id_Estatus": p.Id_Estatus
+            }
+            for p in periodos
+        ]
+        
+    except Exception as e:
+        print(f"Error al listar todos los periodos: {e}")
+        return []

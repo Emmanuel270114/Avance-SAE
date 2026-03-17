@@ -108,28 +108,63 @@
             color: var(--rosa-secundario);
         }
         
+        .titulo-tabla {
+            color: var(--rosa-principal);
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
         .contenedor-tabla {
             overflow-x: auto;
+            overscroll-behavior-x: contain;
             margin-bottom: 30px;
             border-radius: 10px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-            border: 1px solid #e7d7df;
         }
         
         .tabla-resumen {
             width: 100%;
-            border-collapse: collapse;
-            font-size: 0.84rem;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 0.85rem;
             background: white;
+            table-layout: auto;
         }
         
         .tabla-resumen th,
         .tabla-resumen td {
-            border: 1px solid #ddd;
+            border-right: 1px solid #ddd;
+            border-bottom: 1px solid #ddd;
+            border-top: none;
+            border-left: none;
             padding: 8px 6px;
             text-align: center;
             vertical-align: middle;
-            white-space: nowrap;
+            white-space: normal;
+            word-wrap: break-word;
+        }
+        
+        .tabla-resumen thead tr:first-child th {
+            border-top: 1px solid #ddd;
+        }
+        
+        .tabla-resumen .th-programa,
+        .tabla-resumen .celda-programa,
+        .tabla-resumen .td-total-label {
+            border-left: 1px solid #ddd !important;
+        }
+        
+        .tabla-resumen .th-programa,
+        .tabla-resumen .th-generacion,
+        .tabla-resumen .th-boleta {
+            white-space: normal;
+            word-wrap: break-word;
+            line-height: 1.3;
         }
         
         .tabla-resumen th {
@@ -142,88 +177,99 @@
         }
         
         .tabla-resumen .encabezado-nivel-1 {
-            background: var(--rosa-principal);
+            background-color: var(--rosa-principal) !important;
             font-size: 1rem;
             font-weight: bold;
         }
         
         .tabla-resumen .encabezado-nivel-2 {
-            background: var(--rosa-secundario);
+            background-color: var(--rosa-secundario) !important;
             font-size: 0.9rem;
         }
         
         .tabla-resumen .encabezado-nivel-3 {
-            background: var(--rosa-claro);
+            background-color: var(--rosa-claro) !important;
             font-size: 0.85rem;
         }
         
         .tabla-resumen .celda-programa {
-            background: var(--azul-claro);
+            background-color: var(--azul-claro) !important;
             font-weight: bold;
             text-align: left;
-            padding-left: 15px;
+            padding: 8px 12px;
             position: sticky;
             left: 0;
             z-index: 6;
-            min-width: 260px;
-            max-width: 320px;
+            min-width: 120px;
+            max-width: 180px;
+            white-space: normal;
+            word-wrap: break-word;
+            line-height: 1.3;
         }
         
         .tabla-resumen .celda-modalidad {
-            background: #e3f2fd;
+            background-color: #daeeff !important;
             text-align: left;
-            padding-left: 25px;
+            padding: 8px 10px;
             font-weight: 600;
             position: sticky;
-            left: 260px;
-            z-index: 6;
-            min-width: 170px;
+            z-index: 5;
+            box-shadow: 3px 0 6px -1px rgba(110,3,67,0.25);
+            min-width: 100px;
+            max-width: 140px;
+            white-space: normal;
+            word-wrap: break-word;
+            line-height: 1.3;
         }
         
-        .tabla-resumen .celda-boletas {
-            background: var(--naranja-claro);
-            font-weight: bold;
+        .tabla-resumen .th-totales {
             position: sticky;
-            left: 430px;
-            z-index: 6;
-            min-width: 90px;
+            z-index: 20;
+            border-right: none !important;
         }
         
         .tabla-resumen .celda-total {
-            background: var(--verde-claro);
+            background: var(--verde-claro) !important;
             font-weight: bold;
         }
-
-        .tabla-resumen td.celda-genero-h,
-        .tabla-resumen td.celda-genero-m,
-        .tabla-resumen td.celda-genero-t,
-        .tabla-resumen td.celda-total {
-            min-width: 52px;
-            font-variant-numeric: tabular-nums;
-        }
-
-        .tabla-resumen thead th:nth-child(1) {
-            position: sticky;
-            left: 0;
-            z-index: 12;
-        }
-
-        .tabla-resumen thead th:nth-child(2) {
-            position: sticky;
-            left: 260px;
-            z-index: 12;
-        }
-
-        .tabla-resumen thead th:nth-child(3) {
-            position: sticky;
-            left: 430px;
-            z-index: 12;
+        
+        .tabla-resumen tbody tr:hover {
+            background: #f8f9fa;
         }
         
         .tabla-resumen .fila-total-general {
-            background: var(--verde-claro);
+            background: linear-gradient(135deg, #c8e6c9 0%, #a5d6a7 100%);
             font-weight: bold;
+            font-size: 1.05rem;
+            border-top: 3px solid #388e3c;
+            border-bottom: 3px solid #388e3c;
+        }
+        
+        .tabla-resumen .td-total-label {
+            position: sticky;
+            left: 0;
+            z-index: 5;
+            text-align: center;
+            background: linear-gradient(135deg, #c8e6c9 0%, #a5d6a7 100%) !important;
+            white-space: normal;
+            word-wrap: break-word;
+            line-height: 1.3;
+            padding: 12px 14px;
+            font-weight: 800;
+            color: #1b5e20;
+            text-transform: uppercase;
+            font-size: 0.95rem;
+            letter-spacing: 1px;
+        }
+        
+        .tabla-resumen .td-total-label i {
+            margin-right: 8px;
             font-size: 1rem;
+        }
+        
+        .tabla-resumen .fila-total-general td {
+            color: #1b5e20;
+            font-weight: 700;
         }
         
         .tabla-resumen tbody tr:hover {
@@ -232,17 +278,431 @@
         
         .celda-genero-h {
             background: #ffffff;
+            min-width: 45px;
+            max-width: 60px;
+            padding: 8px 4px;
         }
         
         .celda-genero-m {
             background: #ffffff;
+            min-width: 45px;
+            max-width: 60px;
+            padding: 8px 4px;
         }
         
         .celda-genero-t {
             background: #ffffff;
             font-weight: bold;
+            min-width: 45px;
+            max-width: 60px;
+            padding: 8px 4px;
         }
         
+        /* Columnas de totales más compactas */
+        .tabla-resumen td {
+            min-width: 45px;
+        }
+        
+        .tabla-resumen th {
+            min-width: 50px;
+        }
+
+        /* ===============================
+           Mini Tablas de Resumen
+           =============================== */
+        .contenedor-mini-tablas {
+            margin: 30px 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        }
+        
+        .titulo-mini-tablas {
+            color: var(--rosa-principal);
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .titulo-mini-tablas i {
+            margin-right: 10px;
+            font-size: 1.2rem;
+        }
+        
+        .grid-mini-tablas {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+            margin-top: 20px;
+        }
+        
+        .mini-tabla-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .mini-tabla-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        }
+        
+        .mini-tabla-header {
+            padding: 15px 20px;
+            font-weight: 700;
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .mini-tabla-header i {
+            font-size: 1.2rem;
+        }
+        
+        .mini-tabla-header.regular {
+            background: linear-gradient(135deg, var(--rosa-principal) 0%, var(--rosa-secundario) 100%);
+            color: white;
+        }
+        
+        .mini-tabla-header.extemporanea {
+            background: linear-gradient(135deg, #6e0343 0%, #721c24 100%);
+            color: white;
+        }
+        
+        .mini-tabla-body {
+            padding: 20px;
+        }
+        
+        .mini-tabla {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .mini-tabla thead th {
+            background: linear-gradient(135deg, #fce4ec 0%, #f8bbd0 100%);
+            color: var(--rosa-principal);
+            padding: 10px 12px;
+            text-align: center;
+            font-weight: 700;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid var(--rosa-secundario);
+        }
+        
+        .mini-tabla tbody tr {
+            transition: background 0.2s ease;
+        }
+        
+        .mini-tabla tbody tr:hover {
+            background: #fce4ec;
+        }
+        
+        .mini-tabla tbody td {
+            padding: 10px 12px;
+            text-align: center;
+            border-bottom: 1px solid #e0e0e0;
+            font-size: 0.95rem;
+        }
+        
+        .mini-tabla .mini-label {
+            text-align: left;
+            font-weight: 600;
+            color: #424242;
+        }
+        
+        .mini-tabla .mini-total {
+            background: linear-gradient(135deg, var(--rosa-secundario) 0%, var(--rosa-principal) 100%);
+            color: white;
+            font-weight: 700;
+            border-radius: 6px;
+        }
+        
+        .mini-tabla .mini-total-row {
+            background: linear-gradient(135deg, #f8bbd0 0%, #f48fb1 100%);
+            border-top: 3px solid var(--rosa-secundario);
+        }
+        
+        .mini-tabla .mini-total-row td {
+            padding: 12px;
+            font-size: 1rem;
+            border-bottom: none;
+        }
+        
+        .mini-tabla .mini-total-row .mini-label {
+            color: var(--rosa-principal);
+        }
+        
+        .mini-tabla .mini-total-row .mini-total {
+            background: linear-gradient(135deg, var(--rosa-principal) 0%, #6e0343 100%);
+            font-size: 1.1rem;
+        }
+        
+        @media (max-width: 768px) {
+            .grid-mini-tablas {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ===============================
+           Validación / Rechazo (roles 4-9)
+           =============================== */
+        .contenedor-botones-validacion {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+
+        .btn-validar {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1rem;
+        }
+
+        .btn-validar:hover {
+            background: #218838;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
+        }
+
+        .btn-rechazar {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1rem;
+        }
+
+        .btn-rechazar:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(220, 53, 69, 0.3);
+        }
+
+        .btn-validar:disabled,
+        .btn-rechazar:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .panel-rechazo {
+            display: none;
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 10px;
+            padding: 25px;
+            margin: 20px 0;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .panel-rechazo h4 {
+            color: #856404;
+            margin-bottom: 15px;
+        }
+
+        .panel-rechazo textarea {
+            width: 100%;
+            min-height: 150px;
+            padding: 15px;
+            border: 2px solid #ffc107;
+            border-radius: 8px;
+            font-size: 1rem;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        .panel-rechazo textarea:focus {
+            outline: none;
+            border-color: #ff9800;
+            box-shadow: 0 0 10px rgba(255, 152, 0, 0.2);
+        }
+        
+        .panel-rechazo-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 15px;
+        }
+        
+        .contador-caracteres {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .panel-rechazo-botones {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn-cancelar-rechazo {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 20px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-cancelar-rechazo:hover {
+            background: #5a6268;
+        }
+        
+        .btn-confirmar-rechazo {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 20px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-confirmar-rechazo:hover {
+            background: #c82333;
+        }
+
+        /* Mensajes de estado (idénticos a Matrícula) */
+        .mensaje-validacion {
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin: 20px 0;
+            font-size: 1rem;
+        }
+
+        .mensaje-validacion.validada {
+            background: #d4edda;
+            color: #155724;
+            border: 2px solid #c3e6cb;
+        }
+
+        .mensaje-validacion.rechazada {
+            background: #f8d7da;
+            color: #721c24;
+            border: 2px solid #f5c6cb;
+        }
+
+        .mensaje-validacion.esperando {
+            background: #fff3cd;
+            color: #856404;
+            border: 2px solid #ffeeba;
+        }
+        
+        /* Estilos para columnas sticky de las tablas dinámicas */
+        .sticky-col {
+            position: sticky;
+            left: 0;
+            z-index: 6;
+            background-color: var(--azul-claro) !important;
+            font-weight: bold;
+            text-align: left;
+            padding: 8px 12px;
+            min-width: 120px;
+            max-width: 180px;
+            white-space: normal;
+            word-wrap: break-word;
+            line-height: 1.3;
+        }
+        
+        .sticky-col2 {
+            position: sticky;
+            z-index: 5;
+            background-color: #daeeff !important;
+            text-align: left;
+            padding: 8px 10px;
+            min-width: 100px;
+            max-width: 140px;
+            font-weight: 600;
+            white-space: normal;
+            word-wrap: break-word;
+            line-height: 1.3;
+        }
+        
+        .sticky-col3 {
+            position: sticky;
+            z-index: 4;
+            background-color: #f0f8ff !important;
+            text-align: center;
+            padding: 8px;
+            min-width: 60px;
+            max-width: 80px;
+            font-weight: 600;
+            white-space: normal;
+            word-wrap: break-word;
+        }
+        
+        .td-programa {
+            background-color: var(--azul-claro) !important;
+            font-weight: bold;
+            text-align: left;
+            padding: 8px 12px;
+            min-width: 120px;
+            max-width: 180px;
+            white-space: normal;
+            word-wrap: break-word;
+            line-height: 1.3;
+        }
+        
+        .td-generacion {
+            background-color: #daeeff !important;
+            text-align: left;
+            padding: 8px 10px;
+            min-width: 100px;
+            max-width: 140px;
+            font-weight: 600;
+            white-space: normal;
+            word-wrap: break-word;
+            line-height: 1.3;
+        }
+        
+        .td-boleta {
+            background-color: #f0f8ff !important;
+            text-align: center;
+            padding: 8px;
+            min-width: 60px;
+            max-width: 80px;
+            font-weight: 600;
+            white-space: normal;
+            word-wrap: break-word;
+        }
+        
+        .col-total {
+            background-color: var(--verde-claro) !important;
+            font-weight: bold;
+        }
+
         .btn-regresar {
             background: transparent;
             color: var(--rosa-principal);
@@ -288,7 +748,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-top: 30px;
+            margin-bottom: 30px;
         }
         
         .alerta-sin-datos {
@@ -315,15 +775,49 @@
             margin: 30px 0;
         }
         
-        /* Estilos para tipo de egreso */
-        .celda-regular {
-            background: #e8f5e9;
+        .alerta-info {
+            background: #d1ecf1;
+            border: 2px solid #bee5eb;
+            color: #0c5460;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .tabla-resumen .th-programa {
+            background-color: var(--rosa-principal) !important;
+            color: white !important;
+            font-weight: bold;
+            text-align: center;
+            position: sticky;
+            left: 0;
+            z-index: 21;
+            min-width: 120px;
+            max-width: 180px;
+            white-space: normal;
+            word-wrap: break-word;
+            line-height: 1.3;
+            padding: 8px 12px;
         }
         
-        .celda-extemporaneo {
-            background: #fff3e0;
+        .tabla-resumen .th-modalidad,
+        .tabla-resumen .th-generacion,
+        .tabla-resumen .th-boleta {
+            background-color: var(--rosa-secundario) !important;
+            color: white !important;
+            text-align: center;
+            font-weight: 600;
+            position: sticky;
+            z-index: 20;
+            box-shadow: 3px 0 6px -1px rgba(110,3,67,0.35);
+            white-space: normal;
+            word-wrap: break-word;
+            line-height: 1.3;
+            padding: 8px 10px;
         }
-    </style>
+        
+
+</style>
 </head>
 <body>
     <div class="contenedor-principal">
@@ -347,7 +841,7 @@
         <!-- Footer con botones -->
         <div class="contenido-vista">
             <div class="footer-botones">
-                {% if datos_resumen %}
+                {% if filas_pivot %}
                 <button class="btn-exportar" onclick="exportarExcel()">
                     <i class="fas fa-file-excel"></i>
                     Exportar a Excel
@@ -384,13 +878,60 @@
                 </div>
             </div>
 
+            {% if id_rol in [4, 5, 6, 7, 8, 9] and filas_pivot %}
+            <div class="contenedor-botones-validacion" id="contenedor-botones-validacion">
+                <button class="btn-validar" id="btn-validar" onclick="validarEgresados()">
+                    <i class="fas fa-check-circle"></i>
+                    Validar Egresados
+                </button>
+                <button class="btn-rechazar" id="btn-rechazar" onclick="rechazarEgresados()">
+                    <i class="fas fa-times-circle"></i>
+                    Rechazar Egresados
+                </button>
+            </div>
+
+            <!-- Panel de rechazo (oculto inicialmente) -->
+            <div class="panel-rechazo" id="panel-rechazo">
+                <h4>
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Motivo del Rechazo
+                </h4>
+                <textarea 
+                    id="motivo-rechazo"
+                    placeholder="Por favor, describa el motivo del rechazo de estos egresados (máximo 250 caracteres)..."
+                    maxlength="250"
+                    oninput="actualizarContador()"
+                ></textarea>
+                <div class="panel-rechazo-footer">
+                    <span class="contador-caracteres">
+                        <span id="contador-caracteres">0</span>/250 caracteres
+                    </span>
+                    <div class="panel-rechazo-botones">
+                        <button class="btn-cancelar-rechazo" onclick="cerrarPanelRechazo()">
+                            <i class="fas fa-times"></i>
+                            Cancelar
+                        </button>
+                        <button class="btn-confirmar-rechazo" onclick="confirmarRechazo()">
+                            <i class="fas fa-paper-plane"></i>
+                            Enviar Rechazo
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mensaje de validación previa -->
+            <div class="mensaje-validacion" id="mensaje-validacion" style="display: none;"></div>
+            {% else %}
+            <!-- Sin botones de validación para este rol o sin datos -->
+            {% endif %}
+
             {% if error_message %}
             <!-- Mensaje de error -->
             <div class="alerta-error">
                 <h4><i class="fas fa-exclamation-triangle"></i> Error</h4>
                 <p>{{ error_message }}</p>
             </div>
-            {% elif not datos_resumen %}
+            {% elif not filas_pivot %}
             <!-- Sin datos -->
             <div class="alerta-sin-datos">
                 <div><i class="fas fa-info-circle"></i></div>
@@ -398,154 +939,448 @@
                 <p>No se encontraron registros de egresados para los filtros seleccionados.</p>
             </div>
             {% else %}
-            <!-- Tabla de resumen -->
+            <!-- Tabla 1: Resumen por Boleta y Modalidad -->
+            <h3 class="titulo-tabla">
+                <i class="fas fa-table"></i>
+                Resumen por Boleta y Modalidad
+            </h3>
             <div class="contenedor-tabla">
                 <table class="tabla-resumen">
-                    <thead>
-                        <!-- Fila 1: Encabezado principal con generaciones -->
-                        <tr>
-                            <th rowspan="3" class="encabezado-nivel-1">Programa Académico</th>
-                            <th rowspan="3" class="encabezado-nivel-1">Modalidad</th>
-                            <th rowspan="3" class="encabezado-nivel-1">Boletas</th>
-                            
-                            {% for generacion in generaciones %}
-                                <th colspan="6" class="encabezado-nivel-1">{{ generacion }}</th>
-                            {% endfor %}
-                            
-                            <th colspan="3" class="encabezado-nivel-1">Total Egresados</th>
-                        </tr>
-                        
-                        <!-- Fila 2: Tipo de egreso (Regular/Extemporáneo) -->
-                        <tr>
-                            {% for generacion in generaciones %}
-                                <th colspan="3" class="encabezado-nivel-2">Regular</th>
-                                <th colspan="3" class="encabezado-nivel-2">Extemporáneo</th>
-                            {% endfor %}
-                            
-                            <th colspan="3" class="encabezado-nivel-2">Total</th>
-                        </tr>
-                        
-                        <!-- Fila 3: Género (H/M/T) -->
-                        <tr>
-                            {% for generacion in generaciones %}
-                                {% for tipo in range(2) %}
-                                    <th class="encabezado-nivel-3">H</th>
-                                    <th class="encabezado-nivel-3">M</th>
-                                    <th class="encabezado-nivel-3">T</th>
+                        <thead>
+                            <tr>
+                                <th rowspan="2" class="encabezado-nivel-1 th-programa">Programa Académico</th>
+                                <th rowspan="2" class="encabezado-nivel-1 th-generacion">Generación</th>
+                                <th rowspan="2" class="encabezado-nivel-1 th-boleta">Boleta</th>
+
+                                {% for modalidad in modalidades_columnas %}
+                                    <th colspan="3" class="encabezado-nivel-1">{{ modalidad }}</th>
                                 {% endfor %}
-                            {% endfor %}
-                            
-                            <th class="encabezado-nivel-3">H</th>
-                            <th class="encabezado-nivel-3">M</th>
-                            <th class="encabezado-nivel-3">T</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% set programa_actual = None %}
-                        {% set datos_por_programa = {} %}
-                        
-                        {# Agrupar datos por programa #}
-                        {% for dato in datos_resumen %}
-                            {% if dato.programa not in datos_por_programa %}
-                                {% set _ = datos_por_programa.__setitem__(dato.programa, []) %}
-                            {% endif %}
-                            {% set _ = datos_por_programa[dato.programa].append(dato) %}
-                        {% endfor %}
-                        
-                        {# Renderizar por programa con modalidades y boletas #}
-                        {% for programa, filas in datos_por_programa.items() %}
-                            {% for i in range(filas|length) %}
-                                {% set dato = filas[i] %}
+
+                                <th colspan="3" class="encabezado-nivel-1 th-total">Total</th>
+                            </tr>
+                            <tr>
+                                {% for modalidad in modalidades_columnas %}
+                                    <th class="encabezado-nivel-2">H</th>
+                                    <th class="encabezado-nivel-2">M</th>
+                                    <th class="encabezado-nivel-2">T</th>
+                                {% endfor %}
+                                <th class="encabezado-nivel-2 th-total">H</th>
+                                <th class="encabezado-nivel-2 th-total">M</th>
+                                <th class="encabezado-nivel-2 th-total">T</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% set ns = namespace(curr_prog=None, curr_tipo=None, prog_first=True, tipo_first=True) %}
+                            {% for row in filas_boleta_modalidad %}
+                                {% if ns.curr_prog != row.programa %}
+                                    {% set ns.curr_prog = row.programa %}
+                                    {% set ns.curr_tipo = None %}
+                                {% endif %}
+
                                 <tr>
-                                    {# Programa (solo en primera fila de cada programa) #}
-                                    {% if i == 0 %}
-                                        <td class="celda-programa" rowspan="{{ filas|length }}">
-                                            {{ programa }}
+                                    {% if loop.first or (loop.previtem and loop.previtem.programa != row.programa) %}
+                                        <td rowspan="{{ programa_counts[row.programa].total }}" class="td-programa sticky-col">
+                                            {{ row.programa }}
                                         </td>
                                     {% endif %}
-                                    
-                                    {# Modalidad #}
-                                    <td class="celda-modalidad">{{ dato.modalidad }}</td>
-                                    
-                                    {# Boleta literal #}
-                                    <td class="celda-boletas">{{ dato.boleta }}</td>
-                                    
-                                    {# Datos por generación #}
-                                    {% for gen in dato.generaciones %}
-                                        {# Regular #}
-                                        <td class="celda-genero-h celda-regular">{{ gen.regular.H }}</td>
-                                        <td class="celda-genero-m celda-regular">{{ gen.regular.M }}</td>
-                                        <td class="celda-genero-t celda-regular">{{ gen.regular.T }}</td>
-                                        
-                                        {# Extemporáneo #}
-                                        <td class="celda-genero-h celda-extemporaneo">{{ gen.extemporaneo.H }}</td>
-                                        <td class="celda-genero-m celda-extemporaneo">{{ gen.extemporaneo.M }}</td>
-                                        <td class="celda-genero-t celda-extemporaneo">{{ gen.extemporaneo.T }}</td>
+
+                                    {% if ns.curr_tipo != row.tipo %}
+                                        {% set ns.curr_tipo = row.tipo %}
+                                        <td rowspan="{{ programa_counts[row.programa][row.tipo] }}" class="td-generacion sticky-col2">
+                                            {% if row.tipo == 'regular' %}Generación Regular{% else %}Generación Extemporánea{% endif %}
+                                        </td>
+                                    {% endif %}
+
+                                    <td class="td-boleta sticky-col3">{{ row.boleta }}</td>
+
+                                    {% for modalidad in modalidades_columnas %}
+                                        {% set v = row.modalidades.get(modalidad, {'H':0,'M':0,'T':0}) %}
+                                        <td>{{ v.H }}</td>
+                                        <td>{{ v.M }}</td>
+                                        <td class="col-total">{{ v.T }}</td>
                                     {% endfor %}
-                                    
-                                    {# Total egresados #}
-                                    <td class="celda-total celda-genero-h">{{ dato.total_h }}</td>
-                                    <td class="celda-total celda-genero-m">{{ dato.total_m }}</td>
-                                    <td class="celda-total celda-genero-t">{{ dato.total_t }}</td>
+
+                                    <td class="col-total th-total">{{ row.total_h }}</td>
+                                    <td class="col-total th-total">{{ row.total_m }}</td>
+                                    <td class="col-total th-total">{{ row.total_t }}</td>
                                 </tr>
                             {% endfor %}
-                        {% endfor %}
-                        
-                        {# Fila de totales generales #}
-                        {% set total_general_h = datos_resumen | sum(attribute='total_h') %}
-                        {% set total_general_m = datos_resumen | sum(attribute='total_m') %}
-                        {% set total_general_t = datos_resumen | sum(attribute='total_t') %}
-                        
-                        <tr class="fila-total-general">
-                            <td colspan="3">TOTAL GENERAL</td>
                             
-                            {# Calcular totales por generación y tipo #}
-                            {% for gen_idx in range(generaciones|length) %}
-                                {# Regular #}
-                                {% set sum_reg_h = 0 %}
-                                {% set sum_reg_m = 0 %}
-                                {% set sum_reg_t = 0 %}
-                                {# Extemporáneo #}
-                                {% set sum_ext_h = 0 %}
-                                {% set sum_ext_m = 0 %}
-                                {% set sum_ext_t = 0 %}
+                            <!-- Fila de Total General -->
+                            <tr class="fila-total-general">
+                                <td colspan="3" class="td-total-label">
+                                    <i class="fas fa-flag-checkered"></i> TOTAL GENERAL
+                                </td>
                                 
-                                {% for dato in datos_resumen %}
-                                    {% set gen_data = dato.generaciones[gen_idx] %}
-                                    {% set sum_reg_h = sum_reg_h + gen_data.regular.H %}
-                                    {% set sum_reg_m = sum_reg_m + gen_data.regular.M %}
-                                    {% set sum_reg_t = sum_reg_t + gen_data.regular.T %}
-                                    {% set sum_ext_h = sum_ext_h + gen_data.extemporaneo.H %}
-                                    {% set sum_ext_m = sum_ext_m + gen_data.extemporaneo.M %}
-                                    {% set sum_ext_t = sum_ext_t + gen_data.extemporaneo.T %}
+                                {% for modalidad in modalidades_columnas %}
+                                    {% set v = totales_tabla1.modalidades.get(modalidad, {'H':0,'M':0,'T':0}) %}
+                                    <td>{{ v.H }}</td>
+                                    <td>{{ v.M }}</td>
+                                    <td>{{ v.T }}</td>
                                 {% endfor %}
-                                
-                                <td class="celda-regular">{{ sum_reg_h }}</td>
-                                <td class="celda-regular">{{ sum_reg_m }}</td>
-                                <td class="celda-regular">{{ sum_reg_t }}</td>
-                                <td class="celda-extemporaneo">{{ sum_ext_h }}</td>
-                                <td class="celda-extemporaneo">{{ sum_ext_m }}</td>
-                                <td class="celda-extemporaneo">{{ sum_ext_t }}</td>
-                            {% endfor %}
-                            
-                            <td>{{ total_general_h }}</td>
-                            <td>{{ total_general_m }}</td>
-                            <td>{{ total_general_t }}</td>
-                        </tr>
-                    </tbody>
+
+                                <td class="col-total">{{ totales_tabla1.total_h }}</td>
+                                <td class="col-total">{{ totales_tabla1.total_m }}</td>
+                                <td class="col-total">{{ totales_tabla1.total_t }}</td>
+                            </tr>
+                        </tbody>
                 </table>
             </div>
+            
+            <!-- Mini Tablas de Resumen por Generación (Tabla 1) -->
+            <div class="contenedor-mini-tablas">
+                <h4 class="titulo-mini-tablas">
+                    <i class="fas fa-chart-pie"></i> Resumen por Tipo de Generación
+                </h4>
+                <div class="grid-mini-tablas">
+                    <!-- Subtotal Generación Regular -->
+                    {% if subtotales_generacion_tabla1.regular.total_t > 0 %}
+                    <div class="mini-tabla-card">
+                        <div class="mini-tabla-header regular">
+                            <i class="fas fa-users"></i>
+                            <span>Generación Regular</span>
+                        </div>
+                        <div class="mini-tabla-body">
+                            <table class="mini-tabla">
+                                <thead>
+                                    <tr>
+                                        <th>Modalidad</th>
+                                        <th>H</th>
+                                        <th>M</th>
+                                        <th>Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for modalidad in modalidades_columnas %}
+                                        {% set v = subtotales_generacion_tabla1.regular.modalidades.get(modalidad, {'H':0,'M':0,'T':0}) %}
+                                        {% if v.T > 0 %}
+                                        <tr>
+                                            <td class="mini-label">{{ modalidad }}</td>
+                                            <td>{{ v.H }}</td>
+                                            <td>{{ v.M }}</td>
+                                            <td class="mini-total">{{ v.T }}</td>
+                                        </tr>
+                                        {% endif %}
+                                    {% endfor %}
+                                    <tr class="mini-total-row">
+                                        <td class="mini-label"><strong>Total</strong></td>
+                                        <td><strong>{{ subtotales_generacion_tabla1.regular.total_h }}</strong></td>
+                                        <td><strong>{{ subtotales_generacion_tabla1.regular.total_m }}</strong></td>
+                                        <td class="mini-total"><strong>{{ subtotales_generacion_tabla1.regular.total_t }}</strong></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Subtotal Generación Extemporánea -->
+                    {% if subtotales_generacion_tabla1.extemporaneo.total_t > 0 %}
+                    <div class="mini-tabla-card">
+                        <div class="mini-tabla-header extemporanea">
+                            <i class="fas fa-user-clock"></i>
+                            <span>Generación Extemporánea</span>
+                        </div>
+                        <div class="mini-tabla-body">
+                            <table class="mini-tabla">
+                                <thead>
+                                    <tr>
+                                        <th>Modalidad</th>
+                                        <th>H</th>
+                                        <th>M</th>
+                                        <th>Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for modalidad in modalidades_columnas %}
+                                        {% set v = subtotales_generacion_tabla1.extemporaneo.modalidades.get(modalidad, {'H':0,'M':0,'T':0}) %}
+                                        {% if v.T > 0 %}
+                                        <tr>
+                                            <td class="mini-label">{{ modalidad }}</td>
+                                            <td>{{ v.H }}</td>
+                                            <td>{{ v.M }}</td>
+                                            <td class="mini-total">{{ v.T }}</td>
+                                        </tr>
+                                        {% endif %}
+                                    {% endfor %}
+                                    <tr class="mini-total-row">
+                                        <td class="mini-label"><strong>Total</strong></td>
+                                        <td><strong>{{ subtotales_generacion_tabla1.extemporaneo.total_h }}</strong></td>
+                                        <td><strong>{{ subtotales_generacion_tabla1.extemporaneo.total_m }}</strong></td>
+                                        <td class="mini-total"><strong>{{ subtotales_generacion_tabla1.extemporaneo.total_t }}</strong></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            <!-- Tabla 2: Resumen por Edad y Turno -->
+            <h3 class="titulo-tabla" style="margin-top: 40px;">
+                <i class="fas fa-user-clock"></i>
+                Resumen por Edad y Turno
+            </h3>
+            {% if not filas_edad_turno %}
+                <div class="alerta-info">
+                    No hay datos por Edad/Turno para los filtros seleccionados.
+                </div>
+            {% else %}
+            <div class="contenedor-tabla">
+                <table class="tabla-resumen">
+                            <thead>
+                                <tr>
+                                    <th rowspan="2" class="encabezado-nivel-1 th-programa">Programa Académico</th>
+                                    <th rowspan="2" class="encabezado-nivel-1 th-generacion">Generación</th>
+                                    <th rowspan="2" class="encabezado-nivel-1 th-boleta">Edad</th>
+
+                                    {% for turno in turnos_columnas %}
+                                        <th colspan="3" class="encabezado-nivel-1">{{ turno }}</th>
+                                    {% endfor %}
+
+                                    <th colspan="3" class="encabezado-nivel-1 th-total">Total</th>
+                                </tr>
+                                <tr>
+                                    {% for turno in turnos_columnas %}
+                                        <th class="encabezado-nivel-2">H</th>
+                                        <th class="encabezado-nivel-2">M</th>
+                                        <th class="encabezado-nivel-2">T</th>
+                                    {% endfor %}
+                                    <th class="encabezado-nivel-2 th-total">H</th>
+                                    <th class="encabezado-nivel-2 th-total">M</th>
+                                    <th class="encabezado-nivel-2 th-total">T</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% set ns2 = namespace(curr_prog=None, curr_tipo=None) %}
+                                {% for row in filas_edad_turno %}
+                                    {% if ns2.curr_prog != row.programa %}
+                                        {% set ns2.curr_prog = row.programa %}
+                                        {% set ns2.curr_tipo = None %}
+                                    {% endif %}
+
+                                    <tr>
+                                        {% if loop.first or (loop.previtem and loop.previtem.programa != row.programa) %}
+                                            <td rowspan="{{ programa_counts_edad[row.programa].total }}" class="td-programa sticky-col">
+                                                {{ row.programa }}
+                                            </td>
+                                        {% endif %}
+
+                                        {% if ns2.curr_tipo != row.tipo %}
+                                            {% set ns2.curr_tipo = row.tipo %}
+                                            <td rowspan="{{ programa_counts_edad[row.programa][row.tipo] }}" class="td-generacion sticky-col2">
+                                                {% if row.tipo == 'regular' %}Generación Regular{% else %}Generación Extemporánea{% endif %}
+                                            </td>
+                                        {% endif %}
+
+                                        <td class="td-boleta sticky-col3">{{ row.edad }}</td>
+
+                                        {% for turno in turnos_columnas %}
+                                            {% set v = row.turnos.get(turno, {'H':0,'M':0,'T':0}) %}
+                                            <td>{{ v.H }}</td>
+                                            <td>{{ v.M }}</td>
+                                            <td class="col-total">{{ v.T }}</td>
+                                        {% endfor %}
+
+                                        <td class="col-total th-total">{{ row.total_h }}</td>
+                                        <td class="col-total th-total">{{ row.total_m }}</td>
+                                        <td class="col-total th-total">{{ row.total_t }}</td>
+                                    </tr>
+                                {% endfor %}
+                                
+                                <!-- Fila de Total General -->
+                                <tr class="fila-total-general">
+                                    <td colspan="3" class="td-total-label">
+                                        <i class="fas fa-flag-checkered"></i> TOTAL GENERAL
+                                    </td>
+                                    
+                                    {% for turno in turnos_columnas %}
+                                        {% set v = totales_tabla2.turnos.get(turno, {'H':0,'M':0,'T':0}) %}
+                                        <td>{{ v.H }}</td>
+                                        <td>{{ v.M }}</td>
+                                        <td>{{ v.T }}</td>
+                                    {% endfor %}
+                                    
+                                    <td class="col-total">{{ totales_tabla2.total_h }}</td>
+                                    <td class="col-total">{{ totales_tabla2.total_m }}</td>
+                                    <td class="col-total">{{ totales_tabla2.total_t }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+            </div>
+            
+            <!-- Mini Tablas de Resumen por Generación (Tabla 2) -->
+            <div class="contenedor-mini-tablas">
+                <h4 class="titulo-mini-tablas">
+                    <i class="fas fa-chart-pie"></i> Resumen por Tipo de Generación
+                </h4>
+                <div class="grid-mini-tablas">
+                    <!-- Subtotal Generación Regular -->
+                    {% if subtotales_generacion_tabla2.regular.total_t > 0 %}
+                    <div class="mini-tabla-card">
+                        <div class="mini-tabla-header regular">
+                            <i class="fas fa-users"></i>
+                            <span>Generación Regular</span>
+                        </div>
+                        <div class="mini-tabla-body">
+                            <table class="mini-tabla">
+                                <thead>
+                                    <tr>
+                                        <th>Turno</th>
+                                        <th>H</th>
+                                        <th>M</th>
+                                        <th>Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for turno in turnos_columnas %}
+                                        {% set v = subtotales_generacion_tabla2.regular.turnos.get(turno, {'H':0,'M':0,'T':0}) %}
+                                        {% if v.T > 0 %}
+                                        <tr>
+                                            <td class="mini-label">{{ turno }}</td>
+                                            <td>{{ v.H }}</td>
+                                            <td>{{ v.M }}</td>
+                                            <td class="mini-total">{{ v.T }}</td>
+                                        </tr>
+                                        {% endif %}
+                                    {% endfor %}
+                                    <tr class="mini-total-row">
+                                        <td class="mini-label"><strong>Total</strong></td>
+                                        <td><strong>{{ subtotales_generacion_tabla2.regular.total_h }}</strong></td>
+                                        <td><strong>{{ subtotales_generacion_tabla2.regular.total_m }}</strong></td>
+                                        <td class="mini-total"><strong>{{ subtotales_generacion_tabla2.regular.total_t }}</strong></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Subtotal Generación Extemporánea -->
+                    {% if subtotales_generacion_tabla2.extemporaneo.total_t > 0 %}
+                    <div class="mini-tabla-card">
+                        <div class="mini-tabla-header extemporanea">
+                            <i class="fas fa-user-clock"></i>
+                            <span>Generación Extemporánea</span>
+                        </div>
+                        <div class="mini-tabla-body">
+                            <table class="mini-tabla">
+                                <thead>
+                                    <tr>
+                                        <th>Turno</th>
+                                        <th>H</th>
+                                        <th>M</th>
+                                        <th>Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for turno in turnos_columnas %}
+                                        {% set v = subtotales_generacion_tabla2.extemporaneo.turnos.get(turno, {'H':0,'M':0,'T':0}) %}
+                                        {% if v.T > 0 %}
+                                        <tr>
+                                            <td class="mini-label">{{ turno }}</td>
+                                            <td>{{ v.H }}</td>
+                                            <td>{{ v.M }}</td>
+                                            <td class="mini-total">{{ v.T }}</td>
+                                        </tr>
+                                        {% endif %}
+                                    {% endfor %}
+                                    <tr class="mini-total-row">
+                                        <td class="mini-label"><strong>Total</strong></td>
+                                        <td><strong>{{ subtotales_generacion_tabla2.extemporaneo.total_h }}</strong></td>
+                                        <td><strong>{{ subtotales_generacion_tabla2.extemporaneo.total_m }}</strong></td>
+                                        <td class="mini-total"><strong>{{ subtotales_generacion_tabla2.extemporaneo.total_t }}</strong></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
             {% endif %}
 
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="/static/js/validacion_rechazo.js"></script>
     <script>
         // Variables del backend
+        const idRol = {{ id_rol }};
         const periodo = "{{ periodo }}";
+        const periodoId = {{ periodo_id if periodo_id is not none else 'null' }};
         const nivel = "{{ nivel }}";
         const unidad = "{{ unidad }}";
+
+        const puedeValidar = {{ 'true' if puede_validar else 'false' }};
+        const usuarioYaValido = {{ 'true' if usuario_ya_valido else 'false' }};
+        const usuarioYaRechazo = {{ 'true' if usuario_ya_rechazo else 'false' }};
+
+        initValidacionRechazo({
+            rolesPermitidos: [4,5,6,7,8,9],
+            idRol,
+            puedeValidar,
+            usuarioYaValido,
+            usuarioYaRechazo,
+            endpoints: {
+                validar: '/egresados/validar',
+                rechazar: '/egresados/rechazar'
+            },
+            buildValidarPayload: () => ({
+                periodo,
+            }),
+            buildRechazarPayload: (motivo) => ({
+                periodo,
+                motivo
+            }),
+htmlNoTurno: '<span style="font-size: 24px;">⏳</span> <strong>Esperando ser validado por: {{ esperando_por_rol if esperando_por_rol is not none else "Capturista" }}</strong>',
+htmlYaValido: '<span style="font-size: 24px;">✅</span> <strong>Ya has validado Egresados previamente.</strong>',
+htmlYaRechazo: '<span style="font-size: 24px;">❌</span> <strong>Ya has rechazado Egresados previamente.</strong>',
+tooltipNoTurno: '⏳ Esperando validación de nivel/rol anterior.',
+
+            beforeValidar: async () => {
+                try {
+                    if (typeof Swal !== 'undefined' && Swal?.fire) {
+                        const r = await Swal.fire({
+                            icon: 'question',
+                            title: '¿Validar egresados?',
+                            text: `Periodo: ${periodo} | ${unidad} | ${nivel}`,
+                            showCancelButton: true,
+                            confirmButtonText: 'Sí, validar',
+                            cancelButtonText: 'Cancelar'
+                        });
+                        return !!r.isConfirmed;
+                    }
+                } catch (_) {}
+                return confirm('¿Deseas validar los egresados de este periodo?');
+            },
+            beforeRechazar: async (_motivo) => {
+                try {
+                    if (typeof Swal !== 'undefined' && Swal?.fire) {
+                        const r = await Swal.fire({
+                            icon: 'warning',
+                            title: 'Confirmar rechazo',
+                            text: 'Se devolverá el formato al capturista para correcciones.',
+                            showCancelButton: true,
+                            confirmButtonText: 'Sí, rechazar',
+                            cancelButtonText: 'Cancelar'
+                        });
+                        return !!r.isConfirmed;
+                    }
+                } catch (_) {}
+                return confirm('¿Confirmas el rechazo?');
+            },
+            msgValidado: '✅ Egresados validados correctamente',
+            msgRechazado: '🔴 Egresados rechazados.',
+        });
+
+        // Wrappers para los onclick del HTML
+        function validarEgresados() { window.__validacionRechazo?.ejecutarValidacion(); }
+        function rechazarEgresados() { window.__validacionRechazo?.abrirPanelRechazo(); }
+        function cerrarPanelRechazo() { window.__validacionRechazo?.cerrarPanelRechazo(); }
+        function actualizarContador() { window.__validacionRechazo?.actualizarContador(); }
+        function confirmarRechazo() { window.__validacionRechazo?.ejecutarRechazo(); }
         
         function exportarExcel() {
             // Obtener la tabla

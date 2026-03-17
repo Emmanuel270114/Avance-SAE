@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse
 
 from backend.database.connection import get_db
 from backend.core.templates import templates
+from backend.core.auth import get_current_session
 from backend.services.periodo_service import get_ultimo_periodo, get_periodo_activo
 
 router = APIRouter()
@@ -14,12 +15,12 @@ HHost: str = "Test"
 
 @router.get("/semaforo", response_class=HTMLResponse)
 def semaforo_view(
-    request: Request,
+    request: Request, sess=Depends(get_current_session),
     db: Session = Depends(get_db)
 ):
     
-    UUsuario = request.cookies.get("nombre_usuario", "")
-    Rol = request.cookies.get("nombre_rol","")
+    UUsuario = sess.nombre_usuario
+    Rol = sess.nombre_rol
     
     # Obtener periodo dinámico (priorizar activo)
     _, PPeriodo = get_periodo_activo(db) or get_ultimo_periodo(db)

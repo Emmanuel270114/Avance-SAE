@@ -5,6 +5,7 @@ from sqlalchemy import text
 
 from backend.database.connection import get_db
 from backend.core.templates import templates
+from backend.core.auth import get_current_session
 from backend.services.periodo_service import get_ultimo_periodo, get_periodo_activo
 
 router = APIRouter()
@@ -13,12 +14,12 @@ HHost: str = "Test"
 
 @router.get("/periodos", response_class=HTMLResponse)
 def domicilios_view(
-    request: Request,
+    request: Request, sess=Depends(get_current_session),
     db: Session = Depends(get_db)
 ):
     
-    UUsuario = str(request.cookies.get("nombre_usuario", ""))
-    Rol = str(request.cookies.get("nombre_rol",""))
+    UUsuario = str(sess.nombre_usuario)
+    Rol = str(sess.nombre_rol)
 
     # Obtener periodo dinámico (priorizar activo)
     _, PPeriodo = get_periodo_activo(db) or get_ultimo_periodo(db)
@@ -62,9 +63,9 @@ def domicilios_view(
     )
 
 @router.post("/nuevo_periodo")  
-def nuevo_periodo(request: Request, data: dict, db: Session = Depends(get_db)):
+def nuevo_periodo(request: Request, data: dict, sess=Depends(get_current_session), db: Session = Depends(get_db)):
     # Obtener información del usuario desde las cookies
-    UUsuario = str(request.cookies.get("nombre_usuario", ""))
+    UUsuario = str(sess.nombre_usuario)
     
     print(f"Creando periodo: {data['periodo']} por usuario: {UUsuario}")
     print(f"Fecha inicial: {data.get('fecha_inicial')}, Fecha final: {data.get('fecha_final')}")

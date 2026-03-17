@@ -3,6 +3,10 @@
 {% block title %}Captura de Egresados{% endblock %}
 
 {% block styles %}
+    <!-- SweetAlert2 (overlay de carga al consultar resumen) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <link rel="stylesheet" href="/static/css/components/header.css">
     <link rel="stylesheet" href="/static/css/components/tables.css">
     <link rel="stylesheet" href="/static/css/components/matricula_consulta.css">
@@ -174,6 +178,98 @@
             to { transform: rotate(360deg); }
         }
         /* === FIN PANEL DE FILTROS SUPERIORES === */
+
+        /* === BANNER DE SELECCIÓN (ESTILO MATRÍCULA) === */
+        .banner-seleccion-egresados {
+            display: none;
+            margin: 18px 0 6px 0;
+            text-align: center;
+            background-color: #6e0343;
+            color: #ffffff;
+            overflow: hidden;
+        }
+        .banner-seleccion-egresados.visible {
+            display: block;
+        }
+        .banner-seleccion-egresados h3 {
+            color: #ffffff;
+            font-weight: 600;
+            margin: 0;
+            padding: 10px 16px;
+            font-size: 30px;
+            line-height: 1.2;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            box-sizing: border-box;
+        }
+        .banner-seleccion-egresados .header-programa,
+        .banner-seleccion-egresados .header-modalidad {
+            white-space: nowrap;
+        }
+        .banner-seleccion-egresados .header-separador {
+            font-size: 0.7em;
+            opacity: 0.9;
+        }
+
+        .tabla-header-egresados {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+            padding: 10px 14px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            flex-wrap: wrap;
+        }
+
+        .pestana-semaforo {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 12px;
+            border-radius: 999px;
+            border: 2px solid #dc3545;
+            background: rgba(220, 53, 69, 0.12);
+            font-weight: 700;
+            font-size: 13px;
+            line-height: 1.2;
+        }
+
+        .pestana-semaforo .semaforo-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #dc3545;
+            box-shadow: 0 0 0 2px rgba(255,255,255,0.75);
+            flex-shrink: 0;
+        }
+
+        .tabla-egresados-scroll {
+            overflow-x: auto;
+        }
+
+        #tabla-egresados-main {
+            width: 100%;
+            border-collapse: separate;
+            table-layout: fixed;
+        }
+
+        #tabla-egresados-main thead,
+        #tabla-egresados-main tbody tr {
+            display: table;
+            width: 100%;
+            table-layout: fixed;
+        }
+
+        #tabla-egresados-main tbody {
+            display: block;
+            max-height: none;
+            overflow-y: visible;
+            overflow-x: hidden;
+        }
+        /* === FIN BANNER DE SELECCIÓN === */
     </style>
 {% endblock %}
 
@@ -404,8 +500,6 @@
         <div class="filtros-row">
             <!-- Periodo - Campo oculto (se usa el periodo por defecto del sistema) -->
             <input type="hidden" id="periodo" name="periodo" value="{{ periodo_default_id }}">
-            <!-- Turno actual (oculto) -->
-            <input type="hidden" id="turno-actual-id" value="">
             
             <div class="filtro-item">
                 <label for="programa"> <strong>Programa Académico:</strong></label>
@@ -419,142 +513,135 @@
             
             <div class="filtro-item">
                 <label for="modalidad"> <strong>Modalidad:</strong></label>
-                <select id="modalidad" name="modalidad" required>
+                <select id="modalidad" name="modalidad" required disabled>
                     <option value="">-- Primero seleccione un Programa Académico --</option>
                 </select>
             </div>
         </div>
     </div>
 
-    <!-- Sección de Filtros Secundarios para Agregar Filas -->
-    <div class="filtros-secundarios-container" style="background: #f8f9fa; padding: 20px; border-radius: 12px; margin-top: 20px; border: 2px solid #6e0343;">
-        <h3 style="color: #6e0343; margin: 0 0 15px 0; font-size: 20px;">📋 Agregar Registro de Egresado</h3>
-        
-        <div class="filtros-row" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 15px;">
-            <div class="filtro-item">
-                <label for="filtro-boleta"><strong>Boleta:</strong></label>
-                <select id="filtro-boleta" name="filtro_boleta">
-                    <option value="">-- Seleccione Boleta --</option>
-                    {% for boleta in boletas %}
-                    <option value="{{ boleta.id }}">{{ boleta.nombre }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            
-            <div class="filtro-item">
-                <label for="filtro-generacion"><strong>Generación:</strong></label>
-                <select id="filtro-generacion" name="filtro_generacion">
-                    <option value="">-- Seleccione Generación --</option>
-                    {% for generacion in generaciones %}
-                    <option value="{{ generacion.id }}">{{ generacion.nombre }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            
-            <div class="filtro-item">
-                <label for="filtro-turno"><strong>Turno:</strong></label>
-                <select id="filtro-turno" name="filtro_turno">
-                    <option value="">-- Seleccione Turno --</option>
-                    {% for turno in turnos %}
-                    <option value="{{ turno.id }}">{{ turno.nombre }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-        </div>
-        
-        <!-- Tabla de selección de edades -->
-        <div style="margin-top: 20px; margin-bottom: 15px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                <label style="font-weight: 600; color: #6e0343; font-size: 14px;">Seleccione las edades a agregar:</label>
-                <div style="display: flex; gap: 10px;">
-                    <button type="button" onclick="seleccionarTodasEdades(true)" style="padding: 4px 12px; background: #28a745; color: white; border: none; border-radius: 4px; font-size: 12px; cursor: pointer;">
-                        ✓ Seleccionar Todas
-                    </button>
-                    <button type="button" onclick="seleccionarTodasEdades(false)" style="padding: 4px 12px; background: #6c757d; color: white; border: none; border-radius: 4px; font-size: 12px; cursor: pointer;">
-                        ✗ Limpiar Selección
-                    </button>
-                </div>
-            </div>
-            
-            <div style="max-height: 300px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 6px; background: white; padding: 15px;">
-                <div id="tabla-edades-seleccion" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px;">
-                    {% for edad in edades %}
-                    <label style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; cursor: pointer; transition: all 0.2s;">
-                        <input type="checkbox" 
-                               class="checkbox-edad" 
-                               value="{{ edad.id }}" 
-                               data-nombre="{{ edad.nombre }}"
-                               style="width: 18px; height: 18px; cursor: pointer;">
-                        <span style="font-weight: 500; color: #333; font-size: 14px;">{{ edad.nombre }}</span>
-                    </label>
-                    {% endfor %}
-                </div>
-            </div>
-            <div id="edades-seleccionadas-count" style="margin-top: 8px; font-size: 13px; color: #666; text-align: right;">
-                0 edades seleccionadas
-            </div>
-        </div>
-        
-        <div class="filtros-row" style="display: flex; justify-content: flex-end; margin-top: 10px;">
-            <button type="button" id="btn-agregar-fila" class="btn-primary" onclick="agregarFilasEgresados()" style="padding: 12px 30px; background: #6e0343; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: all 0.3s;">
-                ➕ Agregar Filas
-            </button>
-        </div>
-    </div>
+    <!-- Sección de captura: filtros + tabla dinámica (visible cuando se selecciona programa y modalidad) -->
+    <div id="seccion-captura-egresados" style="display: none;">
 
-    <!-- Tabla Dinámica de Egresados -->
-    <div class="tabla-matricula-container" style="margin-top: 30px;">
-        <div class="tabla-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
-            <h3 style="color: #6e0343; margin: 0;">📊 Registros de Egresados</h3>
-            <button type="button" class="btn-secondary" onclick="limpiarTabla()" style="padding: 8px 20px; background: #dc3545; color: white; border: none; border-radius: 6px; cursor: pointer;">
-                🗑️ Limpiar Tabla
-            </button>
+        <!-- Filtros secundarios (Boleta, Generación, Edades) -->
+        <div class="filtros-secundarios-container" style="background: #f8f9fa; padding: 20px; border-radius: 12px; margin-top: 20px; border: 2px solid #6e0343;">
+            <h3 style="color: #6e0343; margin: 0 0 15px 0; font-size: 20px;">📋 Agregar Registros de Egresados</h3>
+            
+            <div class="filtros-row" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 15px;">
+                <div class="filtro-item">
+                    <label for="filtro-boleta"><strong>Boleta:</strong></label>
+                    <select id="filtro-boleta" name="filtro_boleta">
+                        <option value="">-- Seleccione Boleta --</option>
+                        {% for boleta in boletas %}
+                        <option value="{{ boleta.id }}">{{ boleta.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="filtro-item">
+                    <label for="filtro-generacion"><strong>Generación:</strong></label>
+                    <select id="filtro-generacion" name="filtro_generacion">
+                        <option value="">-- Seleccione Generación --</option>
+                        {% for generacion in generaciones %}
+                        <option value="{{ generacion.id }}">{{ generacion.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Selección de edades -->
+            <div style="margin-top: 20px; margin-bottom: 15px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <label style="font-weight: 600; color: #6e0343; font-size: 14px;">Seleccione las edades a agregar:</label>
+                    <div style="display: flex; gap: 10px;">
+                        <button type="button" onclick="seleccionarTodasEdades(true)" style="padding: 4px 12px; background: #28a745; color: white; border: none; border-radius: 4px; font-size: 12px; cursor: pointer;">
+                            ✓ Seleccionar Todas
+                        </button>
+                        <button type="button" onclick="seleccionarTodasEdades(false)" style="padding: 4px 12px; background: #6c757d; color: white; border: none; border-radius: 4px; font-size: 12px; cursor: pointer;">
+                            ✗ Limpiar Selección
+                        </button>
+                    </div>
+                </div>
+                <div style="max-height: 300px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: 6px; background: white; padding: 15px;">
+                    <div id="tabla-edades-seleccion" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px;">
+                        {% for edad in edades %}
+                        <label style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; cursor: pointer; transition: all 0.2s;">
+                            <input type="checkbox" 
+                                   class="checkbox-edad" 
+                                   value="{{ edad.id }}" 
+                                   data-nombre="{{ edad.nombre }}"
+                                   style="width: 18px; height: 18px; cursor: pointer;">
+                            <span style="font-weight: 500; color: #333; font-size: 14px;">{{ edad.nombre }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div id="edades-seleccionadas-count" style="margin-top: 8px; font-size: 13px; color: #666; text-align: right;">
+                    0 edades seleccionadas
+                </div>
+            </div>
+            
+            <div style="display: flex; justify-content: flex-end; margin-top: 10px;">
+                <button type="button" class="btn-primary" onclick="agregarFilasEgresados()" style="padding: 12px 30px; background: #6e0343; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: all 0.3s;">
+                    ➕ Agregar Filas
+                </button>
+            </div>
         </div>
-        
-        <div style="overflow-x: auto;">
-            <table class="tabla-egresados-dinamica" id="tabla-egresados" style="width: 100%; border-collapse: collapse; box-shadow: 0 4px 8px rgba(0,0,0,0.1); border-radius: 8px; overflow: hidden;">
-                <thead>
-                    <tr style="background: linear-gradient(135deg, #6e0343 0%, #8b2635 100%); color: white;">
-                        <th style="padding: 15px; text-align: center; font-weight: 600; font-size: 14px;">Boleta</th>
-                        <th style="padding: 15px; text-align: center; font-weight: 600; font-size: 14px;">Generación</th>
-                        <th style="padding: 15px; text-align: center; font-weight: 600; font-size: 14px;">Edad</th>
-                        <th style="padding: 15px; text-align: center; font-weight: 600; font-size: 14px;">Hombres</th>
-                        <th style="padding: 15px; text-align: center; font-weight: 600; font-size: 14px;">Mujeres</th>
-                        <th style="padding: 15px; text-align: center; font-weight: 600; font-size: 14px;">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody id="egresados-tbody">
-                    <tr>
-                        <td colspan="6" style="text-align: center; padding: 40px; color: #666;">
-                            <div style="font-size: 48px; margin-bottom: 15px;">📚</div>
-                            <p style="font-size: 16px; margin: 0;">No hay registros agregados. Use los filtros arriba para agregar filas.</p>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+
+        <!-- Banner informativo: Programa y Modalidad seleccionados (estilo matrícula) -->
+        <div class="banner-seleccion-egresados" id="banner-seleccion-egresados">
+            <h3>
+                <span class="header-programa" id="banner-nombre-programa">—</span>
+                <span class="header-separador"> ◉ </span>
+                <span class="header-modalidad" id="banner-nombre-modalidad">—</span>
+            </h3>
         </div>
-    </div>
-        
+
+        <!-- Banner del título de la tabla (encima de los inputs) -->
+        <div class="tabla-matricula-container" style="margin-top: 10px;">
+            <div class="tabla-header tabla-header-egresados">
+                <div id="pestana-semaforo-egresados" class="pestana-semaforo" title="Estado de captura por semáforo">
+                    <span id="semaforo-dot-egresados" class="semaforo-dot"></span>
+                    <span id="semaforo-texto-egresados">No hay datos capturados</span>
+                </div>
+                <button type="button" onclick="limpiarTablaEgresados()" style="padding: 8px 20px; background: #dc3545; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                    🗑️ Limpiar Tabla
+                </button>
+            </div>
+
+            <div class="tabla-egresados-scroll">
+                <table class="tabla-egresados-dinamica" id="tabla-egresados-main" style="width: 100%; box-shadow: 0 4px 8px rgba(0,0,0,0.1); border-radius: 8px; overflow: hidden;">
+                    <thead id="egresados-thead">
+                        <!-- Generado dinámicamente con los turnos según nivel -->
+                    </thead>
+                    <tbody id="egresados-tbody">
+                        <tr>
+                            <td colspan="10" style="text-align: center; padding: 40px; color: #666;">
+                                <div style="font-size: 48px; margin-bottom: 15px;">📚</div>
+                                <p style="font-size: 16px; margin: 0;">Seleccione Programa y Modalidad, luego agregue filas.</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
         <!-- Botones de Acción -->
         <div class="actions-section actions-after-table" style="margin-top: 30px; display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
             {% if es_capturista %}
-            <!-- Botones para Capturista (rol ID 3) -->
             <button id="btn-guardar-avance" type="button" class="btn-primary" onclick="guardarAvanceEgresados()" 
                     style="padding: 12px 30px; background: #17a2b8; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: all 0.3s;">
                 💾 Guardar Avance
             </button>
-
             <button id="btn-limpiar-formulario" type="button" class="btn-secondary" onclick="limpiarFormulario()" 
                     style="padding: 12px 30px; background: #6c757d; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: all 0.3s;">
                 🧹 Limpiar Todo
             </button>
-            
             <button id="btn-finalizar-captura" type="button" class="btn-success" onclick="finalizarCapturaEgresados()" 
                     style="padding: 12px 30px; background: #28a745; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: all 0.3s;">
                 ✅ Finalizar Captura
             </button>
             {% else %}
-            <!-- Botones para roles de validación (ID 4, 5, 6, 7, 8) -->
             <button id="btn-validar-egresados" type="button" class="btn-success" onclick="validarEgresados()"
                 {% if usuario_ya_valido or usuario_ya_rechazo %}disabled title="Ya has validado/rechazado estos egresados"{% endif %} 
                 style="padding: 12px 30px; background: #28a745; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">
@@ -567,7 +654,8 @@
             </button>
             {% endif %}
         </div>
-    </div>
+    </div> <!-- fin seccion-captura-egresados -->
+    </div> <!-- fin contenedor-matricula-principal -->
     
     <!-- Panel de Informe (oculto para roles 4-9) -->
     <div id="informe-panel" class="informe-container" style="{% if es_rol_director or es_rol_superior %}display:none;{% else %}display:block;{% endif %} margin-top: 30px;">
@@ -742,23 +830,31 @@
     let spEnEjecucion = false;
     let interfazBloqueada = false;
     
-    // Almacén de filas de egresados en memoria
+    // Almacén de filas de egresados en memoria (estructura única, turnos como columnas)
+    // [ { id, programa, programaNombre, modalidad, modalidadNombre, boleta, boletaNombre,
+    //     generacion, generacionNombre, edad, edadNombre,
+    //     turnos: { turnoId: { hombres: '', mujeres: '' }, ... } } ]
     let filasEgresados = [];
     
-    // Variables para manejo de turnos
+    // Turnos disponibles según el nivel de la UA
     let turnosDisponibles = {{ turnos | tojson }};
-    let turnoActualIndex = 0;
     
     // Mapeo de Programa ID -> Modalidades IDs para filtrado dinámico
     let programaAModalidades = {};
     let todasLasModalidades = [];
+    const catalogoSemaforo = {{ semaforo_estados | tojson }};
+    const mapaColoresSemaforo = {};
+    (catalogoSemaforo || []).forEach(estado => {
+        const id = String(estado.id);
+        const color = (estado.color || '').trim();
+        if (id) mapaColoresSemaforo[id] = color;
+    });
     
     try {
         programaAModalidades = {{ programa_a_modalidades_json | safe }};
         todasLasModalidades = {{ modalidades | tojson }};
         console.log('✅ Mapeo cargado:', Object.keys(programaAModalidades).length, 'programas');
-        console.log('📊 programaAModalidades completo:', programaAModalidades);
-        console.log('📊 todasLasModalidades:', todasLasModalidades);
+        console.log('🔄 Turnos disponibles:', turnosDisponibles);
     } catch (e) {
         console.error('❌ Error al cargar mapeo:', e);
     }
@@ -797,6 +893,26 @@
         }
         return true;
     }
+
+    // ==============================================
+    // OVERLAY DE CARGA (Mismo estilo que Matrícula)
+    // ==============================================
+    function mostrarCargaSeleccion(mensaje) {
+        if (typeof Swal === 'undefined') return;
+        Swal.fire({
+            title: 'Cargando',
+            text: mensaje || 'Cargando egresados seleccionados...',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showConfirmButton: false,
+            didOpen: () => Swal.showLoading()
+        });
+    }
+
+    function ocultarCargaSeleccion() {
+        if (typeof Swal === 'undefined') return;
+        if (Swal.isVisible()) Swal.close();
+    }
     
     /* ==============================================
        FUNCIONES DE FILTRADO
@@ -809,38 +925,29 @@
         const selectPrograma = document.getElementById('programa');
         const selectModalidad = document.getElementById('modalidad');
         
-        if (!selectPrograma || !selectModalidad) {
-            console.error('❌ No se encontraron los selectores de programa o modalidad');
-            return;
-        }
+        if (!selectPrograma || !selectModalidad) return;
         
-        const programaId = selectPrograma.value; // Mantener como string para buscar en el mapeo
-        console.log('🔍 Programa seleccionado:', programaId);
+        const programaId = selectPrograma.value;
         
         if (!programaId) {
             selectModalidad.innerHTML = '<option value="">-- Primero seleccione un Programa Académico --</option>';
             selectModalidad.disabled = true;
+            ocultarSeccionCaptura();
             return;
         }
         
-        console.log('📊 Mapeo completo programaAModalidades:', programaAModalidades);
-        console.log('📊 Todas las modalidades disponibles:', todasLasModalidades);
-        
-        // Buscar usando string primero, luego intentar con número
         const modalidadesDelPrograma = programaAModalidades[programaId] || programaAModalidades[parseInt(programaId)] || [];
-        console.log(`📋 Modalidades para programa ${programaId}:`, modalidadesDelPrograma);
         
         if (modalidadesDelPrograma.length === 0) {
-            console.warn(`⚠️ No hay modalidades configuradas para el programa ${programaId}`);
             selectModalidad.innerHTML = '<option value="">-- No hay modalidades para este programa --</option>';
             selectModalidad.disabled = true;
+            ocultarSeccionCaptura();
             return;
         }
         
         const modalidadesFiltradas = todasLasModalidades.filter(mod => 
             modalidadesDelPrograma.includes(mod.id)
         );
-        console.log(`✅ Modalidades filtradas (${modalidadesFiltradas.length}):`, modalidadesFiltradas);
         
         selectModalidad.innerHTML = '<option value="">-- Seleccione una Modalidad --</option>';
         modalidadesFiltradas.forEach(mod => {
@@ -851,7 +958,6 @@
         });
         
         selectModalidad.disabled = false;
-        console.log('✅ Select de modalidad actualizado y habilitado');
     }
     
     /**
@@ -876,329 +982,407 @@
             countElement.style.fontWeight = count > 0 ? '600' : 'normal';
         }
     }
-    
+
     /* ==============================================
-       FUNCIONES DE MANEJO DE TURNOS (SIMPLIFICADAS)
+       CONTROL VISIBILIDAD SECCIÓN CAPTURA
        ============================================== */
     
-    // Los turnos ahora se manejan mediante el selector en filtros secundarios
-    // Ya no se necesita navegación ni índice de turno actual
-    
-    /* ==============================================
-       FUNCIONES DE GESTIÓN DE FILAS DE EGRESADOS
-       ============================================== */
-    
-    /**
-     * Agregar múltiples filas de egresados (una por cada edad seleccionada)
-     */
-    function agregarFilasEgresados() {
-        // Obtener valores de los filtros
+    function mostrarSeccionCaptura() {
+        const seccion = document.getElementById('seccion-captura-egresados');
+        if (seccion) seccion.style.display = 'block';
+        // Generar/actualizar cabecera de tabla con turnos dinámicos
+        generarCabeceraTabla();
+        requestAnimationFrame(() => ajustarTamanoBannerSeleccion());
+        actualizarSemaforoPestana();
+    }
+
+    function ocultarSeccionCaptura() {
+        const seccion = document.getElementById('seccion-captura-egresados');
+        if (seccion) seccion.style.display = 'none';
+        const banner = document.getElementById('banner-seleccion-egresados');
+        if (banner) banner.classList.remove('visible');
+        aplicarSemaforoPestana(1);
+    }
+
+    function actualizarBannerSeleccion() {
+        const prog = document.getElementById('programa');
+        const mod = document.getElementById('modalidad');
+        const banner = document.getElementById('banner-seleccion-egresados');
+        const spanProg = document.getElementById('banner-nombre-programa');
+        const spanMod = document.getElementById('banner-nombre-modalidad');
+
+        if (prog && prog.value && mod && mod.value) {
+            if (spanProg) spanProg.textContent = prog.options[prog.selectedIndex].text;
+            if (spanMod) spanMod.textContent = mod.options[mod.selectedIndex].text;
+            if (banner) {
+                banner.classList.add('visible');
+                requestAnimationFrame(() => ajustarTamanoBannerSeleccion());
+            }
+        } else {
+            if (banner) banner.classList.remove('visible');
+        }
+    }
+
+    // Mismo comportamiento que matrícula: máximo 30px y reducción progresiva hasta ajustar.
+    function ajustarTamanoBannerSeleccion() {
+        const banner = document.getElementById('banner-seleccion-egresados');
+        if (!banner || !banner.classList.contains('visible')) return;
+
+        const titulo = banner.querySelector('h3');
+        if (!titulo) return;
+
+        let fs = 30;
+        titulo.style.fontSize = `${fs}px`;
+
+        while (titulo.scrollWidth > banner.clientWidth && fs > 11) {
+            fs -= 0.5;
+            titulo.style.fontSize = `${fs}px`;
+        }
+    }
+
+    function hexToRgba(hexColor, alpha = 0.18) {
+        const hex = (hexColor || '').replace('#', '').trim();
+        if (hex.length !== 6) return `rgba(220,53,69,${alpha})`;
+        const r = parseInt(hex.substring(0, 2), 16);
+        const g = parseInt(hex.substring(2, 4), 16);
+        const b = parseInt(hex.substring(4, 6), 16);
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+
+    function obtenerTextoSemaforo(estadoId) {
+        const textos = {
+            1: 'No hay datos capturados',
+            2: 'En proceso de Captura',
+            3: 'Captura Finalizada'
+        };
+        return textos[estadoId] || textos[1];
+    }
+
+    function obtenerColorSemaforo(estadoId) {
+        const fallback = {
+            1: '#dc3545',
+            2: '#ffc107',
+            3: '#28a745'
+        };
+        return mapaColoresSemaforo[String(estadoId)] || fallback[estadoId] || fallback[1];
+    }
+
+    function aplicarSemaforoPestana(estadoId) {
+        const pill = document.getElementById('pestana-semaforo-egresados');
+        const dot = document.getElementById('semaforo-dot-egresados');
+        const texto = document.getElementById('semaforo-texto-egresados');
+
+        if (!pill || !dot || !texto) return;
+
+        const estado = [1, 2, 3].includes(parseInt(estadoId)) ? parseInt(estadoId) : 1;
+        const color = obtenerColorSemaforo(estado);
+        const colorTexto = estado === 2 ? '#7a5a00' : (estado === 3 ? '#1f6a2e' : '#8b1a1a');
+
+        pill.classList.remove('estado-1', 'estado-2', 'estado-3');
+        pill.classList.add(`estado-${estado}`);
+
+        dot.style.backgroundColor = color;
+        pill.style.borderColor = color;
+        pill.style.backgroundColor = hexToRgba(color, 0.18);
+        pill.style.color = colorTexto;
+        texto.textContent = obtenerTextoSemaforo(estado);
+    }
+
+    function calcularEstadoGlobalSemaforo(estadosPorTurno) {
+        const estadoDefault = 1;
+        const clavesTurno = (turnosDisponibles || []).map(t => String(t.id));
+
+        let estados = [];
+        if (clavesTurno.length > 0) {
+            estados = clavesTurno.map(k => parseInt(estadosPorTurno[k]) || estadoDefault);
+        } else {
+            estados = Object.values(estadosPorTurno || {}).map(v => parseInt(v) || estadoDefault);
+        }
+
+        if (estados.length === 0) return estadoDefault;
+        if (estados.every(e => e === 3)) return 3;
+        if (estados.some(e => e === 2 || e === 3)) return 2;
+        return 1;
+    }
+
+    async function actualizarSemaforoPestana() {
         const programa = document.getElementById('programa');
         const modalidad = document.getElementById('modalidad');
-        const turnoSelect = document.getElementById('filtro-turno');
+        const periodo = document.getElementById('periodo');
+
+        if (!programa || !modalidad || !periodo || !programa.value || !modalidad.value) {
+            aplicarSemaforoPestana(1);
+            return;
+        }
+
+        try {
+            const response = await fetch('/egresados/estados_semaforo', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    periodo: periodo.value,
+                    programa: programa.value,
+                    modalidad: modalidad.value
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`Error HTTP ${response.status}`);
+            }
+
+            const resultado = await response.json();
+            if (!resultado.success) {
+                throw new Error(resultado.error || 'No se obtuvieron estados de semáforo');
+            }
+
+            const estadoGlobal = calcularEstadoGlobalSemaforo(resultado.estados_semaforo || {});
+            aplicarSemaforoPestana(estadoGlobal);
+        } catch (error) {
+            console.warn('⚠️ No se pudo actualizar el semáforo de captura:', error);
+            aplicarSemaforoPestana(1);
+        }
+    }
+
+    /* ==============================================
+       TABLA DINÁMICA CON TURNOS COMO COLUMNAS
+       ============================================== */
+
+    /**
+     * Genera la cabecera de la tabla según los turnos disponibles
+     * Columnas: Boleta | Generación | Edad | [Turno1 H | Turno1 M] | [Turno2 H | Turno2 M] ... | Acciones
+     */
+    function generarCabeceraTabla() {
+        const thead = document.getElementById('egresados-thead');
+        if (!thead) return;
+
+        // Fila 1: Boleta, Generación, Edad, por cada turno su nombre (colspan 2), Acciones
+        let fila1 = '<tr style="background: linear-gradient(135deg, #6e0343 0%, #8b2635 100%); color: white;">';
+        fila1 += '<th rowspan="2" style="padding:12px 15px; text-align:center; font-weight:600; font-size:14px; border:1px solid rgba(255,255,255,0.2); vertical-align:middle;">Boleta</th>';
+        fila1 += '<th rowspan="2" style="padding:12px 15px; text-align:center; font-weight:600; font-size:14px; border:1px solid rgba(255,255,255,0.2); vertical-align:middle;">Generación</th>';
+        fila1 += '<th rowspan="2" style="padding:12px 15px; text-align:center; font-weight:600; font-size:14px; border:1px solid rgba(255,255,255,0.2); vertical-align:middle;">Edad</th>';
+
+        turnosDisponibles.forEach(turno => {
+            fila1 += `<th colspan="2" style="padding:10px 15px; text-align:center; font-weight:700; font-size:13px; border:1px solid rgba(255,255,255,0.2); background:rgba(0,0,0,0.15);">${turno.nombre}</th>`;
+        });
+
+        fila1 += '<th rowspan="2" style="padding:12px 15px; text-align:center; font-weight:600; font-size:14px; border:1px solid rgba(255,255,255,0.2); vertical-align:middle;">Acciones</th>';
+        fila1 += '</tr>';
+
+        // Fila 2: H y M por cada turno
+        let fila2 = '<tr style="background: rgba(110,3,67,0.85); color: white;">';
+        turnosDisponibles.forEach(() => {
+            fila2 += '<th style="padding:8px 10px; text-align:center; font-size:12px; border:1px solid rgba(255,255,255,0.2); color:#b3e5fc;">H</th>';
+            fila2 += '<th style="padding:8px 10px; text-align:center; font-size:12px; border:1px solid rgba(255,255,255,0.2); color:#f8bbd0;">M</th>';
+        });
+        fila2 += '</tr>';
+
+        thead.innerHTML = fila1 + fila2;
+    }
+
+    /**
+     * Agregar filas de egresados: una por cada edad seleccionada
+     */
+    function agregarFilasEgresados() {
+        const programa = document.getElementById('programa');
+        const modalidad = document.getElementById('modalidad');
         const boleta = document.getElementById('filtro-boleta');
         const generacion = document.getElementById('filtro-generacion');
-        
-        // Validar que todos los campos estén llenos
-        if (!programa || !programa.value) {
-            alert('⚠️ Por favor seleccione un Programa');
-            return;
-        }
-        
-        if (!modalidad || !modalidad.value) {
-            alert('⚠️ Por favor seleccione una Modalidad');
-            return;
-        }
-        
-        if (!turnoSelect || !turnoSelect.value) {
-            alert('⚠️ Por favor seleccione un Turno');
-            return;
-        }
-        
-        if (!boleta || !boleta.value) {
-            alert('⚠️ Por favor seleccione una Boleta');
-            return;
-        }
-        
-        if (!generacion || !generacion.value) {
-            alert('⚠️ Por favor seleccione una Generación');
-            return;
-        }
-        
-        // Obtener edades seleccionadas
-        const checkboxesSeleccionados = document.querySelectorAll('.checkbox-edad:checked');
-        
-        if (checkboxesSeleccionados.length === 0) {
-            alert('⚠️ Por favor seleccione al menos una edad');
-            return;
-        }
-        
-        // Obtener el turno seleccionado del selector
-        const turnoId = turnoSelect.value;
-        const turnoNombre = turnoSelect.options[turnoSelect.selectedIndex].text;
-        
+
+        if (!programa || !programa.value) { alert('⚠️ Por favor seleccione un Programa'); return; }
+        if (!modalidad || !modalidad.value) { alert('⚠️ Por favor seleccione una Modalidad'); return; }
+        if (!boleta || !boleta.value) { alert('⚠️ Por favor seleccione una Boleta'); return; }
+        if (!generacion || !generacion.value) { alert('⚠️ Por favor seleccione una Generación'); return; }
+
+        const checkboxesSel = document.querySelectorAll('.checkbox-edad:checked');
+        if (checkboxesSel.length === 0) { alert('⚠️ Por favor seleccione al menos una edad'); return; }
+
         let filasAgregadas = 0;
         let filasDuplicadas = 0;
-        
-        // Crear una fila por cada edad seleccionada
-        checkboxesSeleccionados.forEach(checkbox => {
-            const edadValor = checkbox.value;
-            const edadNombre = checkbox.dataset.nombre;
-            
-            // Verificar si ya existe una fila con la misma combinación
-            const existe = filasEgresados.some(fila => 
-                fila.programa === programa.value &&
-                fila.modalidad === modalidad.value &&
-                fila.turno === turnoId &&
-                fila.boleta === boleta.value &&
-                fila.generacion === generacion.value &&
-                fila.edad === edadValor
+
+        checkboxesSel.forEach(cb => {
+            const edadValor = cb.value;
+            const edadNombre = cb.dataset.nombre;
+
+            // Verificar duplicado
+            const existe = filasEgresados.some(f =>
+                f.programa === programa.value &&
+                f.modalidad === modalidad.value &&
+                f.boleta === boleta.value &&
+                f.generacion === generacion.value &&
+                f.edad === edadValor
             );
-            
-            if (existe) {
-                filasDuplicadas++;
-                console.warn(`⚠️ Ya existe una fila para edad: ${edadNombre}`);
-                return; // Skip this edad
-            }
-            
-            // Crear objeto de fila
-            const fila = {
-                id: Date.now() + Math.random(), // ID único
+
+            if (existe) { filasDuplicadas++; return; }
+
+            // Inicializar turnos con valores vacíos
+            const turnosInit = {};
+            turnosDisponibles.forEach(t => { turnosInit[t.id] = { hombres: '', mujeres: '' }; });
+
+            filasEgresados.push({
+                id: Date.now() + Math.random(),
                 programa: programa.value,
                 programaNombre: programa.options[programa.selectedIndex].text,
                 modalidad: modalidad.value,
                 modalidadNombre: modalidad.options[modalidad.selectedIndex].text,
-                turno: turnoId,
-                turnoNombre: turnoNombre,
                 boleta: boleta.value,
                 boletaNombre: boleta.options[boleta.selectedIndex].text,
                 generacion: generacion.value,
                 generacionNombre: generacion.options[generacion.selectedIndex].text,
                 edad: edadValor,
                 edadNombre: edadNombre,
-                hombres: '',
-                mujeres: ''
-            };
-            
-            // Agregar al almacén
-            filasEgresados.push(fila);
+                turnos: turnosInit
+            });
             filasAgregadas++;
-            
-            console.log('✅ Fila agregada:', fila);
         });
-        
-        // Renderizar tabla
+
         renderizarTablaEgresados();
-        
-        // Limpiar selección de edades
-        seleccionarTodasEdades(false);
-        
-        // Mostrar mensaje de resultado
-        let mensaje = `✅ ${filasAgregadas} fila${filasAgregadas !== 1 ? 's' : ''} agregada${filasAgregadas !== 1 ? 's' : ''}`;
-        if (filasDuplicadas > 0) {
-            mensaje += `\n⚠️ ${filasDuplicadas} edad${filasDuplicadas !== 1 ? 'es' : ''} ya existía${filasDuplicadas !== 1 ? 'n' : ''} y no se agregó${filasDuplicadas !== 1 ? 'aron' : ''}`;
-        }
-        alert(mensaje);
-        
-        console.log(`📊 Resumen: ${filasAgregadas} agregadas, ${filasDuplicadas} duplicadas`);
+
+        // Limpiar checkboxes
+        document.querySelectorAll('.checkbox-edad').forEach(cb => cb.checked = false);
+        actualizarContadorEdades();
+
+        let msg = `✅ ${filasAgregadas} fila${filasAgregadas !== 1 ? 's' : ''} agregada${filasAgregadas !== 1 ? 's' : ''}`;
+        if (filasDuplicadas > 0) msg += `\n⚠️ ${filasDuplicadas} ya existía${filasDuplicadas !== 1 ? 'n' : ''} y se omitió${filasDuplicadas !== 1 ? 'eron' : ''}`;
+        alert(msg);
     }
-    
+
     /**
-     * Renderizar la tabla de egresados
+     * Renderizar la tabla de egresados (tabla única con columnas de turnos)
      */
     function renderizarTablaEgresados() {
         const tbody = document.getElementById('egresados-tbody');
-        
+        if (!tbody) return;
+
+        const colspan = 3 + turnosDisponibles.length * 2 + 1;
+
         if (filasEgresados.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="6" style="text-align: center; padding: 40px; color: #666;">
-                        <div style="font-size: 48px; margin-bottom: 15px;">📚</div>
-                        <p style="font-size: 16px; margin: 0;">No hay registros agregados. Use los filtros arriba para agregar filas.</p>
+                    <td colspan="${colspan}" style="text-align:center; padding:40px; color:#666;">
+                        <div style="font-size:48px; margin-bottom:15px;">📚</div>
+                        <p style="font-size:16px; margin:0;">No hay registros. Use los filtros arriba para agregar filas.</p>
                     </td>
-                </tr>
-            `;
+                </tr>`;
+            ajustarScrollTablaEgresados();
             return;
         }
-        
+
         tbody.innerHTML = '';
         filasEgresados.forEach((fila, index) => {
             const tr = document.createElement('tr');
             tr.style.borderBottom = '1px solid #dee2e6';
-            tr.style.transition = 'background-color 0.2s';
-            tr.innerHTML = `
-                <td style="padding: 12px; text-align: center;">${fila.boletaNombre}</td>
-                <td style="padding: 12px; text-align: center;">${fila.generacionNombre}</td>
-                <td style="padding: 12px; text-align: center; font-weight: 600;">${fila.edadNombre}</td>
-                <td style="padding: 12px; text-align: center;">
-                    <div style="display:inline-flex; align-items:center; gap:3px; padding:2px 4px; background:#e3f2fd; border-radius:4px; border:1px solid #90caf9; line-height:1;">
+            if (index % 2 === 0) tr.style.background = '#fafafa';
+
+            let celdas = `
+                <td style="padding:12px; text-align:center;">${fila.boletaNombre}</td>
+                <td style="padding:12px; text-align:center;">${fila.generacionNombre}</td>
+                <td style="padding:12px; text-align:center; font-weight:600;">${fila.edadNombre}</td>`;
+
+            turnosDisponibles.forEach(turno => {
+                const vals = fila.turnos[turno.id] || { hombres: '', mujeres: '' };
+                celdas += `
+                <td style="padding:8px; text-align:center;">
+                    <div style="display:inline-flex;align-items:center;gap:3px;padding:2px 4px;background:#e3f2fd;border-radius:4px;border:1px solid #90caf9;line-height:1;">
                         <div style="font-weight:700;color:#1976d2;font-size:11px;min-width:14px;text-align:center;">H</div>
-                        <input type="number" 
-                               min="0" 
-                               value="${fila.hombres}" 
-                               onchange="actualizarValorFila(${fila.id}, 'hombres', this.value)"
-                               style="width:42px;padding:2px 3px;border:2px solid #2196f3;border-radius:3px;background:#fff;color:#1976d2;font-weight:600;text-align:center;font-size:11px;line-height:1.1;"
-                               placeholder="">
+                        <input type="number" min="0"
+                               value="${vals.hombres}"
+                               onchange="actualizarValorFila(${fila.id}, ${turno.id}, 'hombres', this.value)"
+                               style="width:42px;padding:2px 3px;border:2px solid #2196f3;border-radius:3px;background:#fff;color:#1976d2;font-weight:600;text-align:center;font-size:11px;">
                     </div>
                 </td>
-                <td style="padding: 12px; text-align: center;">
-                    <div style="display:inline-flex; align-items:center; gap:3px; padding:2px 4px; background:#fce4ec; border-radius:4px; border:1px solid #f48fb1; line-height:1;">
+                <td style="padding:8px; text-align:center;">
+                    <div style="display:inline-flex;align-items:center;gap:3px;padding:2px 4px;background:#fce4ec;border-radius:4px;border:1px solid #f48fb1;line-height:1;">
                         <div style="font-weight:700;color:#c2185b;font-size:11px;min-width:14px;text-align:center;">M</div>
-                        <input type="number" 
-                               min="0" 
-                               value="${fila.mujeres}" 
-                               onchange="actualizarValorFila(${fila.id}, 'mujeres', this.value)"
-                               style="width:42px;padding:2px 3px;border:2px solid #e91e63;border-radius:3px;background:#fff;color:#c2185b;font-weight:600;text-align:center;font-size:11px;line-height:1.1;"
-                               placeholder="">
+                        <input type="number" min="0"
+                               value="${vals.mujeres}"
+                               onchange="actualizarValorFila(${fila.id}, ${turno.id}, 'mujeres', this.value)"
+                               style="width:42px;padding:2px 3px;border:2px solid #e91e63;border-radius:3px;background:#fff;color:#c2185b;font-weight:600;text-align:center;font-size:11px;">
                     </div>
-                </td>
-                <td style="padding: 12px; text-align: center;">
-                    <button type="button" 
-                            onclick="eliminarFilaEgresado(${fila.id})" 
-                            style="padding: 6px 12px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;"
-                            title="Eliminar fila">
-                        🗑️
-                    </button>
-                </td>
-            `;
+                </td>`;
+            });
+
+            celdas += `
+                <td style="padding:12px; text-align:center;">
+                    <button type="button"
+                            onclick="eliminarFilaEgresado(${fila.id})"
+                            style="padding:6px 12px;background:#dc3545;color:white;border:none;border-radius:4px;cursor:pointer;font-size:14px;"
+                            title="Eliminar fila">🗑️</button>
+                </td>`;
+
+            tr.innerHTML = celdas;
             tbody.appendChild(tr);
         });
-        
-        console.log(`📊 Tabla renderizada con ${filasEgresados.length} filas`);
-        
-        // Actualizar informe después de renderizar
+
+        ajustarScrollTablaEgresados();
+
         actualizarInformeEgresados();
     }
-    
+
+    function ajustarScrollTablaEgresados() {
+        const tbody = document.getElementById('egresados-tbody');
+        if (!tbody) return;
+
+        if (filasEgresados.length > 5) {
+            const primeraFila = tbody.querySelector('tr');
+            const altoFila = primeraFila ? primeraFila.getBoundingClientRect().height : 58;
+            tbody.style.maxHeight = `${Math.ceil(altoFila * 5)}px`;
+            tbody.style.overflowY = 'auto';
+        } else {
+            tbody.style.maxHeight = 'none';
+            tbody.style.overflowY = 'visible';
+        }
+    }
+
     /**
-     * Actualizar valor de una fila específica
+     * Actualizar valor de H o M de un turno en una fila
      */
-    function actualizarValorFila(id, campo, valor) {
-        const fila = filasEgresados.find(f => f.id === id);
+    function actualizarValorFila(filaId, turnoId, campo, valor) {
+        const fila = filasEgresados.find(f => f.id === filaId);
         if (fila) {
-            fila[campo] = parseInt(valor) || 0;
-            console.log(`✏️ Actualizado ${campo} de fila ${id}: ${fila[campo]}`);
-            
-            // Actualizar informe en tiempo real
+            if (!fila.turnos[turnoId]) fila.turnos[turnoId] = { hombres: '', mujeres: '' };
+            fila.turnos[turnoId][campo] = parseInt(valor) || 0;
             actualizarInformeEgresados();
         }
     }
-    
+
     /**
      * Eliminar una fila de egresado
      */
-    function eliminarFilaEgresado(id) {
+    function eliminarFilaEgresado(filaId) {
         if (confirm('¿Está seguro de eliminar este registro?')) {
-            filasEgresados = filasEgresados.filter(f => f.id !== id);
+            filasEgresados = filasEgresados.filter(f => f.id !== filaId);
             renderizarTablaEgresados();
-            console.log(`🗑️ Fila eliminada: ${id}`);
         }
     }
-    
+
     /**
      * Limpiar toda la tabla
      */
-    function limpiarTabla() {
-        if (filasEgresados.length === 0) {
-            alert('ℹ️ No hay registros para limpiar');
-            return;
-        }
-        
+    function limpiarTablaEgresados() {
+        if (filasEgresados.length === 0) { alert('ℹ️ No hay registros para limpiar'); return; }
         if (confirm(`¿Está seguro de eliminar los ${filasEgresados.length} registros?`)) {
             filasEgresados = [];
             renderizarTablaEgresados();
-            console.log('🧹 Tabla limpiada completamente');
         }
     }
-    
+
     /**
      * Limpiar formulario completo
      */
     function limpiarFormulario() {
         if (confirm('¿Está seguro de limpiar todo el formulario? Se perderán todos los datos no guardados.')) {
-            // Limpiar selectores principales
             document.getElementById('programa').value = '';
-            document.getElementById('modalidad').value = '';
-            document.getElementById('modalidad').innerHTML = '<option value="">-- Primero seleccione un Programa Académico --</option>';
-            document.getElementById('modalidad').disabled = true;
-            document.getElementById('filtro-turno').value = '';
-            
-            // Limpiar filtros de fila
-            document.getElementById('filtro-boleta').value = '';
-            document.getElementById('filtro-boleta').innerHTML = '<option value="">-- Primero seleccione una Modalidad --</option>';
-            document.getElementById('filtro-boleta').disabled = true;
-
-            document.getElementById('filtro-generacion').value = '';
-
-            // Limpiar selección de edades
-            seleccionarTodasEdades(false);
-            
-            // Limpiar tabla
+            const selMod = document.getElementById('modalidad');
+            selMod.innerHTML = '<option value="">-- Primero seleccione un Programa Académico --</option>';
+            selMod.disabled = true;
             filasEgresados = [];
-            renderizarTablaEgresados();
-            
+            ocultarSeccionCaptura();
             console.log('🧹 Formulario limpiado completamente');
         }
     }
-    
     /* ==============================================
        FUNCIONES DE GUARDADO Y VALIDACIÓN
        ============================================== */
-    
-    /**
-     * Guardar egresados en el backend
-     */
-    async function guardarEgresados() {
-        if (filasEgresados.length === 0) {
-            alert('⚠️ No hay registros para guardar. Agregue al menos una fila.');
-            return;
-        }
-        
-        // ELIMINADA LA VALIDACIÓN: Ahora se permite guardar filas con valores vacíos
-        // para que el usuario pueda editarlos o eliminarlos manualmente
-        // const tieneValores = filasEgresados.some(f => f.hombres > 0 || f.mujeres > 0);
-        // if (!tieneValores) {
-        //     alert('⚠️ Debe ingresar al menos un valor de Hombres o Mujeres');
-        //     return;
-        // }
-        
-        if (!confirm(`¿Guardar ${filasEgresados.length} registros de egresados?`)) {
-            return;
-        }
-        
-        mostrarOverlayCarga('Guardando Egresados...', 'Por favor espere');
-        
-        try {
-            const response = await fetch('/egresados/guardar', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    periodo: document.getElementById('periodo').value,
-                    registros: filasEgresados
-                })
-            });
-            
-            const resultado = await response.json();
-            
-            if (resultado.success) {
-                alert(`✅ ${resultado.message || 'Egresados guardados correctamente'}`);
-                console.log('✅ Respuesta del servidor:', resultado);
-                
-                // Actualizar el informe con datos reales del SP
-                await actualizarInformeEgresados();
-            } else {
-                alert(`❌ Error: ${resultado.error || 'No se pudo guardar'}`);
-                console.error('❌ Error del servidor:', resultado);
-            }
-        } catch (error) {
-            console.error('❌ Error al guardar egresados:', error);
-            alert('❌ Error al conectar con el servidor');
-        } finally {
-            ocultarOverlayCarga();
-        }
-    }
     
     /**
      * Validar egresados (para roles superiores)
@@ -1287,7 +1471,6 @@
      * y actualiza el semáforo a estado 2 (En Proceso)
      */
     async function guardarAvanceEgresados() {
-        // Validar que haya un programa y modalidad seleccionados
         const programa = document.getElementById('programa');
         const modalidad = document.getElementById('modalidad');
         
@@ -1301,157 +1484,49 @@
             return;
         }
         
-        // Validar que haya datos capturados
         if (filasEgresados.length === 0) {
-            alert('⚠️ No hay datos para guardar. Agregue al menos un registro.');
+            alert('⚠️ No hay registros para guardar. Agregue al menos una fila.');
             return;
         }
         
-        // Filtrar solo las filas que tienen valores para enviar al backend
-        const filasConValores = filasEgresados.filter(f => {
-            const hombres = parseInt(f.hombres) || 0;
-            const mujeres = parseInt(f.mujeres) || 0;
-            return hombres > 0 || mujeres > 0;
+        // Rellenar valores vacíos con 0 para todos los turnos
+        filasEgresados.forEach(fila => {
+            turnosDisponibles.forEach(turno => {
+                if (!fila.turnos[turno.id]) {
+                    fila.turnos[turno.id] = { hombres: 0, mujeres: 0 };
+                } else {
+                    if (fila.turnos[turno.id].hombres === '' || fila.turnos[turno.id].hombres === null || fila.turnos[turno.id].hombres === undefined) {
+                        fila.turnos[turno.id].hombres = 0;
+                    }
+                    if (fila.turnos[turno.id].mujeres === '' || fila.turnos[turno.id].mujeres === null || fila.turnos[turno.id].mujeres === undefined) {
+                        fila.turnos[turno.id].mujeres = 0;
+                    }
+                }
+            });
         });
         
-        if (filasConValores.length === 0) {
-            alert('⚠️ No hay valores para guardar. Ingrese al menos un número en Hombres o Mujeres.');
-            return;
-        }
+        // Re-renderizar para reflejar los 0 en los inputs
+        renderizarTablaEgresados();
         
-        if (!confirm(`¿Guardar el avance de captura?\n\nSe guardarán ${filasConValores.length} registro(s) con valores.\nLas filas vacías se mantendrán en la interfaz para que pueda llenarlas después.`)) {
+        const programaNombre = programa.options[programa.selectedIndex].text;
+        const modalidadNombre = modalidad.options[modalidad.selectedIndex].text;
+        
+        if (!confirm(
+            `¿Guardar el avance de captura?\n\n` +
+            `📚 Programa: ${programaNombre}\n` +
+            `📋 Modalidad: ${modalidadNombre}\n` +
+            `📊 Total de filas: ${filasEgresados.length}\n\n` +
+            `Los campos vacíos se guardarán como 0.`
+        )) {
             return;
         }
         
         mostrarOverlayCarga('Guardando Avance...', 'Actualizando datos de egresados');
         
         try {
-            // Primero guardar en Temp_Egresados (solo las filas con valores)
             const responseTemp = await fetch('/egresados/guardar', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    periodo: document.getElementById('periodo').value,
-                    registros: filasConValores  // Solo enviar las que tienen valores
-                })
-            });
-            
-            const resultadoTemp = await responseTemp.json();
-            
-            if (!resultadoTemp.success) {
-                throw new Error(resultadoTemp.error || 'Error al guardar en Temp_Egresados');
-            }
-            
-            console.log('✅ Datos guardados en Temp_Egresados');
-            
-            // Luego ejecutar el SP de actualización
-            const response = await fetch('/egresados/guardar_avance', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    periodo: document.getElementById('periodo').value
-                })
-            });
-            
-            const resultado = await response.json();
-            
-            if (resultado.success) {
-                alert(`✅ Avance guardado exitosamente\n\n` +
-                      `📊 Registros procesados: ${resultado.registros_procesados || 0}\n` +
-                      `🚦 Semáforo: ${resultado.semaforo_actualizado || 'Actualizado'}\n\n` +
-                      `Las filas con valores han sido guardadas y eliminadas de la tabla.\n` +
-                      `Solo permanecen las filas vacías para continuar capturando.`);
-                console.log('✅ Respuesta del servidor:', resultado);
-                
-                // ELIMINAR las filas que tienen valores (las que se guardaron)
-                // Solo mantener las filas vacías
-                const filasVacias = filasEgresados.filter(f => {
-                    const hombres = parseInt(f.hombres) || 0;
-                    const mujeres = parseInt(f.mujeres) || 0;
-                    return hombres === 0 && mujeres === 0;
-                });
-                
-                console.log(`🧹 Eliminando ${filasConValores.length} filas con valores`);
-                console.log(`📋 Manteniendo ${filasVacias.length} filas vacías`);
-                
-                // Actualizar el array y renderizar
-                filasEgresados = filasVacias;
-                renderizarTablaEgresados();
-                
-                // Actualizar el informe con datos reales del SP
-                await actualizarInformeEgresados();
-            } else if (resultado.warning) {
-                alert(`⚠️ ${resultado.warning}`);
-            } else {
-                alert(`❌ Error: ${resultado.error || 'No se pudo guardar el avance'}`);
-                console.error('❌ Error del servidor:', resultado);
-            }
-        } catch (error) {
-            console.error('❌ Error al guardar avance:', error);
-            alert(`❌ Error al guardar avance: ${error.message}`);
-        } finally {
-            ocultarOverlayCarga();
-        }
-    }
-    
-    /**
-     * Finalizar Captura de Egresados
-     * Ejecuta el SP que marca el semestre específico como completado (semáforo ID=3)
-     * y actualiza definitivamente los datos
-     */
-    async function finalizarCapturaEgresados() {
-        // Validar que haya un programa y modalidad seleccionados
-        const programa = document.getElementById('programa');
-        const modalidad = document.getElementById('modalidad');
-        
-        if (!programa || !programa.value) {
-            alert('⚠️ Por favor seleccione un Programa antes de finalizar');
-            return;
-        }
-        
-        if (!modalidad || !modalidad.value) {
-            alert('⚠️ Por favor seleccione una Modalidad antes de finalizar');
-            return;
-        }
-        
-        // Validar que haya datos capturados
-        if (filasEgresados.length === 0) {
-            alert('⚠️ No hay datos para finalizar. Agregue al menos un registro.');
-            return;
-        }
-        
-        // Validar que al menos una fila tenga valores
-        const tieneValores = filasEgresados.some(f => (parseInt(f.hombres) || 0) > 0 || (parseInt(f.mujeres) || 0) > 0);
-        if (!tieneValores) {
-            alert('⚠️ Debe ingresar al menos un valor de Hombres o Mujeres');
-            return;
-        }
-        
-        const programaNombre = programa.options[programa.selectedIndex].text;
-        const modalidadNombre = modalidad.options[modalidad.selectedIndex].text;
-        
-        if (!confirm(
-            `¿Está seguro de FINALIZAR la captura?\n\n` +
-            `📚 Programa: ${programaNombre}\n` +
-            `📋 Modalidad: ${modalidadNombre}\n\n` +
-            `⚠️ Esta acción marcará la captura como completada y actualizará el semáforo.`
-        )) {
-            return;
-        }
-        
-        mostrarOverlayCarga('Finalizando Captura...', 'Procesando datos y actualizando semáforo');
-        
-        try {
-            // Primero guardar en Temp_Egresados
-            const responseTemp = await fetch('/egresados/guardar', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     periodo: document.getElementById('periodo').value,
                     registros: filasEgresados
@@ -1466,12 +1541,156 @@
             
             console.log('✅ Datos guardados en Temp_Egresados');
             
-            // Luego ejecutar el SP de finalización
+            // ========================================================================
+            // PAUSA - SP COMENTADO (GUARDAR AVANCE)
+            // ========================================================================
+            /*
+            const response = await fetch('/egresados/guardar_avance', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    periodo: document.getElementById('periodo').value
+                })
+            });
+            
+            const resultado = await response.json();
+            
+            if (resultado.success) {
+                alert(`✅ Avance guardado exitosamente\n\n` +
+                      `📊 Registros procesados: ${resultado.registros_procesados || 0}\n` +
+                      `🚦 Semáforo: ${resultado.semaforo_actualizado || 'Actualizado'}\n\n` +
+                      `Las filas con valores han sido guardadas.`);
+                // Mantener solo filas donde todos los turnos tienen 0
+                filasEgresados = filasEgresados.filter(fila =>
+                    turnosDisponibles.every(t => {
+                        const h = parseInt(fila.turnos[t.id]?.hombres) || 0;
+                        const m = parseInt(fila.turnos[t.id]?.mujeres) || 0;
+                        return h === 0 && m === 0;
+                    })
+                );
+                renderizarTablaEgresados();
+                await actualizarInformeEgresados();
+            } else if (resultado.warning) {
+                alert(`⚠️ ${resultado.warning}`);
+            } else {
+                alert(`❌ Error: ${resultado.error || 'No se pudo guardar el avance'}`);
+            }
+            */
+            // ========================================================================
+            // ...hasta aquí para activar el SP de Guardar Avance
+            // ========================================================================
+            
+            // 🟢 MENSAJE TEMPORAL (mientras el SP está pausado)
+            alert(`✅ Datos guardados en Temp_Egresados\n\n` +
+                  `📊 Registros guardados: ${filasEgresados.length}\n\n` +
+                  `⚠️ NOTA: Los Stored Procedures están pausados.\n` +
+                  `Los datos se guardan solo en la tabla temporal.`);
+            console.log('✅ Guardado en Temp_Egresados (SP pausado)');
+            
+            // Mantener solo filas donde todos los turnos tienen 0 (las demás ya se guardaron)
+            filasEgresados = filasEgresados.filter(fila =>
+                turnosDisponibles.every(t => {
+                    const h = parseInt(fila.turnos[t.id]?.hombres) || 0;
+                    const m = parseInt(fila.turnos[t.id]?.mujeres) || 0;
+                    return h === 0 && m === 0;
+                })
+            );
+            renderizarTablaEgresados();
+            await actualizarInformeEgresados();
+            await actualizarSemaforoPestana();
+        } catch (error) {
+            console.error('❌ Error al guardar avance:', error);
+            alert(`❌ Error al guardar avance: ${error.message}`);
+        } finally {
+            ocultarOverlayCarga();
+        }
+    }
+    
+    /**
+     * Finalizar Captura de Egresados
+     * Ejecuta el SP que marca el turno específico como completado (semáforo ID=3)
+     * y actualiza definitivamente los datos
+     */
+    async function finalizarCapturaEgresados() {
+        const programa = document.getElementById('programa');
+        const modalidad = document.getElementById('modalidad');
+        
+        if (!programa || !programa.value) {
+            alert('⚠️ Por favor seleccione un Programa antes de finalizar');
+            return;
+        }
+        
+        if (!modalidad || !modalidad.value) {
+            alert('⚠️ Por favor seleccione una Modalidad antes de finalizar');
+            return;
+        }
+        
+        if (filasEgresados.length === 0) {
+            alert('⚠️ No hay datos para finalizar. Agregue al menos una fila.');
+            return;
+        }
+        
+        // Rellenar valores vacíos con 0 para todos los turnos
+        filasEgresados.forEach(fila => {
+            turnosDisponibles.forEach(turno => {
+                if (!fila.turnos[turno.id]) {
+                    fila.turnos[turno.id] = { hombres: 0, mujeres: 0 };
+                } else {
+                    if (fila.turnos[turno.id].hombres === '' || fila.turnos[turno.id].hombres === null || fila.turnos[turno.id].hombres === undefined) {
+                        fila.turnos[turno.id].hombres = 0;
+                    }
+                    if (fila.turnos[turno.id].mujeres === '' || fila.turnos[turno.id].mujeres === null || fila.turnos[turno.id].mujeres === undefined) {
+                        fila.turnos[turno.id].mujeres = 0;
+                    }
+                }
+            });
+        });
+        
+        // Re-renderizar para reflejar los 0 en los inputs
+        renderizarTablaEgresados();
+        
+        const programaNombre = programa.options[programa.selectedIndex].text;
+        const modalidadNombre = modalidad.options[modalidad.selectedIndex].text;
+        
+        if (!confirm(
+            `¿Está seguro de FINALIZAR la captura?\n\n` +
+            `📚 Programa: ${programaNombre}\n` +
+            `📋 Modalidad: ${modalidadNombre}\n` +
+            `📊 Total de filas: ${filasEgresados.length}\n\n` +
+            `⚠️ Esta acción marcará la captura como completada.\n` +
+            `Los campos vacíos se guardarán como 0.`
+        )) {
+            return;
+        }
+        
+        mostrarOverlayCarga('Finalizando Captura...', 'Procesando datos y actualizando semáforo');
+        
+        try {
+            const responseTemp = await fetch('/egresados/guardar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    periodo: document.getElementById('periodo').value,
+                    registros: filasEgresados
+                })
+            });
+            
+            const resultadoTemp = await responseTemp.json();
+            
+            if (!resultadoTemp.success) {
+                throw new Error(resultadoTemp.error || 'Error al guardar en Temp_Egresados');
+            }
+            
+            console.log('✅ Datos guardados en Temp_Egresados');
+            
+            // ========================================================================
+            // 🔴 PAUSA - SP COMENTADO (FINALIZAR CAPTURA)
+            // Para reactivar los Stored Procedures, descomenta desde aquí...
+            // ========================================================================
+            /*
             const response = await fetch('/egresados/finalizar_captura', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     periodo: document.getElementById('periodo').value,
                     programa: programa.value,
@@ -1488,22 +1707,33 @@
                       `📊 Registros procesados: ${resultado.registros_procesados || 0}\n` +
                       `🚦 Semáforo: ${resultado.semaforo_actualizado || 'Completado'}\n\n` +
                       `La captura ha sido marcada como completada.`);
-                console.log('✅ Respuesta del servidor:', resultado);
-                
-                // Limpiar la tabla y recargar la página
                 filasEgresados = [];
                 renderizarTablaEgresados();
-                
-                // Opcional: Recargar la página después de un delay
-                setTimeout(() => {
-                    window.location.reload();
-                }, 2000);
+                await actualizarInformeEgresados();
+                setTimeout(() => { window.location.reload(); }, 2000);
             } else if (resultado.warning) {
                 alert(`⚠️ ${resultado.warning}`);
             } else {
                 alert(`❌ Error: ${resultado.error || 'No se pudo finalizar la captura'}`);
-                console.error('❌ Error del servidor:', resultado);
             }
+            */
+            // ========================================================================
+            // ...hasta aquí para activar el SP de Finalizar Captura
+            // ========================================================================
+            
+            // 🟢 MENSAJE TEMPORAL (mientras el SP está pausado)
+            alert(`✅ Datos guardados en Temp_Egresados\n\n` +
+                  `📚 Programa: ${programaNombre}\n` +
+                  `📋 Modalidad: ${modalidadNombre}\n` +
+                  `📊 Registros guardados: ${filasEgresados.length}\n\n` +
+                  `⚠️ NOTA: Los Stored Procedures están pausados.\n` +
+                  `Los datos se guardan solo en la tabla temporal.`);
+            console.log('✅ Guardado en Temp_Egresados (SP pausado)');
+            
+            filasEgresados = [];
+            renderizarTablaEgresados();
+            await actualizarInformeEgresados();
+            await actualizarSemaforoPestana();
         } catch (error) {
             console.error('❌ Error al finalizar captura:', error);
             alert(`❌ Error al finalizar captura: ${error.message}`);
@@ -1554,12 +1784,36 @@
             
             console.log('📦 Respuesta del servidor:', resultado);
             console.log('📊 Datos recibidos:', resultado.datos);
+
+            const normalizarTexto = (valor) => String(valor || '')
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .trim()
+                .toLowerCase();
+
+            const selectPrograma = document.getElementById('programa');
+            const nombreProgramaSeleccionado =
+                selectPrograma && selectPrograma.value && selectPrograma.selectedOptions.length > 0
+                    ? selectPrograma.selectedOptions[0].textContent.trim()
+                    : '';
+
+            let datosInforme = resultado.datos || [];
+            if (!nombreProgramaSeleccionado) {
+                datosInforme = [];
+                console.log('ℹ️ Informe oculto: no hay programa seleccionado');
+            } else {
+                const programaSeleccionadoNorm = normalizarTexto(nombreProgramaSeleccionado);
+                datosInforme = datosInforme.filter(fila =>
+                    normalizarTexto(fila.Nombre_Programa) === programaSeleccionadoNorm
+                );
+                console.log(`🎯 Filtro por programa aplicado: '${nombreProgramaSeleccionado}' -> ${datosInforme.length} registro(s)`);
+            }
             
-            if (resultado.success && resultado.datos && resultado.datos.length > 0) {
+            if (resultado.success && datosInforme.length > 0) {
                 // Agrupar datos por combinación única incluyendo Turno
                 const registrosAgrupados = {};
                 
-                resultado.datos.forEach(fila => {
+                datosInforme.forEach(fila => {
                     console.log('🔍 Procesando fila:', fila);
                     
                     // Crear clave única para agrupar (incluyendo Turno)
@@ -1670,17 +1924,21 @@
                 tbody.innerHTML = htmlFilas;
                 
                 console.log('✅ Informe actualizado:', {
-                    registros: resultado.datos.length,
+                    registros: datosInforme.length,
                     totalHombres: totalGeneralHombres,
                     totalMujeres: totalGeneralMujeres,
                     total: totalGeneral
                 });
             } else {
+                const mensajeSinDatos = nombreProgramaSeleccionado
+                    ? `No hay datos guardados para el programa seleccionado: ${nombreProgramaSeleccionado}.`
+                    : 'Seleccione un programa para mostrar el informe.';
+
                 // Sin datos
                 tbody.innerHTML = `<tr>
                     <td colspan="9" style="text-align: center; padding: 30px; color: #999;">
                         <div style="font-size: 48px; margin-bottom: 10px;">📋</div>
-                        <div>No hay datos guardados aún. Guarde registros para ver el informe.</div>
+                        <div>${mensajeSinDatos}</div>
                     </td>
                 </tr>`;
                 
@@ -1809,8 +2067,13 @@
 
                     console.log(`📈 Abriendo resumen dinámico (Director) - Periodo: ${periodoTexto}, Nivel: ${nivelTexto}, UA fija: ${uaFijaSiglaDirector}`);
 
+                    mostrarCargaSeleccion('Cargando egresados seleccionados...');
+                    btnVerResumenDirector.disabled = true;
+
                     const url = `/egresados/resumen-dinamico?periodo=${encodeURIComponent(periodoTexto)}&nivel=${encodeURIComponent(nivelTexto)}&unidad=${encodeURIComponent(uaFijaSiglaDirector)}`;
-                    window.location.href = url;
+                    setTimeout(() => {
+                        window.location.href = url;
+                    }, 80);
                 });
 
                 verificarSeleccionDirector();
@@ -1891,12 +2154,24 @@
 
                     console.log(`📈 Abriendo resumen dinámico - Periodo: ${periodoTexto}, Nivel: ${nivelTexto}, UA: ${uaSigla}`);
 
+                    mostrarCargaSeleccion('Cargando egresados seleccionados...');
+                    btnVerResumen.disabled = true;
+
                     const url = `/egresados/resumen-dinamico?periodo=${encodeURIComponent(periodoTexto)}&nivel=${encodeURIComponent(nivelTexto)}&unidad=${encodeURIComponent(uaSigla)}`;
-                    window.location.href = url;
+                    setTimeout(() => {
+                        window.location.href = url;
+                    }, 80);
                 });
             }
         }
         // === FIN LÓGICA ROLES 4-9 ===
+
+        // Si el usuario regresa con el botón "atrás", cerramos el overlay de carga
+        window.addEventListener('pageshow', function(event) {
+            if (event.persisted) {
+                ocultarCargaSeleccion();
+            }
+        });
         
         // Agregar listeners a los checkboxes de edad
         const checkboxesEdad = document.querySelectorAll('.checkbox-edad');
@@ -1908,7 +2183,24 @@
         if (selectPrograma && selectModalidad) {
             selectModalidad.disabled = true;
             
-            selectPrograma.addEventListener('change', filtrarModalidadesPorPrograma);
+            selectPrograma.addEventListener('change', function() {
+                filtrarModalidadesPorPrograma();
+                actualizarInformeEgresados();
+            });
+            
+            selectModalidad.addEventListener('change', function() {
+                if (selectPrograma.value && selectModalidad.value) {
+                    mostrarSeccionCaptura();
+                    actualizarBannerSeleccion();
+                    actualizarSemaforoPestana();
+                } else {
+                    ocultarSeccionCaptura();
+                }
+            });
+
+            window.addEventListener('resize', function() {
+                ajustarTamanoBannerSeleccion();
+            });
             
             setTimeout(function() {
                 if (selectPrograma.value) {

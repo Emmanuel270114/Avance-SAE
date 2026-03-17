@@ -3,6 +3,8 @@ from backend.database.connection import get_db
 from backend.services.usuario_service import validacion_usuario
 from backend.schemas.Usuario import UsuarioLogin, UsuarioResponse
 from backend.core.templates import templates, static
+from backend.core.session_store import SessionData, session_store
+from backend.core.auth import set_session_cookie, clear_session_cookie, SESSION_TTL_SECONDS
 
 from fastapi import APIRouter, Request, Depends, Form
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
@@ -16,6 +18,17 @@ router = APIRouter()
 @router.get("/", response_class=HTMLResponse)
 async def login_view(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
+
+
+@router.get("/logout")
+async def logout(request: Request):
+    """Cierra sesión (borra sesión server-side y la cookie session_id)."""
+    sid = request.cookies.get("session_id")
+    if sid:
+        session_store.delete(sid)
+    resp = RedirectResponse(url="/login", status_code=303)
+    clear_session_cookie(resp)
+    return resp
 
 @router.post("/", response_class=HTMLResponse)
 async def login(
@@ -65,27 +78,41 @@ async def login(
             if temp_password_detected:
                 # Si tiene contraseña temporal, redirigir a cambiar_password
                 response = RedirectResponse(url="/recuperacion/cambiar", status_code=303)
-                # Establecer cookie para que el frontend bloquee navegación si es necesario
-                response.set_cookie(key="requiere_cambio_password", value="1", httponly=True)
                 print(f"DEBUG: Redirigiendo a /recuperacion/cambiar")
             else:
                 # Redirigir a la vista principal después de login
                 response = RedirectResponse(url="/mod_principal", status_code=303)
                 print(f"DEBUG: Redirigiendo a /mod_principal")
+
+            # Crear sesión server-side (no confiar en cookies editables)
+            sess = SessionData(
+                id_usuario=int(id_usuario or 0),
+                usuario=user.Usuario or "",
+                id_rol=int(id_rol or 0),
+                nombre_rol=nombre_rol or "",
+                id_nivel=int(id_nivel or 0),
+                nombre_nivel=nombre_nivel or "",
+                id_unidad_academica=int(id_unidad or 0),
+                sigla_unidad_academica=sigla_unidad or "",
+                nombre_usuario=user.Nombre or "",
+                apellidoP_usuario=user.Paterno or "",
+                apellidoM_usuario=user.Materno or "",
+                requiere_cambio_password=bool(temp_password_detected),
+            )
+            session_id = session_store.create(sess, ttl_seconds=SESSION_TTL_SECONDS)
+            set_session_cookie(response, session_id)
             
-            # Establecer todas las cookies con la información del usuario
-            response.set_cookie(key="id_rol", value=str(id_rol), httponly=True)
-            response.set_cookie(key="nombre_rol", value=nombre_rol, httponly=True)
-            response.set_cookie(key="id_nivel", value=str(id_nivel), httponly=True)
-            response.set_cookie(key="nombre_nivel", value=nombre_nivel, httponly=True)
-            if id_usuario:
-                response.set_cookie(key="id_usuario", value=str(id_usuario), httponly=True)
-            response.set_cookie(key="usuario", value=user.Usuario or "", httponly=True)  # LOGIN del usuario
-            response.set_cookie(key="id_unidad_academica", value=str(id_unidad), httponly=True)
-            response.set_cookie(key="sigla_unidad_academica", value=sigla_unidad, httponly=True)
-            response.set_cookie(key="nombre_usuario", value=user.Nombre or "", httponly=True)
-            response.set_cookie(key="apellidoP_usuario", value=user.Paterno or "", httponly=True)
-            response.set_cookie(key="apellidoM_usuario", value=user.Materno or "", httponly=True)
+            # (Opcional) limpiar cookies legacy si existían de versiones anteriores
+            for legacy in [
+                "id_rol","nombre_rol","id_nivel","nombre_nivel","id_usuario","usuario",
+                "id_unidad_academica","sigla_unidad_academica","nombre_usuario","apellidoP_usuario","apellidoM_usuario",
+                "requiere_cambio_password"
+            ]:
+                try:
+                    response.delete_cookie(legacy, path='/')
+                except Exception:
+                    pass
+            
             return response
         else:
             mensaje = "Usuario o contraseña incorrectos."
@@ -105,3 +132,4 @@ async def register_user_endpoint(user: UsuarioCreate, db: Session = Depends(get_
         return register_usuario(db, user)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))"""
+

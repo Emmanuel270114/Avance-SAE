@@ -1,0 +1,938 @@
+{% extends 'base.html' %}
+
+{% block title %}Resumen Dinámico de Aprovechamiento{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="/static/css/components/header.css">
+<link rel="stylesheet" href="/static/css/components/matricula_consulta.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+<style>
+    .submenu-categorias-box {
+        display: none !important;
+    }
+
+    :root {
+        --rosa-principal: #6e0343;
+        --rosa-secundario: #8b1257;
+        --rosa-claro: #c2185b;
+        --rosa-muy-claro: #ffffff;
+        --azul-claro: #b3d9ff;
+        --verde-claro: #c8e6c9;
+    }
+
+    .acciones-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .filtros-aplicados {
+        background: var(--rosa-muy-claro);
+        padding: 15px 20px;
+        border-radius: 10px;
+        margin-bottom: 25px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+
+    .filtros-aplicados .filtro-item {
+        color: var(--rosa-principal);
+        font-weight: 600;
+    }
+
+    .filtros-aplicados .filtro-item strong {
+        color: var(--rosa-secundario);
+    }
+
+    /* Título sección tabla */
+    .titulo-tabla {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--rosa-principal);
+        margin: 30px 0 10px 0;
+        border-left: 5px solid var(--rosa-principal);
+        padding-left: 12px;
+    }
+
+    .contenedor-tabla {
+        overflow-x: auto;
+        overscroll-behavior-x: contain;
+        margin-bottom: 10px;
+        border-radius: 10px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .tabla-resumen {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        font-size: 0.85rem;
+        background: white;
+    }
+
+    .tabla-resumen th,
+    .tabla-resumen td {
+        border-right: 1px solid #ddd;
+        border-bottom: 1px solid #ddd;
+        border-top: none;
+        border-left: none;
+        padding: 10px 8px;
+        text-align: center;
+        vertical-align: middle;
+    }
+
+    .tabla-resumen thead tr:first-child th {
+        border-top: 1px solid #ddd;
+    }
+
+    .tabla-resumen .th-programa,
+    .tabla-resumen .celda-programa,
+    .tabla-resumen .td-total-label {
+        border-left: 1px solid #ddd !important;
+    }
+
+    .tabla-resumen th {
+        background: linear-gradient(135deg, var(--rosa-principal), var(--rosa-secundario));
+        color: white;
+        font-weight: 600;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+
+    .tabla-resumen .encabezado-nivel-1 {
+        background-color: var(--rosa-principal) !important;
+        font-size: 1rem;
+        font-weight: bold;
+    }
+
+    .tabla-resumen .encabezado-nivel-2 {
+        background-color: var(--rosa-secundario) !important;
+        font-size: 0.9rem;
+    }
+
+    .tabla-resumen .encabezado-nivel-3 {
+        background-color: var(--rosa-claro) !important;
+        font-size: 0.85rem;
+    }
+
+    /* sticky izquierda */
+    .tabla-resumen .celda-programa {
+        background-color: var(--azul-claro) !important;
+        font-weight: bold;
+        text-align: left;
+        padding-left: 15px;
+        position: sticky;
+        left: 0;
+        z-index: 6;
+    }
+
+    .tabla-resumen .celda-aprovechamiento {
+        background-color: #f9f9f9 !important;
+        text-align: left;
+        padding-left: 10px;
+        position: sticky;
+        z-index: 5;
+        box-shadow: 3px 0 6px -1px rgba(110, 3, 67, 0.25);
+        min-width: 170px;
+        max-width: 190px;
+        white-space: normal;
+    }
+
+    .tabla-resumen .th-programa {
+        background-color: var(--rosa-principal) !important;
+        color: white !important;
+        font-weight: bold;
+        position: sticky;
+        left: 0;
+        z-index: 21;
+    }
+
+    .tabla-resumen .th-aprovechamiento {
+        background-color: var(--rosa-secundario) !important;
+        color: white !important;
+        font-weight: 600;
+        position: sticky;
+        z-index: 20;
+        box-shadow: 3px 0 6px -1px rgba(110, 3, 67, 0.35);
+    }
+
+    /* sticky derecha */
+    .tabla-resumen .th-totales {
+        position: sticky;
+        z-index: 20;
+        border-right: none !important;
+    }
+
+    .tabla-resumen .celda-total-h,
+    .tabla-resumen .celda-total-m,
+    .tabla-resumen .celda-total-t {
+        background-color: var(--verde-claro) !important;
+        font-weight: bold;
+        position: sticky;
+        z-index: 4;
+        border-right: none !important;
+    }
+
+    .tabla-resumen .th-totales-inicio {
+        box-shadow: -3px 0 6px -1px rgba(110, 3, 67, 0.35), inset -1px 0 0 rgba(255, 255, 255, 0.3);
+    }
+
+    .tabla-resumen .encabezado-nivel-3.th-totales:not(.th-totales-inicio) {
+        box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.3);
+    }
+
+    .tabla-resumen .celda-total-h {
+        box-shadow: -3px 0 6px -1px rgba(110, 3, 67, 0.25), inset -1px 0 0 #bbb;
+    }
+
+    .tabla-resumen .celda-total-m {
+        box-shadow: inset -1px 0 0 #bbb;
+    }
+
+    .tabla-resumen .celda-total-t {
+        box-shadow: none;
+    }
+
+    .tabla-resumen .td-total-label {
+        position: sticky;
+        left: 0;
+        z-index: 5;
+        text-align: center;
+        background-color: var(--verde-claro) !important;
+    }
+
+    /* filas especiales */
+    .tabla-resumen .fila-subtotal td {
+        background: #f0f0f0 !important;
+        font-weight: bold;
+        color: var(--rosa-principal);
+        border-top: 2px solid #ddd;
+    }
+
+    .tabla-resumen .fila-total-general {
+        background: var(--verde-claro);
+        font-weight: bold;
+        font-size: 1rem;
+    }
+
+    .tabla-resumen tbody tr:hover td {
+        background: #f8f9fa !important;
+    }
+
+    /* colores tipo */
+    .tipo-aprobados .celda-aprovechamiento {
+        color: #166534;
+        font-weight: 700;
+    }
+
+    .tipo-baja .celda-aprovechamiento {
+        color: #991b1b;
+    }
+
+    .tipo-reprobada .celda-aprovechamiento {
+        color: #991b1b;
+    }
+
+    .tipo-desercion .celda-aprovechamiento {
+        color: #7c3aed;
+    }
+
+    .tipo-reincorp .celda-aprovechamiento {
+        color: #0369a1;
+    }
+
+    .sep-modal {
+        border-left: 2px solid #ddd !important;
+    }
+
+    /* botones */
+    .btn-regresar {
+        background: transparent;
+        color: var(--rosa-principal);
+        border: 2px solid var(--rosa-principal);
+        padding: 12px 30px;
+        border-radius: 25px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-regresar:hover {
+        background: var(--rosa-principal);
+        color: white;
+        transform: translateX(-3px);
+    }
+
+    .btn-exportar {
+        background: var(--rosa-principal);
+        color: white;
+        border: none;
+        padding: 12px 30px;
+        border-radius: 25px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-exportar:hover {
+        background: var(--rosa-secundario);
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(110, 3, 67, 0.3);
+    }
+
+    .footer-botones {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 30px;
+    }
+
+    /* alertas */
+    .alerta-sin-datos {
+        background: #fff3cd;
+        border: 2px solid #ffc107;
+        color: #856404;
+        padding: 20px;
+        border-radius: 10px;
+        text-align: center;
+        margin: 30px 0;
+    }
+
+    .alerta-error {
+        background: #f8d7da;
+        border: 2px solid #f5c6cb;
+        color: #721c24;
+        padding: 20px;
+        border-radius: 10px;
+        margin: 30px 0;
+        white-space: pre-wrap;
+        font-size: 0.85rem;
+    }
+
+    /* validación */
+    .contenedor-botones-validacion {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        margin: 30px 0;
+    }
+
+    .btn-validar {
+        background: #28a745;
+        color: white;
+        border: none;
+        padding: 15px 40px;
+        border-radius: 25px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 1rem;
+    }
+
+    .btn-validar:hover {
+        background: #218838;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
+    }
+
+    .btn-rechazar {
+        background: #dc3545;
+        color: white;
+        border: none;
+        padding: 15px 40px;
+        border-radius: 25px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 1rem;
+    }
+
+    .btn-rechazar:hover {
+        background: #c82333;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(220, 53, 69, 0.3);
+    }
+
+    .btn-validar:disabled,
+    .btn-rechazar:disabled {
+        background: #6c757d;
+        cursor: not-allowed;
+        opacity: 0.5;
+    }
+
+    /* panel rechazo */
+    .panel-rechazo {
+        display: none;
+        background: #fff3cd;
+        border: 2px solid #ffc107;
+        border-radius: 10px;
+        padding: 25px;
+        margin: 20px 0;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .panel-rechazo h4 {
+        color: #856404;
+        margin-bottom: 15px;
+    }
+
+    .panel-rechazo textarea {
+        width: 100%;
+        min-height: 150px;
+        padding: 15px;
+        border: 2px solid #ffc107;
+        border-radius: 8px;
+        font-size: 1rem;
+        resize: vertical;
+        font-family: inherit;
+        box-sizing: border-box;
+    }
+
+    .panel-rechazo textarea:focus {
+        outline: none;
+        border-color: #ff9800;
+        box-shadow: 0 0 10px rgba(255, 152, 0, 0.2);
+    }
+
+    .panel-rechazo-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 15px;
+    }
+
+    .contador-caracteres {
+        color: #666;
+        font-size: 0.9rem;
+    }
+
+    .panel-rechazo-botones {
+        display: flex;
+        gap: 10px;
+    }
+
+    .btn-confirmar-rechazo {
+        background: #dc3545;
+        color: white;
+        border: none;
+        padding: 10px 25px;
+        border-radius: 20px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .btn-confirmar-rechazo:hover {
+        background: #c82333;
+    }
+
+    .btn-cancelar-rechazo {
+        background: #6c757d;
+        color: white;
+        border: none;
+        padding: 10px 25px;
+        border-radius: 20px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .btn-cancelar-rechazo:hover {
+        background: #5a6268;
+    }
+
+    .mensaje-validacion {
+        padding: 20px;
+        border-radius: 10px;
+        text-align: center;
+        margin: 20px 0;
+        font-size: 1rem;
+    }
+
+    .mensaje-validacion.validada {
+        background: #d4edda;
+        color: #155724;
+        border: 2px solid #c3e6cb;
+    }
+
+    .mensaje-validacion.rechazada {
+        background: #f8d7da;
+        color: #721c24;
+        border: 2px solid #f5c6cb;
+    }
+
+    .mensaje-validacion.esperando {
+        background: #fff3cd;
+        color: #856404;
+        border: 2px solid #ffeeba;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+
+    <div class="header-usuarios">
+        <div class="bienvenido">Bienvenido: <strong>{{ nombre_completo }}</strong>
+            {% if periodo %}&nbsp;|&nbsp; Periodo: <strong>{{ periodo }}</strong>{% endif %}
+            {% if nombre_rol %}&nbsp;|&nbsp; Rol: <strong>{{ nombre_rol }}</strong>{% endif %}
+        </div>
+        <a href="/aprovechamiento/consulta" class="btn-volver">Regresar</a>
+    </div>
+
+    <h2><i class="fas fa-chart-bar" style="margin-right:8px;"></i>Resumen Dinámico de Aprovechamiento</h2>
+
+    <div class="acciones-header">
+        {% if tabla_datos %}
+        <button class="btn-exportar" onclick="exportarExcel()">
+            <i class="fas fa-file-excel"></i> Exportar a Excel
+        </button>
+        {% else %}<div></div>{% endif %}
+    </div>
+
+    <div class="filtros-aplicados">
+        <div class="filtro-item"><i class="fas fa-calendar-alt"></i> Periodo: <strong>{{ periodo }}</strong></div>
+        <div class="filtro-item"><i class="fas fa-layer-group"></i> Nivel: <strong>{{ nivel }}</strong></div>
+        <div class="filtro-item"><i class="fas fa-building"></i> Unidad: <strong>{{ nombre_ua }}</strong></div>
+        {% if tabla_datos %}
+        <div class="filtro-item"><i class="fas fa-users"></i> Total Alumnos: <strong>{{ tabla_datos.total_general_t
+                }}</strong></div>
+        {% endif %}
+    </div>
+
+    {% if error %}
+    <div class="alerta-error">
+        <h4><i class="fas fa-exclamation-triangle"></i> Error</h4>
+        <p>{{ error }}</p>
+    </div>
+
+    {% elif not tabla_datos %}
+    <div class="alerta-sin-datos">
+        <div><i class="fas fa-info-circle" style="font-size:3rem;margin-bottom:15px;"></i></div>
+        <h4>No hay datos disponibles</h4>
+        <p>No se encontraron registros para los filtros seleccionados.</p>
+    </div>
+
+    {% else %}
+    {% set datos = tabla_datos %}
+    {% set datos2 = tabla_datos_semestre %}
+
+    {# ── Bloque validación: visible para roles 4-9 con periodo activo ── #}
+    {% if id_rol in [4,5,6,7,8,9] and periodo_activo %}
+
+    {# Mensaje de estado (ya validó / rechazó / esperando) — controlado por JS #}
+    <div class="mensaje-validacion" id="mensaje-validacion" style="display:none;"></div>
+
+    {# Botones — siempre presentes en el DOM, visibilidad controlada por JS #}
+    <div class="contenedor-botones-validacion" id="contenedor-botones-validacion" style="display:none;">
+        <button class="btn-validar" id="btn-validar" onclick="validarAprovechamiento()">
+            <i class="fas fa-check-circle"></i> Validar Aprovechamiento
+        </button>
+        <button class="btn-rechazar" id="btn-rechazar" onclick="rechazarAprovechamiento()">
+            <i class="fas fa-times-circle"></i> Rechazar Aprovechamiento
+        </button>
+    </div>
+
+    {# Panel de rechazo #}
+    <div class="panel-rechazo" id="panel-rechazo">
+        <h4><i class="fas fa-exclamation-triangle"></i> Motivo del Rechazo</h4>
+        <textarea id="motivo-rechazo" placeholder="Describa el motivo del rechazo (mínimo 10 caracteres, máximo 250)..."
+            maxlength="250" oninput="actualizarContador()"></textarea>
+        <div class="panel-rechazo-footer">
+            <span class="contador-caracteres"><span id="contador-caracteres">0</span>/250 caracteres</span>
+            <div class="panel-rechazo-botones">
+                <button class="btn-cancelar-rechazo" onclick="cerrarPanelRechazo()">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+                <button class="btn-confirmar-rechazo" onclick="confirmarRechazo()">
+                    <i class="fas fa-paper-plane"></i> Enviar Rechazo
+                </button>
+            </div>
+        </div>
+    </div>
+
+    {% endif %}
+
+    {# ════════════════════════════════════════════════════
+    TABLA 1 — Aprovechamiento por Turno
+    ════════════════════════════════════════════════════ #}
+    <div class="titulo-tabla"><i class="fas fa-table"></i> Aprovechamiento por Turno</div>
+    <div class="contenedor-tabla">
+        <table class="tabla-resumen" id="tbl-turno">
+            <thead>
+                <tr>
+                    <th rowspan="3" class="encabezado-nivel-1 th-programa">Programa Académico</th>
+                    <th rowspan="3" class="encabezado-nivel-1 th-aprovechamiento">Aprovechamiento</th>
+                    {% for mod in datos.modalidades %}
+                    <th colspan="{{ datos.turnos_por_modalidad[mod]|length * 3 }}" class="encabezado-nivel-1 sep-modal">
+                        {{ mod }}</th>
+                    {% endfor %}
+                    <th colspan="3" class="encabezado-nivel-1 th-totales th-totales-inicio">Total</th>
+                </tr>
+                <tr>
+                    {% for mod in datos.modalidades %}
+                    {% for tur in datos.turnos_por_modalidad[mod] %}
+                    <th colspan="3" class="encabezado-nivel-2{% if loop.first %} sep-modal{% endif %}">{{ tur }}</th>
+                    {% endfor %}
+                    {% endfor %}
+                    <th class="encabezado-nivel-2 th-totales th-totales-inicio" colspan="3">H / M / T</th>
+                </tr>
+                <tr>
+                    {% for mod in datos.modalidades %}
+                    {% for tur in datos.turnos_por_modalidad[mod] %}
+                    <th class="encabezado-nivel-3{% if loop.first %} sep-modal{% endif %}">H</th>
+                    <th class="encabezado-nivel-3">M</th>
+                    <th class="encabezado-nivel-3">T</th>
+                    {% endfor %}
+                    {% endfor %}
+                    <th class="encabezado-nivel-3 th-totales">H</th>
+                    <th class="encabezado-nivel-3 th-totales">M</th>
+                    <th class="encabezado-nivel-3 th-totales">T</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for prog_data in datos.programas %}
+                {% set apr_count = prog_data.filas|length %}
+                {% for fila in prog_data.filas %}
+                {% set apl = fila.aprovechamiento | lower %}
+                {% if 'aprobad' in apl %}{% set tc='tipo-aprobados' %}
+                {% elif 'reprobad' in apl %}{% set tc='tipo-reprobada' %}
+                {% elif 'baja' in apl %}{% set tc='tipo-baja' %}
+                {% elif 'deserci' in apl %}{% set tc='tipo-desercion' %}
+                {% elif 'reincorp' in apl %}{% set tc='tipo-reincorp' %}
+                {% else %}{% set tc='' %}{% endif %}
+                <tr class="{{ tc }}">
+                    {% if loop.first %}
+                    <td class="celda-programa" rowspan="{{ apr_count + 1 }}">{{ prog_data.nombre }}</td>
+                    {% endif %}
+                    <td class="celda-aprovechamiento">{{ fila.aprovechamiento }}</td>
+                    {% for celda in fila.celdas %}
+                    <td{% if loop.first %} class="sep-modal" {% endif %}>{{ celda.h if celda.h else 0 }}</td>
+                        <td>{{ celda.m if celda.m else 0 }}</td>
+                        <td>{{ celda.t if celda.t else 0 }}</td>
+                        {% endfor %}
+                        <td class="celda-total-h">{{ fila.total_h }}</td>
+                        <td class="celda-total-m">{{ fila.total_m }}</td>
+                        <td class="celda-total-t">{{ fila.total_t }}</td>
+                </tr>
+                {% endfor %}
+                <tr class="fila-subtotal">
+                    <td class="celda-aprovechamiento"><strong>Subtotal</strong></td>
+                    {% for celda in prog_data.subtotales_celdas %}
+                    <td{% if loop.first %} class="sep-modal" {% endif %}>{{ celda.h }}</td>
+                        <td>{{ celda.m }}</td>
+                        <td>{{ celda.t }}</td>
+                        {% endfor %}
+                        <td class="celda-total-h">{{ prog_data.subtotal_h }}</td>
+                        <td class="celda-total-m">{{ prog_data.subtotal_m }}</td>
+                        <td class="celda-total-t">{{ prog_data.subtotal_t }}</td>
+                </tr>
+                {% endfor %}
+                <tr class="fila-total-general">
+                    <td class="td-total-label" colspan="2"><strong>TOTAL GENERAL</strong></td>
+                    {% for celda in datos.total_general_celdas %}
+                    <td{% if loop.first %} class="sep-modal" {% endif %}>{{ celda.h }}</td>
+                        <td>{{ celda.m }}</td>
+                        <td>{{ celda.t }}</td>
+                        {% endfor %}
+                        <td class="celda-total-h">{{ datos.total_general_h }}</td>
+                        <td class="celda-total-m">{{ datos.total_general_m }}</td>
+                        <td class="celda-total-t">{{ datos.total_general_t }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    {# ════════════════════════════════════════════════════
+    TABLA 2 — Aprovechamiento por Semestre
+    ════════════════════════════════════════════════════ #}
+    {% if datos2 %}
+    <div class="titulo-tabla" style="margin-top:40px;"><i class="fas fa-table"></i> Aprovechamiento por Semestre</div>
+    <div class="contenedor-tabla">
+        <table class="tabla-resumen" id="tbl-semestre">
+            <thead>
+                <tr>
+                    <th rowspan="2" class="encabezado-nivel-1 th-programa">Programa Académico</th>
+                    <th rowspan="2" class="encabezado-nivel-1 th-aprovechamiento">Aprovechamiento</th>
+                    {% for sem in datos2.semestres %}
+                    <th colspan="3" class="encabezado-nivel-1 sep-modal">Semestre {{ sem }}</th>
+                    {% endfor %}
+                    <th colspan="3" class="encabezado-nivel-1 th-totales th-totales-inicio">Total</th>
+                </tr>
+                <tr>
+                    {% for sem in datos2.semestres %}
+                    <th class="encabezado-nivel-3 sep-modal">H</th>
+                    <th class="encabezado-nivel-3">M</th>
+                    <th class="encabezado-nivel-3">T</th>
+                    {% endfor %}
+                    <th class="encabezado-nivel-3 th-totales">H</th>
+                    <th class="encabezado-nivel-3 th-totales">M</th>
+                    <th class="encabezado-nivel-3 th-totales">T</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for prog_data in datos2.programas %}
+                {% set apr_count = prog_data.filas|length %}
+                {% for fila in prog_data.filas %}
+                {% set apl = fila.aprovechamiento | lower %}
+                {% if 'aprobad' in apl %}{% set tc='tipo-aprobados' %}
+                {% elif 'reprobad' in apl %}{% set tc='tipo-reprobada' %}
+                {% elif 'baja' in apl %}{% set tc='tipo-baja' %}
+                {% elif 'deserci' in apl %}{% set tc='tipo-desercion' %}
+                {% elif 'reincorp' in apl %}{% set tc='tipo-reincorp' %}
+                {% else %}{% set tc='' %}{% endif %}
+                <tr class="{{ tc }}">
+                    {% if loop.first %}
+                    <td class="celda-programa" rowspan="{{ apr_count + 1 }}">{{ prog_data.nombre }}</td>
+                    {% endif %}
+                    <td class="celda-aprovechamiento">{{ fila.aprovechamiento }}</td>
+                    {% for celda in fila.celdas %}
+                    <td class="sep-modal">{{ celda.h if celda.h else 0 }}</td>
+                    <td>{{ celda.m if celda.m else 0 }}</td>
+                    <td>{{ celda.t if celda.t else 0 }}</td>
+                    {% endfor %}
+                    <td class="celda-total-h">{{ fila.total_h }}</td>
+                    <td class="celda-total-m">{{ fila.total_m }}</td>
+                    <td class="celda-total-t">{{ fila.total_t }}</td>
+                </tr>
+                {% endfor %}
+                <tr class="fila-subtotal">
+                    <td class="celda-aprovechamiento"><strong>Subtotal</strong></td>
+                    {% for celda in prog_data.subtotales_celdas %}
+                    <td class="sep-modal">{{ celda.h }}</td>
+                    <td>{{ celda.m }}</td>
+                    <td>{{ celda.t }}</td>
+                    {% endfor %}
+                    <td class="celda-total-h">{{ prog_data.subtotal_h }}</td>
+                    <td class="celda-total-m">{{ prog_data.subtotal_m }}</td>
+                    <td class="celda-total-t">{{ prog_data.subtotal_t }}</td>
+                </tr>
+                {% endfor %}
+                <tr class="fila-total-general">
+                    <td class="td-total-label" colspan="2"><strong>TOTAL GENERAL</strong></td>
+                    {% for celda in datos2.total_general_celdas %}
+                    <td class="sep-modal">{{ celda.h }}</td>
+                    <td>{{ celda.m }}</td>
+                    <td>{{ celda.t }}</td>
+                    {% endfor %}
+                    <td class="celda-total-h">{{ datos2.total_general_h }}</td>
+                    <td class="celda-total-m">{{ datos2.total_general_m }}</td>
+                    <td class="celda-total-t">{{ datos2.total_general_t }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <div class="footer-botones">
+        <a href="/aprovechamiento/consulta" class="btn-regresar">
+            <i class="fas fa-arrow-left"></i> Regresar
+        </a>
+        <button class="btn-exportar" onclick="exportarExcel()">
+            <i class="fas fa-file-excel"></i> Exportar a Excel
+        </button>
+    </div>
+
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    const periodo = "{{ periodo }}";
+    const nivel = "{{ nivel }}";
+    const unidad = "{{ unidad }}";
+    const idRol = {{ id_rol }};
+    const puedeValidar = {{ 'true' if puede_validar     else 'false' }};
+    const usuarioYaValido = {{ 'true' if usuario_ya_valido  else 'false' }};
+    const usuarioYaRechazo = {{ 'true' if usuario_ya_rechazo else 'false' }};
+
+    // ── Verificar estado de validación al cargar ───────────────────────────
+    function verificarEstadoValidacion() {
+        const contenedorBotones = document.getElementById('contenedor-botones-validacion');
+        const panelRechazo = document.getElementById('panel-rechazo');
+        let mensajeValidacion = document.getElementById('mensaje-validacion');
+
+        if (!contenedorBotones) return;
+
+        console.log('🔍 Verificando estado de validación...');
+        console.log(`   puedeValidar: ${puedeValidar}`);
+        console.log(`   usuarioYaValido: ${usuarioYaValido}`);
+        console.log(`   usuarioYaRechazo: ${usuarioYaRechazo}`);
+
+        if (usuarioYaValido || usuarioYaRechazo) {
+            // Ocultar botones y panel
+            contenedorBotones.style.display = 'none';
+            if (panelRechazo) panelRechazo.style.display = 'none';
+
+            // Crear mensaje si no existe
+            if (!mensajeValidacion) {
+                mensajeValidacion = document.createElement('div');
+                mensajeValidacion.id = 'mensaje-validacion';
+                if (contenedorBotones.parentNode) {
+                    contenedorBotones.parentNode.insertBefore(mensajeValidacion, contenedorBotones);
+                }
+            }
+
+            mensajeValidacion.style.display = 'block';
+            if (usuarioYaValido) {
+                mensajeValidacion.className = 'mensaje-validacion validada';
+                mensajeValidacion.innerHTML = '<span style="font-size:24px;">✅</span> <strong>Ya has validado el aprovechamiento de esta unidad académica.</strong>';
+            } else {
+                mensajeValidacion.className = 'mensaje-validacion rechazada';
+                mensajeValidacion.innerHTML = '<span style="font-size:24px;">❌</span> <strong>Ya has rechazado el aprovechamiento de esta unidad académica.</strong>';
+            }
+
+        } else if (!puedeValidar) {
+            // No puede validar aún — ocultar botones, mostrar mensaje de espera
+            contenedorBotones.style.display = 'none';
+
+            if (!mensajeValidacion) {
+                mensajeValidacion = document.createElement('div');
+                mensajeValidacion.id = 'mensaje-validacion';
+                if (contenedorBotones.parentNode) {
+                    contenedorBotones.parentNode.insertBefore(mensajeValidacion, contenedorBotones);
+                }
+            }
+
+            mensajeValidacion.style.display = 'block';
+            mensajeValidacion.className = 'mensaje-validacion esperando';
+            mensajeValidacion.innerHTML = '<span style="font-size:24px;">⏳</span> <strong>Esperando validación del nivel anterior para poder actuar.</strong>';
+
+        } else {
+            // Puede validar — mostrar botones
+            contenedorBotones.style.display = 'flex';
+            if (mensajeValidacion) mensajeValidacion.style.display = 'none';
+        }
+    }
+
+    // ── Sticky dinámico para ambas tablas ──────────────────────────────────
+    function aplicarStickyTabla(tabla) {
+        if (!tabla) return;
+        const thProg = tabla.querySelector('.th-programa');
+        if (thProg) {
+            const w = thProg.offsetWidth;
+            tabla.querySelectorAll('.celda-aprovechamiento, .th-aprovechamiento').forEach(el => el.style.left = w + 'px');
+        }
+        const filaHMT = [...tabla.querySelectorAll('thead tr')].at(-1);
+        if (!filaHMT) return;
+        const ths = filaHMT.querySelectorAll('th');
+        const n = ths.length;
+        if (n < 3) return;
+        const rT = 0, rM = ths[n - 1].offsetWidth, rH = rM + ths[n - 2].offsetWidth;
+
+        tabla.querySelectorAll('thead tr').forEach(fila => {
+            const tots = fila.querySelectorAll('th.th-totales');
+            if (tots.length === 1) { tots[0].style.right = '0'; tots[0].classList.add('th-totales-inicio'); }
+            else if (tots.length === 3) {
+                tots[2].style.right = rT + 'px'; tots[1].style.right = rM + 'px'; tots[0].style.right = rH + 'px';
+                tots[0].classList.add('th-totales-inicio');
+            }
+        });
+        tabla.querySelectorAll('tbody tr').forEach(fila => {
+            const h = fila.querySelector('.celda-total-h');
+            const m = fila.querySelector('.celda-total-m');
+            const t = fila.querySelector('.celda-total-t');
+            if (h) h.style.right = rH + 'px';
+            if (m) m.style.right = rM + 'px';
+            if (t) t.style.right = rT + 'px';
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        aplicarStickyTabla(document.getElementById('tbl-turno'));
+        aplicarStickyTabla(document.getElementById('tbl-semestre'));
+        verificarEstadoValidacion();
+    });
+
+    // ── Exportar ambas tablas en hojas separadas ───────────────────────────
+    function exportarExcel() {
+        const wb = XLSX.utils.book_new();
+        const pc = periodo.replace(/\//g, '-'), nc = nivel.replace(/\s+/g, '_');
+        const t1 = document.getElementById('tbl-turno');
+        const t2 = document.getElementById('tbl-semestre');
+        if (t1) XLSX.utils.book_append_sheet(wb, XLSX.utils.table_to_sheet(t1), 'Por Turno');
+        if (t2) XLSX.utils.book_append_sheet(wb, XLSX.utils.table_to_sheet(t2), 'Por Semestre');
+        XLSX.writeFile(wb, `Aprovechamiento_${unidad}_${nc}_${pc}.xlsx`);
+    }
+
+    // ── Validar ────────────────────────────────────────────────────────────
+    async function validarAprovechamiento() {
+        const r = await Swal.fire({
+            title: '¿Validar Aprovechamiento?',
+            html: `<b>Periodo:</b> ${periodo}<br><b>Nivel:</b> ${nivel}<br><b>Unidad:</b> ${unidad}`,
+            icon: 'question', showCancelButton: true,
+            confirmButtonColor: '#28a745', cancelButtonColor: '#6c757d',
+            confirmButtonText: '<i class="fas fa-check"></i> Sí, validar', cancelButtonText: 'Cancelar'
+        });
+        if (!r.isConfirmed) return;
+
+        Swal.fire({ title: 'Validando...', allowOutsideClick: false, allowEscapeKey: false, showConfirmButton: false, didOpen: () => Swal.showLoading() });
+        try {
+            const res = await fetch('/aprovechamiento/validar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ periodo, nivel, unidad }) });
+            const data = await res.json();
+            if (data.success) { await Swal.fire({ icon: 'success', title: '¡Validado!', text: data.mensaje, timer: 2000, showConfirmButton: false }); location.reload(); }
+            else Swal.fire({ icon: 'error', title: 'Error', text: data.error || 'No se pudo completar la validación', confirmButtonColor: '#6e0343' });
+        } catch (e) { Swal.fire({ icon: 'error', title: 'Error de conexión', text: e.message, confirmButtonColor: '#6e0343' }); }
+    }
+
+    // ── Rechazar ───────────────────────────────────────────────────────────
+    function rechazarAprovechamiento() {
+        const panel = document.getElementById('panel-rechazo');
+        if (panel.style.display === 'block') { cerrarPanelRechazo(); return; }
+        document.getElementById('motivo-rechazo').value = '';
+        document.getElementById('contador-caracteres').textContent = '0';
+        panel.style.display = 'block';
+        setTimeout(() => document.getElementById('motivo-rechazo').focus(), 100);
+        setTimeout(() => panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 150);
+    }
+    function cerrarPanelRechazo() {
+        document.getElementById('panel-rechazo').style.display = 'none';
+        document.getElementById('motivo-rechazo').value = '';
+    }
+    function actualizarContador() {
+        const len = document.getElementById('motivo-rechazo').value.length;
+        const el = document.getElementById('contador-caracteres');
+        el.textContent = len; el.style.color = len > 230 ? '#dc3545' : '#666'; el.style.fontWeight = len > 230 ? 'bold' : 'normal';
+    }
+    async function confirmarRechazo() {
+        const motivo = document.getElementById('motivo-rechazo').value.trim();
+        if (motivo.length < 10) { Swal.fire({ icon: 'warning', title: 'Motivo insuficiente', text: 'Ingrese al menos 10 caracteres.', confirmButtonColor: '#6e0343' }); return; }
+        const r = await Swal.fire({
+            title: '¿Rechazar Aprovechamiento?',
+            html: `<b>Motivo:</b> ${motivo.substring(0, 80)}${motivo.length > 80 ? '...' : ''}`,
+            icon: 'warning', showCancelButton: true,
+            confirmButtonColor: '#dc3545', cancelButtonColor: '#6c757d',
+            confirmButtonText: '<i class="fas fa-paper-plane"></i> Sí, rechazar', cancelButtonText: 'Cancelar'
+        });
+        if (!r.isConfirmed) return;
+        Swal.fire({ title: 'Enviando rechazo...', allowOutsideClick: false, allowEscapeKey: false, showConfirmButton: false, didOpen: () => Swal.showLoading() });
+        try {
+            const res = await fetch('/aprovechamiento/rechazar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ periodo, nivel, unidad, motivo }) });
+            const data = await res.json();
+            if (data.success) { await Swal.fire({ icon: 'success', title: '¡Rechazo enviado!', text: data.mensaje, timer: 2000, showConfirmButton: false }); location.reload(); }
+            else Swal.fire({ icon: 'error', title: 'Error', text: data.error || 'No se pudo enviar el rechazo', confirmButtonColor: '#6e0343' });
+        } catch (e) { Swal.fire({ icon: 'error', title: 'Error de conexión', text: e.message, confirmButtonColor: '#6e0343' }); }
+    }
+</script>
+{% endblock %}

@@ -5,8 +5,10 @@ import json
 from typing import List, Dict, Any, Tuple, Optional
 from fastapi import HTTPException
 from datetime import datetime
+import time
 
 from backend.core.templates import templates
+from backend.core.auth import get_current_session
 from backend.database.connection import get_db
 from backend.database.models.Egresados import Egresados
 from backend.database.models.CatPeriodo import CatPeriodo as Periodo
@@ -28,7 +30,7 @@ from backend.database.models.Validacion import Validacion
 from backend.utils.request import get_request_host
 from backend.database.models.Temp_Egresados import Temp_Egresados
 from backend.database.models.CatRoles import CatRoles
-from backend.services.periodo_service import get_periodo_activo, get_ultimo_periodo
+from backend.services.periodo_service import get_periodo_activo, get_ultimo_periodo, get_periodo_anterior_al_ultimo
 
 router = APIRouter()
 
@@ -147,21 +149,29 @@ def execute_egresados_sp(
         Tuple[List[Dict], Optional[str]]: (datos, nota_rechazo)
     """
     try:
+        # Log de parámetros que se enviarán al SP
+        print(f"🔍 Ejecutando SP con parámetros:")
+        print(f"   @UUnidad_Academica = '{unidad_sigla}'")
+        print(f"   @Pperiodo = '{periodo_literal}'")
+        print(f"   @NNivel = '{nivel_nombre}'")
+        print(f"   @UUsuario = '{usuario}'")
+        print(f"   @HHost = '{host}'")
+        
         sp_call = text("""
             EXEC SP_Consulta_Egresados_Unidad_Academica 
                 @UUnidad_Academica = :unidad,
-                @PPeriodo = :periodo,
+                @Pperiodo = :periodo,
+                @NNivel = :nivel,
                 @UUsuario = :usuario,
-                @HHost = :host,
-                @NNivel = :nivel
+                @HHost = :host
         """)
         
         result = db.execute(sp_call, {
             'unidad': unidad_sigla,
             'periodo': periodo_literal,
+            'nivel': nivel_nombre,
             'usuario': usuario,
-            'host': host,
-            'nivel': nivel_nombre
+            'host': host
         })
         
         # Primer resultset: datos de egresados
@@ -195,7 +205,7 @@ def execute_egresados_sp(
 
 
 @router.get('/consulta')
-async def captura_egresados_sp_view(request: Request, db: Session = Depends(get_db)):
+async def captura_egresados_sp_view(request: Request, sess=Depends(get_current_session), db: Session = Depends(get_db)):
     """
     Endpoint principal para la visualización/captura de egresados usando EXCLUSIVAMENTE Stored Procedures.
     Accesible para:
@@ -204,20 +214,16 @@ async def captura_egresados_sp_view(request: Request, db: Session = Depends(get_
     TODA la información viene del SP, NO de los modelos ORM.
     """
     # Obtener datos del usuario logueado desde las cookies
-    id_unidad_academica = int(request.cookies.get("id_unidad_academica", 0))
+    id_unidad_academica = int(sess.id_unidad_academica)
     
     # Manejar id_nivel que puede ser None para usuarios sin nivel (ej: directores)
-    id_nivel_cookie = request.cookies.get("id_nivel", "0")
-    if id_nivel_cookie == "None" or id_nivel_cookie is None or id_nivel_cookie == "":
-        id_nivel = 0  # Valor por defecto para usuarios sin nivel
-    else:
-        id_nivel = int(id_nivel_cookie)
+    id_nivel = int(getattr(sess, 'id_nivel', 0) or 0)
     
-    id_rol = int(request.cookies.get("id_rol", 0))
-    nombre_rol = request.cookies.get("nombre_rol", "")
-    nombre_usuario = request.cookies.get("nombre_usuario", "")
-    apellidoP_usuario = request.cookies.get("apellidoP_usuario", "")
-    apellidoM_usuario = request.cookies.get("apellidoM_usuario", "")
+    id_rol = int(sess.id_rol)
+    nombre_rol = sess.nombre_rol
+    nombre_usuario = sess.nombre_usuario
+    apellidoP_usuario = sess.apellidoP_usuario
+    apellidoM_usuario = sess.apellidoM_usuario
     nombre_completo = " ".join(filter(None, [nombre_usuario, apellidoP_usuario, apellidoM_usuario]))
 
     # Validar que el usuario tenga uno de los roles permitidos
@@ -420,11 +426,15 @@ async def captura_egresados_sp_view(request: Request, db: Session = Depends(get_
             nivel = db.query(Nivel).filter(Nivel.Id_Nivel == id_nivel).first()
             nivel_nombre = nivel.Nivel if nivel else ""
             
+            # Para egresados, usar el periodo actual (el último/default)
+            periodo_para_sp = periodo_default_literal
+            print(f"📅 Usando periodo para SP de egresados: {periodo_para_sp}")
+
             # Ejecutar SP para obtener metadatos
             resultados_sp, _ = execute_egresados_sp(
                 db=db,
                 unidad_sigla=unidad_actual.Sigla if unidad_actual else "",
-                periodo_literal=periodo_default_literal,
+                periodo_literal=periodo_para_sp,
                 nivel_nombre=nivel_nombre,
                 usuario=nombre_completo,
                 host=get_request_host(request)
@@ -522,6 +532,18 @@ async def captura_egresados_sp_view(request: Request, db: Session = Depends(get_
                 
                 programa_a_modalidades_json = json.dumps(programa_a_modalidades)
                 print(f"🔗 Mapeo ID_Programa -> IDs_Modalidad: {programa_a_modalidades_json}")
+            else:
+                # Si el SP no retorna datos, dejar todo vacío
+                print(f"⚠️ El SP no retornó datos para esta UA/Nivel/Periodo")
+                print(f"   No se cargarán programas ni modalidades (esperando datos del SP)")
+                programas_formatted = []
+                modalidades_formatted = []
+                boletas_formatted = []
+                generaciones_formatted = []
+                turnos_formatted = []
+                sexos_formatted = []
+                edades_formatted = []
+                programa_a_modalidades_json = "{}"
                     
         except Exception as e:
             print(f"❌ Error al obtener metadatos del SP: {str(e)}")
@@ -553,6 +575,25 @@ async def captura_egresados_sp_view(request: Request, db: Session = Depends(get_
         except Exception as e:
             print(f"Error al verificar rechazo: {str(e)}")
 
+    # Obtener datos del semáforo para las pestañas de turnos (primeros 3 registros)
+    semaforo_estados = db.query(CatSemaforo).filter(CatSemaforo.Id_Semaforo.in_([1, 2, 3])).order_by(CatSemaforo.Id_Semaforo).all()
+    semaforo_data = []
+    for estado in semaforo_estados:
+        # Asegurar que el color tenga el símbolo # al inicio
+        color = estado.Color_Semaforo
+        if color and not color.startswith('#'):
+            color = f"#{color}"
+        
+        semaforo_data.append({
+            'id': estado.Id_Semaforo,
+            'descripcion': estado.Descripcion_Semaforo,
+            'color': color
+        })
+    
+    print(f"📊 Estados del semáforo cargados: {len(semaforo_data)}")
+    for estado in semaforo_data:
+        print(f"  - ID {estado['id']}: {estado['descripcion']} ({estado['color']})")
+
     # Renderizar la plantilla - usar egresados_consulta_limpio.html para todos los roles
     template_name = "egresados_consulta_limpio.html"
     
@@ -581,6 +622,7 @@ async def captura_egresados_sp_view(request: Request, db: Session = Depends(get_
         "niveles_disponibles": niveles_disponibles,
         "nivel_a_uas_json": nivel_a_uas_json,
         "programa_a_modalidades_json": programa_a_modalidades_json,
+        "semaforo_estados": semaforo_data,
         "periodos": periodos,
         "rechazo_info": rechazo_info,
         "matricula_rechazada": matricula_rechazada,
@@ -589,7 +631,7 @@ async def captura_egresados_sp_view(request: Request, db: Session = Depends(get_
 
 
 @router.post('/consultar')
-async def consultar_egresados(request: Request, db: Session = Depends(get_db)):
+async def consultar_egresados(request: Request, sess=Depends(get_current_session), db: Session = Depends(get_db)):
     """
     Ejecuta el SP_Consulta_Egresados_Unidad_Academica para obtener datos de egresados
     """
@@ -597,30 +639,41 @@ async def consultar_egresados(request: Request, db: Session = Depends(get_db)):
         data = await request.json()
         
         id_periodo = data.get('id_periodo')
-        id_unidad_academica = data.get('id_unidad_academica')
-        id_nivel = data.get('id_nivel')  # Recibir id_nivel del frontend
+        id_unidad_academica = data.get('id_unidad_academica') or getattr(sess, 'id_unidad_academica', None)
+        id_nivel = data.get('id_nivel') or getattr(sess, 'id_nivel', None)  # Recibir id_nivel del frontend o usar sesión
         id_programa = data.get('id_programa')
         id_modalidad = data.get('id_modalidad')
         
         # Obtener información desde cookies
-        nombre_usuario = request.cookies.get("nombre_usuario", "")
-        apellidoP_usuario = request.cookies.get("apellidoP_usuario", "")
-        apellidoM_usuario = request.cookies.get("apellidoM_usuario", "")
+        nombre_usuario = sess.nombre_usuario
+        apellidoP_usuario = sess.apellidoP_usuario
+        apellidoM_usuario = sess.apellidoM_usuario
         nombre_completo = " ".join(filter(None, [nombre_usuario, apellidoP_usuario, apellidoM_usuario]))
         host = get_request_host(request)
         
         # Obtener datos de periodo, unidad académica y nivel
         periodo = db.query(Periodo).filter(Periodo.Id_Periodo == id_periodo).first()
-        unidad = db.query(Unidad_Academica).filter(
-            Unidad_Academica.Id_Unidad_Academica == id_unidad_academica
-        ).first()
-        
-        # Usar el id_nivel enviado desde el frontend
-        nivel = db.query(Nivel).filter(Nivel.Id_Nivel == id_nivel).first() if id_nivel else None
-        
+        unidad = None
+        try:
+            if id_unidad_academica is not None:
+                unidad = db.query(Unidad_Academica).filter(
+                    Unidad_Academica.Id_Unidad_Academica == int(id_unidad_academica)
+                ).first()
+        except Exception:
+            unidad = None
+
+        # Usar el id_nivel enviado desde el frontend o desde la sesión
+        nivel = None
+        try:
+            if id_nivel is not None:
+                nivel = db.query(Nivel).filter(Nivel.Id_Nivel == int(id_nivel)).first()
+        except Exception:
+            nivel = None
+
         if not all([periodo, unidad, nivel]):
             raise HTTPException(status_code=400, detail="Faltan datos requeridos: periodo, unidad o nivel")
         
+        # Para egresados, usar el periodo seleccionado tal cual (sin restar)
         periodo_literal = periodo.Periodo
         unidad_sigla = unidad.Sigla
         nivel_nombre = nivel.Nivel
@@ -637,18 +690,18 @@ async def consultar_egresados(request: Request, db: Session = Depends(get_db)):
         sp_call = text("""
             EXEC SP_Consulta_Egresados_Unidad_Academica 
                 @UUnidad_Academica = :unidad,
-                @PPeriodo = :periodo,
+                @Pperiodo = :periodo,
+                @NNivel = :nivel,
                 @UUsuario = :usuario,
-                @HHost = :host,
-                @NNivel = :nivel
+                @HHost = :host
         """)
         
         result = db.execute(sp_call, {
             'unidad': unidad_sigla,
             'periodo': periodo_literal,
+            'nivel': nivel_nombre,
             'usuario': nombre_completo,
-            'host': host,
-            'nivel': nivel_nombre
+            'host': host
         })
         
         # Obtener todos los resultados
@@ -689,7 +742,7 @@ async def consultar_egresados(request: Request, db: Session = Depends(get_db)):
 
 
 @router.post('/guardar')
-async def guardar_egresados_temp(request: Request, db: Session = Depends(get_db)):
+async def guardar_egresados_temp(request: Request, sess=Depends(get_current_session), db: Session = Depends(get_db)):
     """
     Guarda o actualiza datos de egresados en Temp_Egresados desde la tabla dinámica del frontend
     Los datos se guardarán temporalmente con TODOS los campos en formato TEXTO (no IDs)
@@ -697,14 +750,99 @@ async def guardar_egresados_temp(request: Request, db: Session = Depends(get_db)
     try:
         data = await request.json()
         
-        # Obtener datos del request
-        periodo_id = data.get('periodo')
+        # Obtener datos del request (aceptar tanto 'periodo' como 'id_periodo')
+        periodo_id = data.get('periodo') or data.get('id_periodo')
         registros = data.get('registros', [])  # Array con los datos de egresados
+
+        # DEBUG: imprimir payload recibido (recortar si es muy largo)
+        try:
+            payload_json = json.dumps(data, default=str)
+            print(f"[DEBUG REQUEST] /egresados/guardar payload: {payload_json[:2000]}")
+        except Exception as e:
+            print(f"[DEBUG REQUEST] No se pudo serializar payload: {e}")
+
+        # Soporte para frontend antiguo: payload con id_programa/id_modalidad y registros agregados
+        # Formato frontend: registros = [{id_boleta, id_generacion, id_turno, id_sexo, cantidad}, ...]
+        # Transformar a formato esperado por este endpoint: registros = [{programa, modalidad, turno, boleta, generacion, edad, hombres, mujeres}, ...]
+        if registros and isinstance(registros, list) and isinstance(registros[0], dict) and registros[0].get('id_boleta') is not None:
+            id_programa_front = data.get('id_programa') or data.get('programa')
+            id_modalidad_front = data.get('id_modalidad') or data.get('modalidad')
+            # Agrupar por boleta/generacion/turno
+            agrup = {}
+            for r in registros:
+                try:
+                    b = int(r.get('id_boleta') or 0)
+                    g = int(r.get('id_generacion') or 0)
+                    t = int(r.get('id_turno') or 0)
+                    s = int(r.get('id_sexo') or 0)
+                    c = int(r.get('cantidad') or 0)
+                except Exception:
+                    continue
+
+                key = f"{b}_{g}_{t}"
+                if key not in agrup:
+                    agrup[key] = { 'boleta': b, 'generacion': g, 'turno': t, 'hombres': 0, 'mujeres': 0 }
+                if s and c:
+                    # Asumir sexo: 1=Hombre, 2=Mujer (si no coincide, se intentará mapear por DB después)
+                    if s == 1:
+                        agrup[key]['hombres'] += c
+                    else:
+                        agrup[key]['mujeres'] += c
+
+            # Reconstruir registros en formato esperado
+            registros_transformados = []
+            for _, v in agrup.items():
+                registros_transformados.append({
+                    'programa': int(id_programa_front) if id_programa_front else 0,
+                    'modalidad': int(id_modalidad_front) if id_modalidad_front else 0,
+                    'turno': v['turno'],
+                    'boleta': v['boleta'],
+                    'generacion': v['generacion'],
+                    'edad': '',
+                    'hombres': v['hombres'],
+                    'mujeres': v['mujeres']
+                })
+
+            registros = registros_transformados
+            print(f"[DEBUG TRANSFORM] Registros transformados a formato interno: {registros}")
+
+        # Soporte para frontend nuevo: cada fila trae un objeto "turnos" con H/M por turno.
+        # Normalizamos a registros planos (uno por turno) para reutilizar el flujo actual.
+        if registros and isinstance(registros, list):
+            registros_normalizados = []
+            formato_turnos_detectado = False
+
+            for reg in registros:
+                if not isinstance(reg, dict):
+                    continue
+
+                turnos_reg = reg.get('turnos')
+
+                if isinstance(turnos_reg, dict):
+                    formato_turnos_detectado = True
+
+                    for turno_id, valores_turno in turnos_reg.items():
+                        valores_turno = valores_turno or {}
+                        reg_plano = dict(reg)
+                        reg_plano['turno'] = turno_id
+                        reg_plano['hombres'] = valores_turno.get('hombres', '')
+                        reg_plano['mujeres'] = valores_turno.get('mujeres', '')
+                        registros_normalizados.append(reg_plano)
+                else:
+                    registros_normalizados.append(reg)
+
+            if formato_turnos_detectado:
+                print(
+                    f"[DEBUG NORMALIZE] Formato con turnos detectado: "
+                    f"{len(registros)} fila(s) -> {len(registros_normalizados)} registro(s) plano(s)"
+                )
+
+            registros = registros_normalizados
         
         # Obtener información del usuario desde cookies
-        nombre_usuario = request.cookies.get("nombre_usuario", "")
-        id_unidad_academica = int(request.cookies.get("id_unidad_academica", 0))
-        id_nivel = int(request.cookies.get("id_nivel", 0))
+        nombre_usuario = sess.nombre_usuario
+        id_unidad_academica = int(sess.id_unidad_academica)
+        id_nivel = int(sess.id_nivel)
         host = get_request_host(request)
         
         print(f"\n{'='*60}")
@@ -740,8 +878,26 @@ async def guardar_egresados_temp(request: Request, db: Session = Depends(get_db)
             else:
                 raise HTTPException(status_code=400, detail=f"Periodo ID {periodo_id} no encontrado")
         else:
-            periodo = str(periodo_id)
-            print(f"✅ Período ya en formato literal: '{periodo}'")
+            # Si el frontend envía el periodo en formato literal (ej. '2025-2026/1'),
+            # debemos convertirlo al periodo ANTERIOR para guardar en Temp_Egresados.
+            periodo_literal = str(periodo_id)
+            try:
+                periodo_obj_literal = db.query(Periodo).filter(Periodo.Periodo == periodo_literal).first()
+                if periodo_obj_literal and periodo_obj_literal.Id_Periodo:
+                    periodo_anterior_id = periodo_obj_literal.Id_Periodo - 1
+                    periodo_anterior_obj = db.query(Periodo).filter(Periodo.Id_Periodo == periodo_anterior_id).first()
+                    if periodo_anterior_obj:
+                        periodo = periodo_anterior_obj.Periodo
+                        print(f"🔄 Período literal convertido: '{periodo_literal}' → periodo anterior '{periodo}' (ID {periodo_anterior_id}) para Temp_Egresados")
+                    else:
+                        periodo = periodo_literal
+                        print(f"⚠️ No se encontró periodo anterior para '{periodo_literal}', usando literal como fallback")
+                else:
+                    periodo = periodo_literal
+                    print(f"⚠️ Periodo literal '{periodo_literal}' no encontrado en Cat_Periodo, usando tal cual")
+            except Exception as e:
+                periodo = periodo_literal
+                print(f"⚠️ Error al convertir periodo literal a anterior: {e}; usando '{periodo_literal}'")
         
         # Obtener Sigla de la Unidad Académica
         unidad_obj = db.query(Unidad_Academica).filter(
@@ -775,7 +931,8 @@ async def guardar_egresados_temp(request: Request, db: Session = Depends(get_db)
             h = reg.get('hombres', '')
             m = reg.get('mujeres', '')
             edad = reg.get('edad', '?')
-            print(f"   {idx}. Edad={edad}, H='{h}', M='{m}', Programa={reg.get('programa', '?')}")
+            turno_dbg = reg.get('turno', '?')
+            print(f"   {idx}. Edad={edad}, Turno={turno_dbg}, H='{h}', M='{m}', Programa={reg.get('programa', '?')}")
         print()
         
         guardados = 0
@@ -810,9 +967,9 @@ async def guardar_egresados_temp(request: Request, db: Session = Depends(get_db)
                     print(f"   Datos recibidos: {registro}")
                     errores.append(f"Registro {idx+1}: Error en formato de datos")
                     continue
-                
-                # Validar que los IDs obligatorios no sean 0 y edad no esté vacía
-                if not all([id_programa, id_modalidad, id_turno, id_boleta, id_generacion]) or not edad:
+
+                # Validar que los IDs obligatorios no sean 0. Edad puede quedar vacía.
+                if not all([id_programa, id_modalidad, id_turno, id_boleta, id_generacion]):
                     print(f"❌ Registro {idx+1}: Faltan datos obligatorios")
                     print(f"   Programa={id_programa}, Modalidad={id_modalidad}, Turno={id_turno}")
                     print(f"   Boleta={id_boleta}, Generacion={id_generacion}, Edad='{edad}'")
@@ -857,6 +1014,31 @@ async def guardar_egresados_temp(request: Request, db: Session = Depends(get_db)
                         Id_Semaforo=id_semaforo,
                         Egresados=hombres
                     )
+                    # DEBUG: mostrar payload antes de insertar y opcional pausa
+                    try:
+                        debug_pause = request.cookies.get("debug_pause", "0") == "1"
+                    except Exception:
+                        debug_pause = False
+
+                    temp_payload = {
+                        'Periodo': periodo,
+                        'Sigla': sigla_unidad,
+                        'Nombre_Programa': programa.Nombre_Programa,
+                        'Nombre_Rama': rama.Nombre_Rama if rama else "",
+                        'Nivel': nivel_texto,
+                        'Modalidad': modalidad.Modalidad if modalidad else "",
+                        'Grupo_Edad': str(edad),
+                        'Boleta': boleta.Boleta if boleta else id_boleta,
+                        'Generacion': generacion.Generacion if generacion else "",
+                        'Turno': turno.Turno if turno else "",
+                        'Sexo': 'Hombre',
+                        'Id_Semaforo': id_semaforo,
+                        'Egresados': hombres
+                    }
+                    print(f"[DEBUG] A punto de guardar (Hombre) en Temp_Egresados: {temp_payload}")
+                    if debug_pause:
+                        print("[DEBUG] Pausa activada: esperando 2 segundos antes de guardar...")
+                        time.sleep(2)
                     db.merge(temp_egr)
                     guardados += 1
                     print(f"   ➕ HOMBRE: {programa.Nombre_Programa}, Edad={edad}, Valor={hombres}")
@@ -878,6 +1060,31 @@ async def guardar_egresados_temp(request: Request, db: Session = Depends(get_db)
                         Id_Semaforo=id_semaforo,
                         Egresados=mujeres
                     )
+                    # DEBUG: mostrar payload antes de insertar y opcional pausa
+                    try:
+                        debug_pause = request.cookies.get("debug_pause", "0") == "1"
+                    except Exception:
+                        debug_pause = False
+
+                    temp_payload = {
+                        'Periodo': periodo,
+                        'Sigla': sigla_unidad,
+                        'Nombre_Programa': programa.Nombre_Programa,
+                        'Nombre_Rama': rama.Nombre_Rama if rama else "",
+                        'Nivel': nivel_texto,
+                        'Modalidad': modalidad.Modalidad if modalidad else "",
+                        'Grupo_Edad': str(edad),
+                        'Boleta': boleta.Boleta if boleta else id_boleta,
+                        'Generacion': generacion.Generacion if generacion else "",
+                        'Turno': turno.Turno if turno else "",
+                        'Sexo': 'Mujer',
+                        'Id_Semaforo': id_semaforo,
+                        'Egresados': mujeres
+                    }
+                    print(f"[DEBUG] A punto de guardar (Mujer) en Temp_Egresados: {temp_payload}")
+                    if debug_pause:
+                        print("[DEBUG] Pausa activada: esperando 2 segundos antes de guardar...")
+                        time.sleep(2)
                     db.merge(temp_egr)
                     guardados += 1
                     print(f"   ➕ MUJER: {programa.Nombre_Programa}, Edad={edad}, Valor={mujeres}")
@@ -918,6 +1125,7 @@ async def guardar_egresados_temp(request: Request, db: Session = Depends(get_db)
             "success": True,
             "message": mensaje,
             "guardados": guardados,
+            "actualizados": 0,
             "errores": errores if errores else []
         }
         
@@ -930,70 +1138,100 @@ async def guardar_egresados_temp(request: Request, db: Session = Depends(get_db)
 
 
 @router.post('/validar')
-async def validar_egresados(request: Request, db: Session = Depends(get_db)):
+async def validar_egresados(request: Request, sess=Depends(get_current_session), db: Session = Depends(get_db)):
     """
-    Valida los datos de egresados (usado por roles 4, 5, 6, 7, 8)
+    Valida los datos de egresados.
+    Ejecuta el SP [dbo].[SP_Valida_Egresados] (Formato 3) para avanzar semáforo y registrar en Validacion.
     """
     try:
         data = await request.json()
-        
-        periodo_id = data.get('periodo')
-        id_programa = data.get('programa')
-        id_modalidad = data.get('modalidad')
-        nota = data.get('nota', '')
-        
-        # Obtener información del usuario
-        nombre_usuario = request.cookies.get("nombre_usuario", "")
-        id_rol = int(request.cookies.get("id_rol", 0))
-        id_unidad_academica = int(request.cookies.get("id_unidad_academica", 0))
-        host = get_request_host(request)
-        
-        print(f"\n{'='*60}")
-        print(f"VALIDANDO EGRESADOS")
-        print(f"Usuario: {nombre_usuario} (Rol: {id_rol})")
-        print(f"Periodo: {periodo_id}")
-        print(f"Programa: {id_programa}, Modalidad: {id_modalidad}")
-        print(f"{'='*60}\n")
-        
-        # Registrar validación
-        nueva_validacion = Validacion(
-            Id_Periodo=periodo_id,
-            Id_Unidad_Academica=id_unidad_academica,
-            Id_Formato=3,  # Formato 3 = Egresados
-            Usuario=nombre_usuario,
-            Validado=True,
-            Nota=nota,
-            Fecha=datetime.now()
-        )
-        db.add(nueva_validacion)
-        
-        # Actualizar semáforo según el rol
+
+        periodo_in = data.get('periodo')
+        nota_in = (data.get('nota') or '').strip()
+
+        # Sesión
+        id_rol = int(sess.id_rol)
+        usuario_sp = sess.usuario or 'sistema'  # LOGIN
+        unidad_sigla = (sess.sigla_unidad_academica or '').strip()
+        nivel_literal = (sess.nombre_nivel or '').strip()
+        host_sp = get_request_host(request)
+
+        # Roles permitidos
+        if id_rol not in [4, 5, 6, 7, 8, 9]:
+            return {"success": False, "message": "Solo roles de validación pueden ejecutar esta acción."}
+
+        # Resolver periodo a literal (si llega como ID)
+        if periodo_in is None:
+            return {"success": False, "message": "No se recibió el periodo."}
+
+        if str(periodo_in).isdigit():
+            per = db.query(Periodo).filter(Periodo.Id_Periodo == int(periodo_in)).first()
+            periodo_literal = per.Periodo if per else str(periodo_in)
+        else:
+            periodo_literal = str(periodo_in)
+
+        if not unidad_sigla:
+            # Fallback: obtener sigla por id_unidad
+            try:
+                ua = db.query(Unidad_Academica).filter(Unidad_Academica.Id_Unidad_Academica == int(sess.id_unidad_academica)).first()
+                unidad_sigla = ua.Sigla if ua else ''
+            except Exception:
+                unidad_sigla = ''
+
+        if not unidad_sigla:
+            return {"success": False, "message": "No se pudo resolver la Unidad Académica."}
+
+        if not nivel_literal:
+            # En SP_Valida_Egresados se compara Cat_Nivel.nivel contra @NNivel
+            # Si tu sesión guarda el Id y no el nombre, aquí habría que mapearlo.
+            nivel_literal = str(sess.id_nivel)
+
+        nota_sp = nota_in or f"Validado por {sess.nombre_completo}"
+
+        # Para logging: leer semáforo actual si existe
         try:
-            semaforo = db.query(SemaforoUnidadAcademica).filter(
-                SemaforoUnidadAcademica.Id_Periodo == periodo_id,
-                SemaforoUnidadAcademica.Id_Unidad_Academica == id_unidad_academica,
-                SemaforoUnidadAcademica.Id_Formato == 3  # Formato 3 = Egresados
+            periodo_id_db = db.query(Periodo.Id_Periodo).filter(Periodo.Periodo == periodo_literal).scalar()
+            sem = db.query(SemaforoUnidadAcademica).filter(
+                SemaforoUnidadAcademica.Id_Periodo == periodo_id_db,
+                SemaforoUnidadAcademica.Id_Unidad_Academica == int(sess.id_unidad_academica),
+                SemaforoUnidadAcademica.Id_Formato == 3,
             ).first()
-            
-            if semaforo:
-                # Lógica de transición de estados según el rol
-                if id_rol == 4:  # Subdirector
-                    semaforo.Id_Semaforo = 5  # Estado: "Validado por Subdirección"
-                elif id_rol == 5:  # Director
-                    semaforo.Id_Semaforo = 6  # Estado: "Validado por Dirección"
-                elif id_rol in [6, 7, 8, 9]:  # Roles superiores
-                    semaforo.Id_Semaforo = 7  # Estado: "Validado completamente"
-                
-                print(f"✅ Semáforo actualizado al estado: {semaforo.Id_Semaforo}")
-        except Exception as e:
-            print(f"⚠️ No se pudo actualizar semáforo: {str(e)}")
-        
+            sem_actual = sem.Id_Semaforo if sem else None
+        except Exception:
+            sem_actual = None
+
+        print(f"\n{'='*60}")
+        print("✅ VALIDAR EGRESADOS (SP_Valida_Egresados)")
+        print(f"Usuario: {usuario_sp} | Rol: {id_rol}")
+        print(f"Periodo: {periodo_literal} | UA: {unidad_sigla} | Nivel: {nivel_literal}")
+        print(f"Semáforo actual (si aplica): {sem_actual}")
+        print(f"Host: {host_sp}")
+        print(f"{'='*60}\n")
+
+        sql = text("""
+            EXEC [dbo].[SP_Valida_Egresados]
+                @PPeriodo = :periodo,
+                @UUnidad_Academica = :ua,
+                @NNivel = :nivel,
+                @UUsuario = :usuario,
+                @HHost = :host,
+                @semaforo = :semaforo,
+                @NNota = :nota
+        """)
+
+        db.execute(sql, {
+            'periodo': periodo_literal,
+            'ua': unidad_sigla,
+            'nivel': nivel_literal,
+            'usuario': usuario_sp,
+            'host': host_sp,
+            'semaforo': int(sem_actual) if sem_actual is not None else 0,
+            'nota': nota_sp,
+        })
+
         db.commit()
-        
-        return {
-            "success": True,
-            "message": "Egresados validados correctamente"
-        }
+
+        return {"success": True, "message": "Egresados validados correctamente"}
         
     except Exception as e:
         db.rollback()
@@ -1004,65 +1242,86 @@ async def validar_egresados(request: Request, db: Session = Depends(get_db)):
 
 
 @router.post('/rechazar')
-async def rechazar_egresados(request: Request, db: Session = Depends(get_db)):
+async def rechazar_egresados(request: Request, sess=Depends(get_current_session), db: Session = Depends(get_db)):
     """
-    Rechaza los datos de egresados con una nota
+    Rechaza los datos de egresados.
+    Ejecuta el SP [dbo].[SP_Rechaza_Egresados] (Formato 3) para regresar semáforo y registrar en Validacion.
     """
     try:
         data = await request.json()
-        
-        periodo_id = data.get('periodo')
-        id_programa = data.get('programa')
-        id_modalidad = data.get('modalidad')
-        motivo = data.get('motivo', '')
-        
-        # Obtener información del usuario
-        nombre_usuario = request.cookies.get("nombre_usuario", "")
-        id_rol = int(request.cookies.get("id_rol", 0))
-        id_unidad_academica = int(request.cookies.get("id_unidad_academica", 0))
-        
-        print(f"\n{'='*60}")
-        print(f"RECHAZANDO EGRESADOS")
-        print(f"Usuario: {nombre_usuario} (Rol: {id_rol})")
-        print(f"Periodo: {periodo_id}")
-        print(f"Motivo: {motivo}")
-        print(f"{'='*60}\n")
-        
+
+        periodo_in = data.get('periodo')
+        motivo = (data.get('motivo') or '').strip()
+
         if not motivo:
             raise HTTPException(status_code=400, detail="Debe proporcionar un motivo de rechazo")
-        
-        # Registrar rechazo
-        nuevo_rechazo = Validacion(
-            Id_Periodo=periodo_id,
-            Id_Unidad_Academica=id_unidad_academica,
-            Id_Formato=3,  # Formato 3 = Egresados
-            Usuario=nombre_usuario,
-            Validado=False,
-            Nota=motivo,
-            Fecha=datetime.now()
-        )
-        db.add(nuevo_rechazo)
-        
-        # Actualizar semáforo a "Rechazado"
-        try:
-            semaforo = db.query(SemaforoUnidadAcademica).filter(
-                SemaforoUnidadAcademica.Id_Periodo == periodo_id,
-                SemaforoUnidadAcademica.Id_Unidad_Academica == id_unidad_academica,
-                SemaforoUnidadAcademica.Id_Formato == 3  # Formato 3 = Egresados
-            ).first()
-            
-            if semaforo:
-                semaforo.Id_Semaforo = 2  # Estado: "Rechazado"
-                print(f"🔴 Semáforo actualizado al estado: Rechazado")
-        except Exception as e:
-            print(f"⚠️ No se pudo actualizar semáforo: {str(e)}")
-        
+
+        # Respetar nvarchar(250)
+        if len(motivo) > 250:
+            motivo = motivo[:250]
+
+        # Sesión
+        id_rol = int(sess.id_rol)
+        usuario_sp = sess.usuario or 'sistema'
+        unidad_sigla = (sess.sigla_unidad_academica or '').strip()
+        nivel_literal = (sess.nombre_nivel or '').strip()
+        host_sp = get_request_host(request)
+
+        if id_rol not in [4, 5, 6, 7, 8, 9]:
+            return {"success": False, "message": "Solo roles de validación pueden ejecutar esta acción."}
+
+        if periodo_in is None:
+            return {"success": False, "message": "No se recibió el periodo."}
+
+        if str(periodo_in).isdigit():
+            per = db.query(Periodo).filter(Periodo.Id_Periodo == int(periodo_in)).first()
+            periodo_literal = per.Periodo if per else str(periodo_in)
+        else:
+            periodo_literal = str(periodo_in)
+
+        if not unidad_sigla:
+            try:
+                ua = db.query(Unidad_Academica).filter(Unidad_Academica.Id_Unidad_Academica == int(sess.id_unidad_academica)).first()
+                unidad_sigla = ua.Sigla if ua else ''
+            except Exception:
+                unidad_sigla = ''
+
+        if not unidad_sigla:
+            return {"success": False, "message": "No se pudo resolver la Unidad Académica."}
+
+        if not nivel_literal:
+            nivel_literal = str(sess.id_nivel)
+
+        print(f"\n{'='*60}")
+        print("🔴 RECHAZAR EGRESADOS (SP_Rechaza_Egresados)")
+        print(f"Usuario: {usuario_sp} | Rol: {id_rol}")
+        print(f"Periodo: {periodo_literal} | UA: {unidad_sigla} | Nivel: {nivel_literal}")
+        print(f"Host: {host_sp}")
+        print(f"Motivo: {motivo}")
+        print(f"{'='*60}\n")
+
+        sql = text("""
+            EXEC [dbo].[SP_Rechaza_Egresados]
+                @PPeriodo = :periodo,
+                @UUnidad_Academica = :ua,
+                @NNivel = :nivel,
+                @UUsuario = :usuario,
+                @HHost = :host,
+                @NNota = :nota
+        """)
+
+        db.execute(sql, {
+            'periodo': periodo_literal,
+            'ua': unidad_sigla,
+            'nivel': nivel_literal,
+            'usuario': usuario_sp,
+            'host': host_sp,
+            'nota': motivo,
+        })
+
         db.commit()
-        
-        return {
-            "success": True,
-            "message": "Egresados rechazados. Se notificará al capturista."
-        }
+
+        return {"success": True, "message": "Egresados rechazados. Se notificará al capturista."}
         
     except Exception as e:
         db.rollback()
@@ -1073,7 +1332,7 @@ async def rechazar_egresados(request: Request, db: Session = Depends(get_db)):
 
 
 @router.post("/guardar_avance")
-async def guardar_avance_egresados(request: Request, db: Session = Depends(get_db)):
+async def guardar_avance_egresados(request: Request, sess=Depends(get_current_session), db: Session = Depends(get_db)):
     """
     Endpoint para Guardar Avance de Egresados.
     Ejecuta el SP SP_Actualiza_Egresados_Por_Unidad_Academica para actualizar 
@@ -1081,15 +1340,15 @@ async def guardar_avance_egresados(request: Request, db: Session = Depends(get_d
     """
     try:
         # Obtener datos del usuario desde cookies
-        nombre_usuario = request.cookies.get("nombre_usuario", "")
-        apellidoP_usuario = request.cookies.get("apellidoP_usuario", "")
-        apellidoM_usuario = request.cookies.get("apellidoM_usuario", "")
+        nombre_usuario = sess.nombre_usuario
+        apellidoP_usuario = sess.apellidoP_usuario
+        apellidoM_usuario = sess.apellidoM_usuario
         nombre_completo = " ".join(filter(None, [nombre_usuario, apellidoP_usuario, apellidoM_usuario]))
         
         # Obtener unidad académica desde cookies
         unidad_sigla = request.cookies.get("unidad_sigla", "")
         if not unidad_sigla:
-            id_unidad_cookie = int(request.cookies.get("id_unidad_academica", 0))
+            id_unidad_cookie = int(sess.id_unidad_academica)
             if id_unidad_cookie:
                 unidad_obj = db.query(Unidad_Academica).filter(
                     Unidad_Academica.Id_Unidad_Academica == id_unidad_cookie
@@ -1128,11 +1387,23 @@ async def guardar_avance_egresados(request: Request, db: Session = Depends(get_d
                 periodo_sp = str(periodo_input)
                 periodo_busqueda = periodo_sp
         else:
-            _, periodo_sp = get_ultimo_periodo(db)
+            # Obtener periodo actual y calcular periodo anterior para buscar en Temp_Egresados
+            periodo_actual_id, periodo_actual_literal = get_ultimo_periodo(db)
+            periodo_sp = periodo_actual_literal
             periodo_busqueda = periodo_sp
+            try:
+                periodo_anterior_id = int(periodo_actual_id) - 1 if periodo_actual_id else None
+                if periodo_anterior_id:
+                    periodo_anterior_obj = db.query(Periodo).filter(Periodo.Id_Periodo == periodo_anterior_id).first()
+                    if periodo_anterior_obj:
+                        periodo_busqueda = periodo_anterior_obj.Periodo
+                        print(f"🔄 Período por defecto (anterior) para Temp: '{periodo_busqueda}' (ID {periodo_anterior_id})")
+            except Exception:
+                # Si algo falla, usar el literal del periodo actual como búsqueda (fallback)
+                periodo_busqueda = periodo_sp
         
         # Obtener nivel
-        nivel = request.cookies.get("nombre_nivel", "")
+        nivel = sess.nombre_nivel
         
         if not all([unidad_sigla, periodo_sp, nivel]):
             return {
@@ -1155,9 +1426,11 @@ async def guardar_avance_egresados(request: Request, db: Session = Depends(get_d
         print(f"{'='*60}")
         
         # Verificar que hay datos en Temp_Egresados antes de actualizar
-        print(f"🔍 Buscando registros con Periodo='{periodo_busqueda}'")
+        print(f"🔍 Buscando registros con Periodo='{periodo_busqueda}', Sigla='{unidad_sigla}', Nivel='{nivel}'")
         temp_count = db.query(Temp_Egresados).filter(
-            Temp_Egresados.Periodo == periodo_busqueda
+            Temp_Egresados.Periodo == periodo_busqueda,
+            Temp_Egresados.Sigla == unidad_sigla,
+            Temp_Egresados.Nivel == nivel
         ).count()
         
         print(f"📊 Registros encontrados: {temp_count}")
@@ -1165,19 +1438,21 @@ async def guardar_avance_egresados(request: Request, db: Session = Depends(get_d
         # Si no hay datos, mostrar diagnóstico
         if temp_count == 0:
             total_registros = db.query(Temp_Egresados).count()
-            print(f"⚠️ No se encontraron registros con Periodo='{periodo_busqueda}'")
+            print(f"⚠️ No se encontraron registros con Periodo='{periodo_busqueda}' para UA='{unidad_sigla}' y Nivel='{nivel}'")
             print(f"⚠️ Total registros en Temp_Egresados: {total_registros}")
-            
+
             # Mostrar los periodos que SÍ existen
             periodos_existentes = db.query(Temp_Egresados.Periodo).distinct().all()
             print(f"⚠️ Periodos existentes en la tabla:")
             for p in periodos_existentes:
                 print(f"   - '{p[0]}'")
-            
+
             return {
                 "warning": "No hay datos en Temp_Egresados para actualizar",
                 "registros_temp": 0,
                 "periodo_buscado": periodo_busqueda,
+                "unidad": unidad_sigla,
+                "nivel": nivel,
                 "total_registros": total_registros,
                 "periodos_existentes": [p[0] for p in periodos_existentes]
             }
@@ -1222,7 +1497,7 @@ async def guardar_avance_egresados(request: Request, db: Session = Depends(get_d
 
 
 @router.post("/finalizar_captura")
-async def finalizar_captura_egresados(request: Request, db: Session = Depends(get_db)):
+async def finalizar_captura_egresados(request: Request, sess=Depends(get_current_session), db: Session = Depends(get_db)):
     """
     Endpoint para Finalizar Captura de Egresados.
     Ejecuta el SP SP_Actualiza_Egresados_Por_Semestre_AU que:
@@ -1232,15 +1507,15 @@ async def finalizar_captura_egresados(request: Request, db: Session = Depends(ge
     """
     try:
         # Obtener datos del usuario desde cookies
-        nombre_usuario = request.cookies.get("nombre_usuario", "")
-        apellidoP_usuario = request.cookies.get("apellidoP_usuario", "")
-        apellidoM_usuario = request.cookies.get("apellidoM_usuario", "")
+        nombre_usuario = sess.nombre_usuario
+        apellidoP_usuario = sess.apellidoP_usuario
+        apellidoM_usuario = sess.apellidoM_usuario
         nombre_completo = " ".join(filter(None, [nombre_usuario, apellidoP_usuario, apellidoM_usuario]))
         
         # Obtener unidad académica desde cookies
         unidad_sigla = request.cookies.get("unidad_sigla", "")
         if not unidad_sigla:
-            id_unidad_cookie = int(request.cookies.get("id_unidad_academica", 0))
+            id_unidad_cookie = int(sess.id_unidad_academica)
             if id_unidad_cookie:
                 unidad_obj = db.query(Unidad_Academica).filter(
                     Unidad_Academica.Id_Unidad_Academica == id_unidad_cookie
@@ -1272,7 +1547,7 @@ async def finalizar_captura_egresados(request: Request, db: Session = Depends(ge
             _, periodo = get_ultimo_periodo(db)
         
         # Obtener nivel
-        nivel = request.cookies.get("nombre_nivel", "")
+        nivel = sess.nombre_nivel
         
         # Obtener nombres literales de programa y modalidad
         programa_obj = db.query(Programas).filter(Programas.Id_Programa == int(programa_id)).first()
@@ -1304,9 +1579,27 @@ async def finalizar_captura_egresados(request: Request, db: Session = Depends(ge
         print(f"Host: {host_sp}")
         print(f"{'='*60}")
         
-        # Verificar que hay datos en Temp_Egresados
-        temp_count = db.query(Temp_Egresados).count()
-        print(f"📊 Registros en Temp_Egresados: {temp_count}")
+        # Determinar periodo de búsqueda en Temp_Egresados (usualmente el periodo anterior)
+        periodo_busqueda = periodo
+        try:
+            # Intentar obtener Id del periodo literal actual y buscar el anterior
+            periodo_obj = db.query(Periodo).filter(Periodo.Periodo == periodo).first()
+            if periodo_obj and periodo_obj.Id_Periodo:
+                periodo_anterior_id = int(periodo_obj.Id_Periodo) - 1
+                periodo_anterior_obj = db.query(Periodo).filter(Periodo.Id_Periodo == periodo_anterior_id).first()
+                if periodo_anterior_obj:
+                    periodo_busqueda = periodo_anterior_obj.Periodo
+                    print(f"🔄 Periodo para buscar en Temp (anterior): '{periodo_busqueda}' (ID {periodo_anterior_id})")
+        except Exception:
+            periodo_busqueda = periodo
+
+        # Verificar que hay datos en Temp_Egresados para la UA/nivel y periodo esperados
+        temp_count = db.query(Temp_Egresados).filter(
+            Temp_Egresados.Periodo == periodo_busqueda,
+            Temp_Egresados.Sigla == unidad_sigla,
+            Temp_Egresados.Nivel == nivel
+        ).count()
+        print(f"📊 Registros en Temp_Egresados (Periodo='{periodo_busqueda}', UA='{unidad_sigla}', Nivel='{nivel}'): {temp_count}")
         
         # Ejecutar el stored procedure
         sql = text("""
@@ -1320,6 +1613,19 @@ async def finalizar_captura_egresados(request: Request, db: Session = Depends(ge
                 @NNivel = :nivel
         """)
         
+        if temp_count == 0:
+            total_registros = db.query(Temp_Egresados).count()
+            periodos_existentes = db.query(Temp_Egresados.Periodo).distinct().all()
+            print(f"⚠️ No hay registros en Temp_Egresados para Periodo='{periodo_busqueda}', UA='{unidad_sigla}', Nivel='{nivel}'")
+            return {
+                "warning": "No hay datos en Temp_Egresados para finalizar la captura",
+                "periodo_buscado": periodo_busqueda,
+                "unidad": unidad_sigla,
+                "nivel": nivel,
+                "total_registros": total_registros,
+                "periodos_existentes": [p[0] for p in periodos_existentes]
+            }
+
         result = db.execute(sql, {
             'unidad': unidad_sigla,
             'programa': programa_nombre,
@@ -1361,24 +1667,24 @@ async def finalizar_captura_egresados(request: Request, db: Session = Depends(ge
 
 
 @router.get('/informe')
-async def obtener_informe_egresados(request: Request, db: Session = Depends(get_db)):
+async def obtener_informe_egresados(request: Request, sess=Depends(get_current_session), db: Session = Depends(get_db)):
     """
     Obtiene el informe de egresados desde el SP para mostrar en la tabla de informe.
     Devuelve los datos reales guardados en la base de datos.
     """
     try:
         # Obtener datos del usuario desde cookies
-        id_unidad_academica = int(request.cookies.get("id_unidad_academica", 0))
-        id_nivel_cookie = request.cookies.get("id_nivel", "0")
+        id_unidad_academica = int(sess.id_unidad_academica)
+        id_nivel_cookie = sess.id_nivel
         
         if id_nivel_cookie == "None" or id_nivel_cookie is None or id_nivel_cookie == "":
             id_nivel = 0
         else:
             id_nivel = int(id_nivel_cookie)
         
-        nombre_usuario = request.cookies.get("nombre_usuario", "")
-        apellidoP_usuario = request.cookies.get("apellidoP_usuario", "")
-        apellidoM_usuario = request.cookies.get("apellidoM_usuario", "")
+        nombre_usuario = sess.nombre_usuario
+        apellidoP_usuario = sess.apellidoP_usuario
+        apellidoM_usuario = sess.apellidoM_usuario
         nombre_completo = " ".join(filter(None, [nombre_usuario, apellidoP_usuario, apellidoM_usuario]))
         
         print(f"\n{'='*60}")
@@ -1440,12 +1746,122 @@ async def obtener_informe_egresados(request: Request, db: Session = Depends(get_
         return {"success": False, "error": str(e)}
 
 
+@router.post('/estados_semaforo')
+async def obtener_estados_semaforo_por_turnos(request: Request, sess=Depends(get_current_session), db: Session = Depends(get_db)):
+    """
+    Endpoint para obtener los estados de semáforo por turno.
+    
+    Retorna un diccionario con el formato: { "turnoId": estadoId }
+    Ejemplo: { "1": 2, "2": 1, "3": 3 } donde 1=Matutino, 2=Vespertino, 3=Mixto
+    
+    Estados de semáforo:
+    - 1: Rojo (Sin datos o incompleto)
+    - 2: Amarillo (En proceso)
+    - 3: Verde (Completado)
+    """
+    try:
+        data = await request.json()
+        periodo_input = data.get('periodo')
+        programa_id = data.get('programa')
+        modalidad_id = data.get('modalidad')
+        
+        # Obtener información del usuario
+        id_unidad_academica = getattr(sess, 'id_unidad_academica', None)
+        id_nivel = getattr(sess, 'id_nivel', None)
+        
+        if not id_unidad_academica or not id_nivel:
+            return {"success": False, "error": "No se pudo identificar la unidad académica o nivel"}
+        
+        # Convertir período a ID
+        if periodo_input:
+            if str(periodo_input).isdigit():
+                periodo_id = int(periodo_input)
+            else:
+                periodo_obj = db.query(Periodo).filter(Periodo.Periodo == periodo_input).first()
+                periodo_id = periodo_obj.Id_Periodo if periodo_obj else None
+        else:
+            periodo_id, _ = get_ultimo_periodo(db)
+        
+        if not periodo_id:
+            return {"success": False, "error": "No se pudo identificar el período"}
+        
+        # Obtener el Id_Modalidad_Programa para la combinación programa + modalidad
+        modalidad_programa_id = None
+        if programa_id and modalidad_id:
+            prog_mod = db.query(ProgramaModalidad).filter(
+                ProgramaModalidad.Id_Programa == int(programa_id),
+                ProgramaModalidad.Id_Modalidad == int(modalidad_id)
+            ).first()
+            if prog_mod:
+                modalidad_programa_id = prog_mod.Id_Modalidad_Programa
+        
+        print(f"\n{'='*60}")
+        print(f"OBTENIENDO ESTADOS DE SEMÁFORO POR TURNOS")
+        print(f"Período ID: {periodo_id}")
+        print(f"Unidad Académica ID: {id_unidad_academica}")
+        print(f"Formato: 3 (Egresados)")
+        print(f"Programa ID: {programa_id}")
+        print(f"Modalidad ID: {modalidad_id}")
+        print(f"Modalidad-Programa ID: {modalidad_programa_id}")
+        print(f"{'='*60}")
+        
+        # ========================================================================
+        # 🔴 NOTA: Ajustar esta consulta según la estructura real de la BD
+        # ========================================================================
+        # En la tabla SemaforoSemestreUnidadAcademica:
+        # - Id_Semestre podría corresponder al Id_Turno (1=Matutino, 2=Vespertino, 3=Mixto)
+        # - O podría necesitarse una consulta diferente según el SP
+        #
+        # Por ahora, consulto SemaforoSemestreUnidadAcademica asumiendo que Id_Semestre = Id_Turno
+        estados_semaforo = {}
+        
+        if modalidad_programa_id:
+            # Consultar estados de semáforo por "semestre" (que podrían ser turnos)
+            registros = db.query(SemaforoSemestreUnidadAcademica).filter(
+                SemaforoSemestreUnidadAcademica.Id_Periodo == periodo_id,
+                SemaforoSemestreUnidadAcademica.Id_Unidad_Academica == id_unidad_academica,
+                SemaforoSemestreUnidadAcademica.Id_Formato == 3,  # Formato 3 = Egresados
+                SemaforoSemestreUnidadAcademica.Id_Modalidad_Programa == modalidad_programa_id
+            ).all()
+            
+            print(f"📊 Registros encontrados en SemaforoSemestreUnidadAcademica: {len(registros)}")
+            
+            for registro in registros:
+                # Asumimos que Id_Semestre corresponde al Id_Turno
+                # Ajustar si la lógica es diferente
+                turno_id = registro.Id_Semestre
+                estado_id = registro.Id_Semaforo
+                estados_semaforo[str(turno_id)] = estado_id
+                print(f"  🚦 Turno {turno_id}: Estado {estado_id}")
+        
+        # Si no hay estados registrados, inicializar todos los turnos en rojo (1)
+        if not estados_semaforo:
+            print("⚠️ No se encontraron estados de semáforo, inicializando todos en rojo (1)")
+            # Obtener todos los turnos disponibles
+            turnos = db.query(Turno).all()
+            for turno in turnos:
+                estados_semaforo[str(turno.Id_Turno)] = 1  # Estado 1 = Rojo (sin datos)
+        
+        print(f"✅ Estados de semáforo a retornar: {estados_semaforo}")
+        
+        return {
+            "success": True,
+            "estados_semaforo": estados_semaforo
+        }
+        
+    except Exception as e:
+        print(f"❌ Error al obtener estados de semáforo: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return {"success": False, "error": str(e)}
+
+
 @router.get('/resumen-dinamico')
 async def resumen_egresados_dinamico_view(
     request: Request, 
     periodo: str,
     nivel: str,
-    unidad: str,
+    unidad: str, sess=Depends(get_current_session),
     db: Session = Depends(get_db)
 ):
     """
@@ -1453,11 +1869,11 @@ async def resumen_egresados_dinamico_view(
     Muestra por Programa → Modalidad → Boletas → Generaciones → Tipo (Regular/Extemporáneo) → Género (H/M/T).
     """
     # Obtener datos del usuario logueado
-    id_rol = int(request.cookies.get("id_rol", 0))
-    nombre_rol = request.cookies.get("nombre_rol", "")
-    nombre_usuario = request.cookies.get("nombre_usuario", "")
-    apellidoP_usuario = request.cookies.get("apellidoP_usuario", "")
-    apellidoM_usuario = request.cookies.get("apellidoM_usuario", "")
+    id_rol = int(sess.id_rol)
+    nombre_rol = sess.nombre_rol
+    nombre_usuario = sess.nombre_usuario
+    apellidoP_usuario = sess.apellidoP_usuario
+    apellidoM_usuario = sess.apellidoM_usuario
     nombre_completo = " ".join(filter(None, [nombre_usuario, apellidoP_usuario, apellidoM_usuario]))
 
     # Validar que el usuario tenga rol superior (4-9)
@@ -1476,9 +1892,17 @@ async def resumen_egresados_dinamico_view(
     print(f"{'='*60}")
 
     try:
+        # ------------------------------------------------------------
+        # Resolver Id_Periodo (para validación/rechazo desde la vista)
+        # ------------------------------------------------------------
+        from backend.database.models.CatPeriodo import CatPeriodo
+
+        periodo_obj = db.query(CatPeriodo).filter(CatPeriodo.Periodo == periodo).first()
+        periodo_id = int(periodo_obj.Id_Periodo) if periodo_obj else None
+
         # Obtener datos del SP de egresados
         host = get_request_host(request)
-        usuario_login = request.cookies.get("usuario", "sistema")
+        usuario_login = sess.usuario
         
         egresados_data, nota_rechazo = execute_egresados_sp(
             db=db,
@@ -1489,6 +1913,74 @@ async def resumen_egresados_dinamico_view(
             host=host
         )
 
+        # ------------------------------------------------------------
+        # Estado de validación/rechazo (roles 4-9)
+        # ------------------------------------------------------------
+        puede_validar = False
+        usuario_ya_valido = False
+        usuario_ya_rechazo = False
+        esperando_por_rol = None
+
+        try:
+            if id_rol in [4, 5, 6, 7, 8, 9] and periodo_id is not None:
+                semaforo_unidad = db.query(SemaforoUnidadAcademica).filter(
+                    SemaforoUnidadAcademica.Id_Periodo == periodo_id,
+                    SemaforoUnidadAcademica.Id_Unidad_Academica == int(sess.id_unidad_academica),
+                    SemaforoUnidadAcademica.Id_Formato == 3  # Formato 3 = Egresados
+                ).first()
+
+                estado_semaforo = semaforo_unidad.Id_Semaforo if semaforo_unidad else None
+
+                # Regla de jerarquía real (alineada a los SPs de Validar/Rechazar):
+                # SP_Valida_Egresados y SP_Rechaza_Egresados validan que:
+                #   sua.Id_Semaforo == (Id_Rol del usuario) - 1
+                # Esto permite pasos distintos para 6,7,8,9 en vez de agruparlos.
+                semaforo_esperado = id_rol - 1
+
+                if estado_semaforo is not None:
+                    if estado_semaforo == semaforo_esperado:
+                        puede_validar = True
+                        usuario_ya_valido = False
+                        usuario_ya_rechazo = False
+                    elif estado_semaforo > semaforo_esperado:
+                        usuario_ya_valido = True
+                    else:
+                        # Aún no toca este nivel
+                        puede_validar = False
+                        try:
+                            # El primer rol por defecto debe ser Capturista (Id_Rol 2)
+                            # Si el semáforo está en 1 o 2, está esperando al Capturista
+                            if estado_semaforo in [1, 2]:
+                                esperando_por_rol = "Capturista"
+                            else:
+                                rol_esperado_id = int(estado_semaforo) + 1
+                                rol_obj = db.query(CatRoles).filter(CatRoles.Id_Rol == rol_esperado_id).first()
+                                esperando_por_rol = rol_obj.Rol if rol_obj else "Capturista"
+                        except Exception:
+                            esperando_por_rol = "Capturista"
+                else:
+                    # Si no hay semáforo configurado, el primer paso siempre es Capturista
+                    esperando_por_rol = "Capturista"
+
+                # Si ya rechazó, ocultar botones (salvo que el semáforo esté justo en el nivel esperado)
+                try:
+                    id_usuario_actual = int(sess.id_usuario)
+                    rechazo_usuario = db.query(Validacion).filter(
+                        Validacion.Id_Periodo == periodo_id,
+                        Validacion.Id_Usuario == id_usuario_actual,
+                        Validacion.Id_Formato == 3,
+                        Validacion.Validado == 0
+                    ).first()
+                    if rechazo_usuario:
+                        if not puede_validar:
+                            usuario_ya_rechazo = True
+                except Exception:
+                    # Si algo falla aquí, no bloqueamos por seguridad de UI
+                    pass
+        except Exception:
+            # Si algo falla, solo no mostramos estado (UI seguirá normal)
+            pass
+
         if not egresados_data:
             return templates.TemplateResponse("egresados_resumen_dinamico.html", {
                 "request": request,
@@ -1496,10 +1988,25 @@ async def resumen_egresados_dinamico_view(
                 "nombre_rol": nombre_rol,
                 "id_rol": id_rol,
                 "periodo": periodo,
+                "periodo_id": periodo_id,
                 "nivel": nivel,
                 "unidad": unidad,
                 "datos_resumen": [],
                 "generaciones": [],
+                "boletas_columnas": [],
+                "filas_pivot": [],
+            "modalidades_columnas": [],
+            "filas_boleta_modalidad": [],
+            "programa_counts": {},
+            "turnos_columnas": [],
+            "edades_columnas": [],
+            "filas_edad_turno": [],
+            "programa_counts_edad": {},
+                "total_general": {"boletas": {}, "total_h": 0, "total_m": 0, "total_t": 0},
+                "puede_validar": puede_validar,
+                "usuario_ya_valido": usuario_ya_valido,
+                "usuario_ya_rechazo": usuario_ya_rechazo,
+                "esperando_por_rol": esperando_por_rol,
                 "error_message": "No hay datos disponibles para los filtros seleccionados"
             })
 
@@ -1542,15 +2049,7 @@ async def resumen_egresados_dinamico_view(
         
         # 2. Estructura para agrupar datos por Programa → Modalidad → Boleta
         # estructura[programa][modalidad][boleta] = {...datos por generación...}
-        estructura = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: {
-            'generaciones': defaultdict(lambda: {
-                'regular': {'H': 0, 'M': 0, 'T': 0},
-                'extemporaneo': {'H': 0, 'M': 0, 'T': 0}
-            }),
-            'total_h': 0,
-            'total_m': 0,
-            'total_t': 0
-        })))
+        estructura: Dict[str, Dict[str, Dict[str, Dict[str, Any]]]] = {}
         
         # 3. Procesar cada registro del SP
         for row in egresados_data:
@@ -1591,13 +2090,32 @@ async def resumen_egresados_dinamico_view(
             
             #print(f"  📝 {programa} | {modalidad} | Bol:{boleta} | Gen:{generacion} ({tipo_key}) | {sexo}: {egresados}")
             
+            # Inicializar estructura jerárquica de forma explícita
+            programa_data = estructura.setdefault(programa, {})
+            modalidad_data = programa_data.setdefault(modalidad, {})
+            if boleta not in modalidad_data:
+                modalidad_data[boleta] = {
+                    'generaciones': {},
+                    'total_h': 0,
+                    'total_m': 0,
+                    'total_t': 0
+                }
+
+            boleta_data = modalidad_data[boleta]
+            generaciones_data = boleta_data['generaciones']
+            if generacion not in generaciones_data:
+                generaciones_data[generacion] = {
+                    'regular': {'H': 0, 'M': 0, 'T': 0},
+                    'extemporaneo': {'H': 0, 'M': 0, 'T': 0}
+                }
+
             # Acumular egresados por generación y tipo
-            estructura[programa][modalidad][boleta]['generaciones'][generacion][tipo_key][sexo] += egresados
-            estructura[programa][modalidad][boleta]['generaciones'][generacion][tipo_key]['T'] += egresados
-            
+            generaciones_data[generacion][tipo_key][sexo] += egresados
+            generaciones_data[generacion][tipo_key]['T'] += egresados
+
             # Acumular totales generales de esta boleta
-            estructura[programa][modalidad][boleta]['total_' + sexo.lower()] += egresados
-            estructura[programa][modalidad][boleta]['total_t'] += egresados
+            boleta_data['total_' + sexo.lower()] += egresados
+            boleta_data['total_t'] += egresados
         
         # 4. Convertir estructura a lista para el template
         # Cada fila = Programa + Modalidad + Boleta literal
@@ -1617,10 +2135,14 @@ async def resumen_egresados_dinamico_view(
                     # Preparar datos de generaciones en el orden correcto
                     gen_data = []
                     for gen in generaciones:
+                        gen_values = datos_boleta['generaciones'].get(gen, {
+                            'regular': {'H': 0, 'M': 0, 'T': 0},
+                            'extemporaneo': {'H': 0, 'M': 0, 'T': 0}
+                        })
                         gen_data.append({
                             'generacion': gen,
-                            'regular': datos_boleta['generaciones'][gen]['regular'],
-                            'extemporaneo': datos_boleta['generaciones'][gen]['extemporaneo']
+                            'regular': gen_values['regular'],
+                            'extemporaneo': gen_values['extemporaneo']
                         })
                     
                     datos_resumen.append({
@@ -1632,20 +2154,363 @@ async def resumen_egresados_dinamico_view(
                         'total_m': datos_boleta['total_m'],
                         'total_t': datos_boleta['total_t']
                     })
+
+        # 5. Construir estructura pivotada: filas por Programa+Modalidad y boletas como columnas
+        boletas_global = set()
+        for programa in estructura:
+            for modalidad in estructura[programa]:
+                boletas_global.update(estructura[programa][modalidad].keys())
+
+        boletas_columnas = sorted(
+            list(boletas_global),
+            key=lambda x: (0, int(str(x))) if str(x).isdigit() else (1, str(x))
+        )
+
+        filas_pivot = []
+        total_general = {
+            'boletas': {
+                b: {
+                    'regular': {'H': 0, 'M': 0, 'T': 0},
+                    'extemporaneo': {'H': 0, 'M': 0, 'T': 0}
+                } for b in boletas_columnas
+            },
+            'total_h': 0,
+            'total_m': 0,
+            'total_t': 0
+        }
+
+        for programa in sorted(estructura.keys()):
+            for modalidad in sorted(estructura[programa].keys()):
+                boletas_data = {}
+                row_total_h = 0
+                row_total_m = 0
+                row_total_t = 0
+
+                for boleta in boletas_columnas:
+                    if boleta in estructura[programa][modalidad]:
+                        datos_boleta = estructura[programa][modalidad][boleta]
+
+                        regular_h = regular_m = regular_t = 0
+                        ext_h = ext_m = ext_t = 0
+
+                        for _, gen_values in datos_boleta['generaciones'].items():
+                            regular_h += gen_values['regular']['H']
+                            regular_m += gen_values['regular']['M']
+                            regular_t += gen_values['regular']['T']
+
+                            ext_h += gen_values['extemporaneo']['H']
+                            ext_m += gen_values['extemporaneo']['M']
+                            ext_t += gen_values['extemporaneo']['T']
+
+                        boletas_data[boleta] = {
+                            'regular': {'H': regular_h, 'M': regular_m, 'T': regular_t},
+                            'extemporaneo': {'H': ext_h, 'M': ext_m, 'T': ext_t}
+                        }
+
+                        row_total_h += regular_h + ext_h
+                        row_total_m += regular_m + ext_m
+                        row_total_t += regular_t + ext_t
+
+                        total_general['boletas'][boleta]['regular']['H'] += regular_h
+                        total_general['boletas'][boleta]['regular']['M'] += regular_m
+                        total_general['boletas'][boleta]['regular']['T'] += regular_t
+                        total_general['boletas'][boleta]['extemporaneo']['H'] += ext_h
+                        total_general['boletas'][boleta]['extemporaneo']['M'] += ext_m
+                        total_general['boletas'][boleta]['extemporaneo']['T'] += ext_t
+                    else:
+                        boletas_data[boleta] = {
+                            'regular': {'H': 0, 'M': 0, 'T': 0},
+                            'extemporaneo': {'H': 0, 'M': 0, 'T': 0}
+                        }
+
+                total_general['total_h'] += row_total_h
+                total_general['total_m'] += row_total_m
+                total_general['total_t'] += row_total_t
+
+                filas_pivot.append({
+                    'programa': programa,
+                    'modalidad': modalidad,
+                    'boletas': boletas_data,
+                    'total_h': row_total_h,
+                    'total_m': row_total_m,
+                    'total_t': row_total_t
+                })
         
         print(f"✅ Resumen procesado: {len(datos_resumen)} filas (Programa+Modalidad+Boleta)")
         print(f"📊 Generaciones: {len(generaciones)}")
+        print(f"📊 Boletas en columnas: {len(boletas_columnas)}")
+        print(f"📊 Filas pivotadas (Programa+Modalidad): {len(filas_pivot)}")
         
+        
+        # ============================================================
+        # 6. TABLAS DINÁMICAS (NUEVO FORMATO)
+        #    Tabla 1: Programa | Generación | Boleta | Modalidad(H/M/T...) | Total(H/M/T)
+        #    Tabla 2: Programa | Generación | Edad   | Turno(H/M/T...)     | Total(H/M/T)
+        # ============================================================
+        from collections import defaultdict
+
+        def _is_nullish(v) -> bool:
+            if v is None:
+                return True
+            s = str(v).strip()
+            return (s == "" or s.upper() in ("NULL", "NONE", "N/A", "NA"))
+
+        modalidades_set = set()
+        boletas_set = set()
+        turnos_set = set()
+        edades_set = set()
+
+        # data_boleta[programa][tipo][boleta][modalidad] = {'H':..,'M':..,'T':..}
+        data_boleta = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: {'H': 0, 'M': 0, 'T': 0}))))
+
+        # data_edad[programa][tipo][edad][turno] = {'H':..,'M':..,'T':..}
+        data_edad = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: {'H': 0, 'M': 0, 'T': 0}))))
+
+        for row in egresados_data:
+            programa = str(_get_row_value(row, 'Nombre_Programa', 'Programa', default='Sin Programa')).strip() or 'Sin Programa'
+            modalidad = str(_get_row_value(row, 'Modalidad', default='Sin Modalidad')).strip() or 'Sin Modalidad'
+            generacion = str(_get_row_value(row, 'Generacion', 'Generación', default='')).strip()
+
+            # Boleta (filtrar nulls)
+            boleta_raw = _get_row_value(row, 'Boleta', default=None)
+            if _is_nullish(boleta_raw):
+                continue
+            boleta = str(boleta_raw).strip()
+
+            # Sexo
+            sexo_raw = str(_get_row_value(row, 'Sexo', default='M')).upper()
+            if 'HOMBRE' in sexo_raw or sexo_raw == 'H':
+                sexo = 'H'
+            elif 'MUJER' in sexo_raw or sexo_raw == 'M':
+                sexo = 'M'
+            else:
+                sexo = 'M'
+
+            # Egresados (filtrar 0 para no "inflar" tablas con combinaciones vacías)
+            eg_raw = _get_row_value(row, 'Egresados', default=0)
+            try:
+                eg = int(float(eg_raw)) if eg_raw not in (None, '') else 0
+            except (TypeError, ValueError):
+                eg = 0
+            if eg <= 0:
+                continue
+
+            # Tipo de generación (regular/extemporaneo)
+            generacion_lower = generacion.lower()
+            if 'extemporanea' in generacion_lower or 'extemporaneo' in generacion_lower:
+                tipo = 'extemporaneo'
+            elif 'regular' in generacion_lower:
+                tipo = 'regular'
+            else:
+                # fallback con la generación más reciente detectada
+                tipo = 'regular' if generacion and generacion == generacion_regular else 'extemporaneo'
+
+            modalidades_set.add(modalidad)
+            boletas_set.add(boleta)
+
+            # Tabla 1 acumula por boleta + modalidad
+            celda = data_boleta[programa][tipo][boleta][modalidad]
+            celda[sexo] += eg
+            celda['T'] += eg
+
+            # Tabla 2 acumula por edad + turno (si existen)
+            # Intentar primero Grupo_Edad, luego Edad como fallback
+            edad_raw = _get_row_value(row, 'Grupo_Edad', 'Edad', default=None)
+            turno_raw = _get_row_value(row, 'Turno', default=None)
+            if not _is_nullish(edad_raw) and not _is_nullish(turno_raw):
+                edad = str(edad_raw).strip()
+                turno = str(turno_raw).strip()
+                edades_set.add(edad)
+                turnos_set.add(turno)
+
+                celda2 = data_edad[programa][tipo][edad][turno]
+                celda2[sexo] += eg
+                celda2['T'] += eg
+
+        # Columnas ordenadas
+        modalidades_columnas = sorted(list(modalidades_set))
+
+        boletas_columnas_row = sorted(
+            list(boletas_set),
+            key=lambda x: (0, int(str(x))) if str(x).isdigit() else (1, str(x))
+        )
+
+        def _sort_mixed_numbers(values):
+            def key(v):
+                s = str(v).strip()
+                return (0, int(s)) if s.isdigit() else (1, s)
+            return sorted(values, key=key)
+
+        turnos_columnas = sorted(list(turnos_set))
+        edades_columnas = _sort_mixed_numbers(list(edades_set))
+
+        # Inicializar totales generales SIEMPRE (incluso si no hay datos)
+        totales_tabla1 = {'modalidades': {}, 'total_h': 0, 'total_m': 0, 'total_t': 0}
+        totales_tabla2 = {'turnos': {}, 'total_h': 0, 'total_m': 0, 'total_t': 0}
+        
+        # Inicializar estructuras para modalidades y turnos
+        for mod in modalidades_columnas:
+            totales_tabla1['modalidades'][mod] = {'H': 0, 'M': 0, 'T': 0}
+        for turno in turnos_columnas:
+            totales_tabla2['turnos'][turno] = {'H': 0, 'M': 0, 'T': 0}
+        
+        # Inicializar subtotales por generación
+        subtotales_generacion_tabla1 = {
+            'regular': {'modalidades': {}, 'total_h': 0, 'total_m': 0, 'total_t': 0},
+            'extemporaneo': {'modalidades': {}, 'total_h': 0, 'total_m': 0, 'total_t': 0}
+        }
+        subtotales_generacion_tabla2 = {
+            'regular': {'turnos': {}, 'total_h': 0, 'total_m': 0, 'total_t': 0},
+            'extemporaneo': {'turnos': {}, 'total_h': 0, 'total_m': 0, 'total_t': 0}
+        }
+        
+        # Inicializar modalidades y turnos para cada tipo de generación
+        for tipo in ['regular', 'extemporaneo']:
+            for mod in modalidades_columnas:
+                subtotales_generacion_tabla1[tipo]['modalidades'][mod] = {'H': 0, 'M': 0, 'T': 0}
+            for turno in turnos_columnas:
+                subtotales_generacion_tabla2[tipo]['turnos'][turno] = {'H': 0, 'M': 0, 'T': 0}
+
+        # Construir filas para Tabla 1
+        filas_boleta_modalidad = []
+        programa_counts = {}
+        
+
+        for programa in sorted(data_boleta.keys()):
+            reg_boletas = _sort_mixed_numbers(list(data_boleta[programa].get('regular', {}).keys()))
+            ext_boletas = _sort_mixed_numbers(list(data_boleta[programa].get('extemporaneo', {}).keys()))
+
+            programa_counts[programa] = {
+                'regular': len(reg_boletas),
+                'extemporaneo': len(ext_boletas),
+                'total': len(reg_boletas) + len(ext_boletas)
+            }
+
+            for tipo, boletas_lista in (('regular', reg_boletas), ('extemporaneo', ext_boletas)):
+                for boleta in boletas_lista:
+                    modalidades_data = {}
+                    total_h = total_m = total_t = 0
+
+                    for mod in modalidades_columnas:
+                        v = data_boleta[programa][tipo][boleta].get(mod, {'H': 0, 'M': 0, 'T': 0})
+                        modalidades_data[mod] = v
+                        total_h += v.get('H', 0)
+                        total_m += v.get('M', 0)
+                        total_t += v.get('T', 0)
+                        
+                        # Acumular en totales globales
+                        totales_tabla1['modalidades'][mod]['H'] += v.get('H', 0)
+                        totales_tabla1['modalidades'][mod]['M'] += v.get('M', 0)
+                        totales_tabla1['modalidades'][mod]['T'] += v.get('T', 0)
+                        
+                        # Acumular en subtotales por generación
+                        subtotales_generacion_tabla1[tipo]['modalidades'][mod]['H'] += v.get('H', 0)
+                        subtotales_generacion_tabla1[tipo]['modalidades'][mod]['M'] += v.get('M', 0)
+                        subtotales_generacion_tabla1[tipo]['modalidades'][mod]['T'] += v.get('T', 0)
+
+                    totales_tabla1['total_h'] += total_h
+                    totales_tabla1['total_m'] += total_m
+                    totales_tabla1['total_t'] += total_t
+                    
+                    # Acumular en subtotales por generación
+                    subtotales_generacion_tabla1[tipo]['total_h'] += total_h
+                    subtotales_generacion_tabla1[tipo]['total_m'] += total_m
+                    subtotales_generacion_tabla1[tipo]['total_t'] += total_t
+
+                    filas_boleta_modalidad.append({
+                        'programa': programa,
+                        'tipo': tipo,
+                        'boleta': boleta,
+                        'modalidades': modalidades_data,
+                        'total_h': total_h,
+                        'total_m': total_m,
+                        'total_t': total_t
+                    })
+
+        # Construir filas para Tabla 2
+        filas_edad_turno = []
+        programa_counts_edad = {}
+
+        for programa in sorted(data_edad.keys()):
+            reg_edades = _sort_mixed_numbers(list(data_edad[programa].get('regular', {}).keys()))
+            ext_edades = _sort_mixed_numbers(list(data_edad[programa].get('extemporaneo', {}).keys()))
+
+            programa_counts_edad[programa] = {
+                'regular': len(reg_edades),
+                'extemporaneo': len(ext_edades),
+                'total': len(reg_edades) + len(ext_edades)
+            }
+
+            for tipo, edades_lista in (('regular', reg_edades), ('extemporaneo', ext_edades)):
+                for edad in edades_lista:
+                    turnos_data = {}
+                    total_h = total_m = total_t = 0
+
+                    for turno in turnos_columnas:
+                        v = data_edad[programa][tipo][edad].get(turno, {'H': 0, 'M': 0, 'T': 0})
+                        turnos_data[turno] = v
+                        total_h += v.get('H', 0)
+                        total_m += v.get('M', 0)
+                        total_t += v.get('T', 0)
+                        
+                        # Acumular en totales globales
+                        totales_tabla2['turnos'][turno]['H'] += v.get('H', 0)
+                        totales_tabla2['turnos'][turno]['M'] += v.get('M', 0)
+                        totales_tabla2['turnos'][turno]['T'] += v.get('T', 0)
+                        
+                        # Acumular en subtotales por generación
+                        subtotales_generacion_tabla2[tipo]['turnos'][turno]['H'] += v.get('H', 0)
+                        subtotales_generacion_tabla2[tipo]['turnos'][turno]['M'] += v.get('M', 0)
+                        subtotales_generacion_tabla2[tipo]['turnos'][turno]['T'] += v.get('T', 0)
+
+                    totales_tabla2['total_h'] += total_h
+                    totales_tabla2['total_m'] += total_m
+                    totales_tabla2['total_t'] += total_t
+                    
+                    # Acumular en subtotales por generación
+                    subtotales_generacion_tabla2[tipo]['total_h'] += total_h
+                    subtotales_generacion_tabla2[tipo]['total_m'] += total_m
+                    subtotales_generacion_tabla2[tipo]['total_t'] += total_t
+
+                    filas_edad_turno.append({
+                        'programa': programa,
+                        'tipo': tipo,
+                        'edad': edad,
+                        'turnos': turnos_data,
+                        'total_h': total_h,
+                        'total_m': total_m,
+                        'total_t': total_t
+                    })
+
         return templates.TemplateResponse("egresados_resumen_dinamico.html", {
             "request": request,
             "nombre_usuario": nombre_completo,
             "nombre_rol": nombre_rol,
             "id_rol": id_rol,
             "periodo": periodo,
+            "periodo_id": periodo_id,
             "nivel": nivel,
             "unidad": unidad,
             "datos_resumen": datos_resumen,
             "generaciones": generaciones,
+            "boletas_columnas": boletas_columnas,
+            "filas_pivot": filas_pivot,
+            "total_general": total_general,
+            "puede_validar": puede_validar,
+            "usuario_ya_valido": usuario_ya_valido,
+            "usuario_ya_rechazo": usuario_ya_rechazo,
+            "esperando_por_rol": esperando_por_rol,
+            "modalidades_columnas": modalidades_columnas,
+            "filas_boleta_modalidad": filas_boleta_modalidad,
+            "programa_counts": programa_counts,
+            "turnos_columnas": turnos_columnas,
+            "edades_columnas": edades_columnas,
+            "filas_edad_turno": filas_edad_turno,
+            "programa_counts_edad": programa_counts_edad,
+            "totales_tabla1": totales_tabla1,
+            "totales_tabla2": totales_tabla2,
+            "subtotales_generacion_tabla1": subtotales_generacion_tabla1,
+            "subtotales_generacion_tabla2": subtotales_generacion_tabla2,
             "error_message": None
         })
         
@@ -1659,9 +2524,18 @@ async def resumen_egresados_dinamico_view(
             "nombre_rol": nombre_rol,
             "id_rol": id_rol,
             "periodo": periodo,
+            "periodo_id": None,
             "nivel": nivel,
             "unidad": unidad,
             "datos_resumen": [],
             "generaciones": [],
+            "boletas_columnas": [],
+            "filas_pivot": [],
+            "total_general": {"boletas": {}, "total_h": 0, "total_m": 0, "total_t": 0},
+            "puede_validar": False,
+            "usuario_ya_valido": False,
+            "usuario_ya_rechazo": False,
+            "esperando_por_rol": None,
             "error_message": f"Error al procesar datos: {str(e)}"
         })
+

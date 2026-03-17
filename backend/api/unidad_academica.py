@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Request, Depends
 from fastapi.responses import HTMLResponse
 from backend.core.templates import templates
+from backend.core.auth import get_current_session
 from backend.database.connection import get_db
 from sqlalchemy.orm import Session
 from backend.database.models.CatUnidadAcademica import CatUnidadAcademica
@@ -10,9 +11,9 @@ from backend.database.models.Temporal_Entidades_Municipios import temporal_Entid
 router = APIRouter()
 
 @router.get("/", response_class=HTMLResponse)
-async def unidad_academica_view(request: Request, db: Session = Depends(get_db)):
+async def unidad_academica_view(request: Request, sess=Depends(get_current_session), db: Session = Depends(get_db)):
     # Obtener ID de UA desde cookies del usuario logueado
-    id_unidad_academica = int(request.cookies.get("id_unidad_academica", 1))
+    id_unidad_academica = int(sess.id_unidad_academica)
     
     # Obtener información de la UA
     unidad_academica = db.query(CatUnidadAcademica).filter_by(Id_Unidad_Academica=id_unidad_academica).first()

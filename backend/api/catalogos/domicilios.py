@@ -5,6 +5,7 @@ from sqlalchemy import text
 
 from backend.database.connection import get_db
 from backend.core.templates import templates
+from backend.core.auth import get_current_session
 from backend.services.periodo_service import get_ultimo_periodo, get_periodo_activo
 
 router = APIRouter()
@@ -15,14 +16,14 @@ HHost: str = "Test"
 
 @router.get("/domicilios", response_class=HTMLResponse)
 def domicilios_view(
-    request: Request,
+    request: Request, sess=Depends(get_current_session),
     db: Session = Depends(get_db)
 ):
     """
     Vista para consultar los domicilios mediante un Stored Procedure.
     """
     UUsuario = getUsuario(request)
-    Rol = str(request.cookies.get("nombre_rol",""))
+    Rol = str(sess.nombre_rol)
     
     # Obtener periodo dinámico (priorizar activo)
     _, PPeriodo = get_periodo_activo(db) or get_ultimo_periodo(db)
@@ -91,7 +92,7 @@ def consultaEntidad(db: Session):
     
 
 @router.post("/registrarUA")
-def registrar_ua(data: dict, request: Request, db: Session = Depends(get_db)):
+def registrar_ua(data: dict, request: Request, sess=Depends(get_current_session), db: Session = Depends(get_db)):
     print("Datos recibidos en REGISTRAR:")
     print(data)  # <-- imprime todo el JSON recibido
     try:
@@ -143,7 +144,7 @@ def registrar_ua(data: dict, request: Request, db: Session = Depends(get_db)):
 
 
 @router.put("/actualizarUA/")
-def actualizar_ua(data: dict, request: Request, db: Session = Depends(get_db)):
+def actualizar_ua(data: dict, request: Request, sess=Depends(get_current_session), db: Session = Depends(get_db)):
 
     print("\nDatos recibidos en ACTUALIZAR:")
     print("Body recibido:", data)
@@ -189,7 +190,7 @@ def actualizar_ua(data: dict, request: Request, db: Session = Depends(get_db)):
 
 
 @router.delete("/eliminarUA/{sigla}")
-def eliminar_ua(sigla: str, request: Request, db: Session = Depends(get_db)):
+def eliminar_ua(sigla: str, request: Request, sess=Depends(get_current_session), db: Session = Depends(get_db)):
     print("\nDatos recibidos en ELIMINAR:")
     print("Sigla:", sigla)
 
@@ -221,6 +222,6 @@ def eliminar_ua(sigla: str, request: Request, db: Session = Depends(get_db)):
     return {"status": "ok", "msg": "UA eliminada correctamente"}
 
 
-def getUsuario(request: Request):
-    UUsuario = request.cookies.get("nombre_usuario", "")
+def getUsuario(request: Request, sess=Depends(get_current_session)):
+    UUsuario = sess.nombre_usuario
     return UUsuario 
