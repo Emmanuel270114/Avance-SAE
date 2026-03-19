@@ -61,8 +61,8 @@ def _detect_group(role_name: str) -> str | None:
 def get_roles_for_user_group(db: Session, current_role_id: int) -> list[RolesResponse]:
     """Retorna los roles que puede asignar el usuario actual según su rol.
     - Si el rol actual es 'Administrador' u 'Operador' => retorna TODOS los roles.
-    - Si pertenece a roles 7, 8, 9 (superiores CIIDII) => puede asignar roles 3, 4, 5, 6, 7, 8, 9
-    - Si pertenece a 'CIIDII' (otros) => solo roles 'CIIDII'.
+    - Si pertenece a roles 7, 8, 9 (superiores DII) => puede asignar roles 3, 4, 5, 6, 7, 8, 9
+    - Si pertenece a 'DII' (otros) => solo roles 'DII'.
     - Si pertenece a 'UAS' => solo roles 'UAS'.
     """
     roles = read_all_roles(db)

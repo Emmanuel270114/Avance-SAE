@@ -1,0 +1,89 @@
+/* Componente: Selector de formatos con checkboxes */
+
+.form-group-formatos {
+    width: 100%;
+}
+
+.format-options-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(150px, 1fr));
+    gap: 8px;
+    padding: 8px;
+    border: 1px solid #d9d9d9;
+    border-radius: 8px;
+    background: #ffffff;
+}
+
+.format-option-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid #e5d6df;
+    border-radius: 10px;
+    background: #fff;
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.format-option-card:hover {
+    border-color: #c597b3;
+    background: #faf5f8;
+}
+
+.format-checkbox {
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border: 2px solid #6e0343;
+    border-radius: 4px;
+    margin: 0;
+    cursor: pointer;
+    position: relative;
+    flex: 0 0 auto;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.format-checkbox:checked {
+    background: #6e0343;
+    border-color: #6e0343;
+}
+
+.format-checkbox:checked::after {
+    content: "";
+    position: absolute;
+    left: 5px;
+    top: 1px;
+    width: 5px;
+    height: 10px;
+    border: solid #ffffff;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+.format-option-text {
+    color: #2b2b2b;
+    font-size: 0.95em;
+}
+
+.format-checkbox:checked + .format-option-text {
+    color: #4a022e;
+    font-weight: 600;
+}
+
+#formatos-container.input-error {
+    border: 2px solid #c62828 !important;
+    background: #ffebee;
+}
+
+@media (max-width: 900px) {
+    .format-options-grid {
+        grid-template-columns: repeat(2, minmax(150px, 1fr));
+    }
+}
+
+@media (max-width: 520px) {
+    .format-options-grid {
+        grid-template-columns: 1fr;
+    }
+}

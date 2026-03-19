@@ -19,5 +19,5 @@ class Usuario(Base):
     Nombre: Mapped[str] = mapped_column(String(50), nullable=True)
     Paterno: Mapped[str] = mapped_column(String(50), nullable=True)
     Materno: Mapped[str] = mapped_column(String(50), nullable=True)
-    Id_Nivel: Mapped[int] = mapped_column(Integer,nullable=True) #mapped_column(ForeignKey("Cat_Nivel.Id_Nivel"))
+    Id_Nivel: Mapped[int | None] = mapped_column(Integer,nullable=True) #mapped_column(ForeignKey("Cat_Nivel.Id_Nivel"))
     

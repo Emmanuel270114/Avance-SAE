@@ -27,11 +27,12 @@
                 <input type="text" id="usuario" name="usuario" placeholder="Usuario Sugerido" required readonly class="input-form input-readonly">
             </div>
         </div>
-        <div class="form-row">
+        <div class="form-row form-row-catalogos">
             <div class="form-group">
                 <label for="id_unidad_academica">Unidad Académica</label>
                 {% if es_super_admin or id_rol in [7, 8, 9] %}
                 <select id="id_unidad_academica" name="id_unidad_academica" class="input-form" required>
+                    <option value="">-- Seleccione una Unidad Académica --</option>
                     {% for ua in unidades_academicas %}
                     <option value="{{ ua.Id_Unidad_Academica }}">{{ ua.Sigla }} </option>
                     {% endfor %}
@@ -49,7 +50,8 @@
             </div>
             <div class="form-group">
                 <label for="id_rol">Rol</label>
-                <select id="id_rol" name="id_rol" required class="input-form" title="Selecciona el rol">
+                <select id="id_rol" name="id_rol" required class="input-form" title="Selecciona primero una Unidad Académica" disabled>
+                    <option value="">-- Seleccione un Rol --</option>
                     {% for rol in roles %}
                     <option value="{{ rol.Id_Rol }}">{{ rol.Rol }}</option>
                     {% endfor %}
@@ -57,15 +59,29 @@
             </div>
             <div class="form-group">
                 <label for="id_nivel">Nivel</label>
-                <select id="id_nivel" name="id_nivel" required class="input-form" title="Selecciona el nivel">
+                <select id="id_nivel" name="id_nivel" required class="input-form" title="Selecciona primero un Rol" disabled>
+                    <option value="">-- Seleccione un Nivel --</option>
                     {% for nivel in niveles %}
                     <option value="{{ nivel.Id_Nivel }}">{{ nivel.Nivel }}</option>
                     {% endfor %}
                 </select>
             </div>
         </div>
+        <div class="form-row form-row-formatos" id="formatos-row" style="display: none;">
+            <div class="form-group form-group-formatos">
+                <label>Formato(s)</label>
+                <div id="formatos-container" class="format-options-grid" role="group" aria-label="Selecciona uno o mas formatos">
+                    {% for formato in formatos %}
+                    <label class="format-option-card" for="formato_{{ formato.Id_Formato }}">
+                        <input type="checkbox" id="formato_{{ formato.Id_Formato }}" name="id_formatos" value="{{ formato.Id_Formato }}" class="format-checkbox">
+                        <span class="format-option-text">{{ formato.Formato }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
         <input type="hidden" id="id_usuario" name="id_usuario">
-        <div class="form-row">
+        <div class="form-row form-row-actions">
             <button type="submit" id="btn-guardar">Registrar</button>
             <button type="button" id="btn-cancelar">Cancelar</button>
             <button type="button" id="btn-limpiar">Limpiar</button>

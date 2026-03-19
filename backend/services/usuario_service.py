@@ -21,6 +21,7 @@ from backend.schemas.Usuario import UsuarioCreate, UsuarioResponse, UsuarioLogin
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from typing import Optional, Dict
+import unicodedata
 
 import bcrypt
 
@@ -45,6 +46,15 @@ def get_username_by_email(db: Session, email: str) -> str | None:
     user = read_user_by_email(db, email)
     return user.Usuario if user else None
 
+
+def _normalizar_texto_accion(texto: str) -> str:
+    """Normaliza texto para comparaciones estables (sin acentos y en minúsculas)."""
+    if not texto:
+        return ""
+    texto = unicodedata.normalize("NFKD", texto)
+    texto = "".join(ch for ch in texto if not unicodedata.combining(ch))
+    return texto.lower().strip()
+
 def has_temporary_password(db: Session, user_id: int) -> bool:
     """Verifica si el usuario tiene contraseña temporal consultando SOLO la bitácora.
     Busca la acción MÁS RECIENTE relacionada con contraseñas.
@@ -53,29 +63,43 @@ def has_temporary_password(db: Session, user_id: int) -> bool:
     """
     try:
         from backend.database.models.Bitacora import Bitacora
-        from datetime import datetime, timedelta
-        
-        # Buscar últimas acciones del usuario en los últimos 30 días
-        # IMPORTANTE: Usar datetime.now() sin timezone para compatibilidad con SQL Server
-        fecha_limite = datetime.now() - timedelta(days=30)
-        
+
+        # Recuperar acciones más recientes del usuario sin acotar por 30 días,
+        # para evitar falsos negativos cuando la contraseña temporal es antigua.
         acciones_recientes = (
             db.query(Bitacora)
             .filter(
-                Bitacora.Id_Usuario == user_id,
-                Bitacora.Fecha >= fecha_limite
+                Bitacora.Id_Usuario == user_id
             )
-            .order_by(Bitacora.Fecha.desc())
+            .order_by(Bitacora.Fecha.desc(), Bitacora.Id_Bitacora.desc())
+            .limit(200)
             .all()
+        )
+
+        patrones_temporal = (
+            "contrasena temporal",
+            "password temporal",
+            "contrasena provisional",
+            "password provisional",
+            "nueva contrasena temporal",
+            "reset password",
+        )
+        patrones_cambio = (
+            "cambio de contrasena",
+            "cambio su contrasena",
+            "contrasena actualizada",
+            "actualizo su contrasena",
+            "actualizo contrasena",
+            "password actualizado",
         )
         
         # Buscar la PRIMERA acción relevante (más reciente)
         for accion in acciones_recientes:
-            texto_accion = accion.Acciones.lower()
+            texto_accion = _normalizar_texto_accion(accion.Acciones or "")
             
             # Verificar si es acción de contraseña
-            es_temporal = "contraseña temporal" in texto_accion
-            es_cambio = "cambió su contraseña" in texto_accion or "cambio de contraseña" in texto_accion
+            es_temporal = any(patron in texto_accion for patron in patrones_temporal)
+            es_cambio = any(patron in texto_accion for patron in patrones_cambio)
             
             if es_temporal:
                 # La acción más reciente es generación de temporal → SÍ requiere cambio

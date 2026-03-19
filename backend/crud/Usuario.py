@@ -26,11 +26,11 @@ def create_usuario(db: Session, user_data: UsuarioCreate) -> Usuario:
 
 ############################__________________FUNCIONES READ____________________________############################
 def read_user_by_username(db: Session, username: str) -> Optional[Usuario]:
-    stmt = select(Usuario).where(Usuario.Usuario == username, Usuario.Id_Estatus != 3)
+    stmt = select(Usuario).where(Usuario.Usuario == username, Usuario.Id_Estatus == 1)
     return db.execute(stmt).scalars().first()
 
 def read_user_by_email(db: Session, email: str) -> Optional[Usuario]:
-    stmt = select(Usuario).where(Usuario.Email == email, Usuario.Id_Estatus != 3)
+    stmt = select(Usuario).where(Usuario.Email == email, Usuario.Id_Estatus == 1)
     return db.execute(stmt).scalars().first()
 
 def read_password_by_user(db: Session, username: str) -> Optional[str]:
@@ -113,7 +113,7 @@ def set_usuario_estatus(db: Session, id_usuario: int, id_estatus: int):
 def get_usuarios_by_unidad(db: Session, id_unidad_academica: int) -> Sequence[Usuario]:
     return (
         db.query(Usuario)
-        .filter(Usuario.Id_Unidad_Academica == id_unidad_academica, Usuario.Id_Estatus != 3)
+        .filter(Usuario.Id_Unidad_Academica == id_unidad_academica, Usuario.Id_Estatus == 1)
         .all()
     )
 

@@ -4,3 +4,4 @@ from .CatRoles import CatRoles
 from .CatUnidadAcademica import CatUnidadAcademica
 from .Usuario import Usuario
 from .CatNivel import CatNivel
+from .Temp_Usuarios import Temp_Usuarios

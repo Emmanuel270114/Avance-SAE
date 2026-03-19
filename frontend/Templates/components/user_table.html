@@ -7,6 +7,7 @@
             <th>Email</th>
             <th>Rol</th>
             <th>Unidad Académica</th>
+            <th>Formato(s)</th>
     <!--    {% if es_super_admin %} 
             <th>Unidad Académica</th>
             {% endif %}
@@ -14,13 +15,14 @@
         </tr>
     </thead>
     <tbody>
-        {% for u, nombre_rol, nombre_ua_usuario in usuarios_con_rol %}
-    <tr class="fila-usuario" data-id="{{ u.Id_Usuario }}" data-nombre="{{ u.Nombre }}" data-paterno="{{ u.Paterno }}" data-materno="{{ u.Materno }}" data-usuario="{{ u.Usuario }}" data-email="{{ u.Email }}" data-id_unidad="{{ u.Id_Unidad_Academica }}" data-id_rol="{{ u.Id_Rol }}" data-id_nivel="{{ u.Id_Nivel }}">
-            <td>{{ u.Nombre }} {{ u.Paterno }} {{ u.Materno }}</td>
-            <td>{{ u.Usuario }}</td>
-            <td>{{ u.Email }}</td>
-            <td>{{ nombre_rol }}</td>
-            <td>{{ nombre_ua_usuario }}</td>
+        {% for u in usuarios %}
+    <tr class="fila-usuario" data-id="{{ u.id_usuario }}" data-nombre="{{ u.nombre }}" data-paterno="{{ u.paterno }}" data-materno="{{ u.materno }}" data-usuario="{{ u.usuario }}" data-email="{{ u.email }}" data-id_unidad="{{ u.id_unidad_academica }}" data-id_rol="{{ u.id_rol }}" data-rol_nombre="{{ u.rol }}" data-id_nivel="{{ u.id_nivel }}" data-formatos="{{ u.formatos_ids | join(',') }}">
+            <td>{{ u.nombre }} {{ u.paterno }} {{ u.materno }}</td>
+            <td>{{ u.usuario }}</td>
+            <td>{{ u.email }}</td>
+            <td>{{ u.rol }}</td>
+            <td>{{ u.sigla_ua }}</td>
+            <td>{{ u.formatos_texto }}</td>
 <!--            {% if es_super_admin %}
             <td>{{ nombre_ua_usuario }}</td>
             {% endif %}

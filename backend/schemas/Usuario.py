@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
 
 class UsuarioBase(BaseModel):
@@ -10,6 +10,7 @@ class UsuarioCreate(UsuarioBase):
     Id_Rol: int
     Password: Optional[str] = None  # Opcional, se genera automáticamente si no se proporciona
     Id_Estatus: int
+    Id_Formatos: list[int] = Field(default_factory=list)
     Nombre: str
     Paterno: str
     Materno: str
