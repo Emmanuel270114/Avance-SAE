@@ -1276,4 +1276,13 @@ td .matricula-pair { flex-wrap:nowrap; }
             box-sizing: border-box;
         }
         
-        /* Overlay eliminado - Ahora se usa SweetAlert2 */
+.tabla-matricula-completa tbody {
+    -ms-overflow-style: none; /* IE y Edge antiguo */
+    scrollbar-width: none; /* Firefox */
+    scrollbar-gutter: stable; /* Evita saltos/alineacion al aparecer scrollbar */
+}
+
+.tabla-matricula-completa tbody::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+}

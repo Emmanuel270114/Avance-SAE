@@ -13,7 +13,7 @@ from backend.services.usuario_service import is_super_admin
 router = APIRouter(prefix="/recuperacion", tags=["recuperacion"])
 
 @router.get("/usuario", response_class=HTMLResponse)
-async def recuperar_usuario_view(request: Request, sess=Depends(get_current_session)):
+async def recuperar_usuario_view(request: Request):
     return templates.TemplateResponse("recuperar_usuario.html", {"request": request})
 
 @router.post("/usuario", response_class=JSONResponse)
@@ -28,14 +28,14 @@ async def recuperar_usuario(email: str = Form(...), db: Session = Depends(get_db
         db.close()
 
 @router.get("/password", response_class=HTMLResponse)
-async def recuperar_password_view(request: Request, sess=Depends(get_current_session)):
+async def recuperar_password_view(request: Request):
     return templates.TemplateResponse("recuperar_password.html", {"request": request})
 
 @router.post("/password", response_class=JSONResponse)
 async def recuperar_password(
     username: str = Form(...), 
     email: str = Form(...), 
-    request: Request = None, sess=Depends(get_current_session), 
+    request: Request = None,
     db: Session = Depends(get_db)
 ):
     # Pasar el objeto request directamente a la función

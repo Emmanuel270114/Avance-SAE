@@ -18,7 +18,7 @@ from backend.utils.security import generate_random_password, hash_password
 
 
 ROLES_SIN_NIVEL = {6, 7, 8, 9}
-ROLES_SIN_FORMATO = {6, 7, 8, 9}
+ROL_CAPTURISTA = 3
 
 
 def _capitalizar_nombre(texto: str) -> str:
@@ -390,7 +390,7 @@ def registrar_usuario_sp(
         raise ValueError("El campo Usuario es obligatorio.")
     if not email:
         raise ValueError("El campo Email es obligatorio.")
-    if not id_formatos and id_rol not in ROLES_SIN_FORMATO:
+    if id_rol == ROL_CAPTURISTA and not id_formatos:
         raise ValueError("Debes seleccionar al menos un formato.")
 
     persona_existente = (
@@ -596,9 +596,14 @@ def modificar_usuario_sp(
     if password_nueva:
         password_nueva = hash_password(password_nueva)
 
+    # Si no se envía contraseña nueva, conservar la contraseña actual.
+    password_para_sp = password_nueva or usuario_actual.Password
+    if not password_para_sp:
+        raise ValueError("No fue posible determinar la contraseña actual del usuario.")
+
     id_formatos = [int(x) for x in (payload.get("Id_Formatos") or [])]
 
-    if not id_formatos and id_rol not in ROLES_SIN_FORMATO:
+    if id_rol == ROL_CAPTURISTA and not id_formatos:
         raise ValueError("Debes seleccionar al menos un formato.")
 
     unidad, rol, nivel, formatos = _resolver_catalogos(db, id_unidad, id_rol, id_nivel, id_formatos)
@@ -643,7 +648,7 @@ def modificar_usuario_sp(
                 "host": host,
                 "usuario_objetivo": usuario_objetivo,
                 "usuario_operador": usuario_operador,
-                "password": password_nueva,
+                "password": password_para_sp,
                 "email": email,
                 "nombre": nombre,
                 "paterno": paterno,

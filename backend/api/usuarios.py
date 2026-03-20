@@ -36,7 +36,7 @@ PERMISOS_CREACION_ROLES = {
     9: [3, 4, 5, 6, 7, 8],  # Rol 9 puede crear todos menos él mismo
 }
 
-ROLES_SIN_FORMATO = {6, 7, 8, 9}
+ROL_CAPTURISTA = 3
 ROLES_SUPERIORES_UNICOS = {6, 7, 8, 9}
 
 
@@ -176,7 +176,7 @@ async def registrar_usuario_view(
         user = UsuarioCreate(**data)
 
         formatos_ids = [int(x) for x in (data.get("Id_Formatos") or [])]
-        if user.Id_Rol not in ROLES_SIN_FORMATO and not formatos_ids:
+        if user.Id_Rol == ROL_CAPTURISTA and not formatos_ids:
             return JSONResponse(
                 status_code=400,
                 content={"detail": "Debes seleccionar al menos un formato."},
@@ -285,7 +285,7 @@ async def editar_usuario_ajax(
         nuevo_id_rol = int(data.get("Id_Rol") or usuario_actual.Id_Rol)
         nueva_id_unidad = int(data.get("Id_Unidad_Academica") or usuario_actual.Id_Unidad_Academica)
 
-        if nuevo_id_rol not in ROLES_SIN_FORMATO and not formatos_ids:
+        if nuevo_id_rol == ROL_CAPTURISTA and not formatos_ids:
             return JSONResponse(
                 status_code=400,
                 content={"mensaje": "Debes seleccionar al menos un formato."},

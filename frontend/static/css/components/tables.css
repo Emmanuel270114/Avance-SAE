@@ -63,14 +63,14 @@ tr:hover {
     border-radius: 6px;
     margin-top: 15px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    background-color: #6e0343; /* 🔹 mismo color que el encabezado */
-    padding: 0; /* 🔹 elimina espacio interno */
+    background-color: #6e0343;
+    padding: 0;
     display: block;
 }
 
 /* Tabla dentro del contenedor */
 .table-container table {
-    background-color: white; /* 🔹 fondo uniforme para las filas */
+    background-color: white;
     margin-top: 0; /* 🔹 evita separación con el borde superior */
 }
 
@@ -82,3 +82,5 @@ tr:hover {
     color: white;
     z-index: 2;
 }
+
+.table-container

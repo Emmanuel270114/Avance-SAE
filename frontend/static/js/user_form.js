@@ -5,15 +5,15 @@ document.addEventListener('DOMContentLoaded', function() {
     const selectUA = document.getElementById('id_unidad_academica');
     const selectRol = document.getElementById('id_rol');
     const selectNivel = document.getElementById('id_nivel');
+    const ROL_CAPTURISTA = '3';
     const ROLES_SIN_NIVEL = new Set(['6', '7', '8', '9']);
-    const ROLES_SIN_FORMATO = new Set(['6', '7', '8', '9']);
 
     function esRolSinNivel(idRol) {
         return ROLES_SIN_NIVEL.has(String(idRol || ''));
     }
 
-    function esRolSinFormato(idRol) {
-        return ROLES_SIN_FORMATO.has(String(idRol || ''));
+    function esRolRequiereFormato(idRol) {
+        return String(idRol || '') === ROL_CAPTURISTA;
     }
 
     function limpiarOpcionesRolDinamicas() {
@@ -97,7 +97,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Mostrar/ocultar formatos según si es Capturista (ID 3)
         const formatosRow = document.getElementById('formatos-row');
         if (formatosRow) {
-            const esCapturista = rolSeleccionado === '3';
+            const esCapturista = rolSeleccionado === ROL_CAPTURISTA;
             if (esCapturista) {
                 formatosRow.style.display = '';
             } else {
@@ -381,7 +381,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 .map(checkbox => parseInt(checkbox.value, 10))
                 .filter(value => !Number.isNaN(value));
 
-            if (!idFormatos.length && !esRolSinFormato(idRol)) {
+            if (esRolRequiereFormato(idRol) && !idFormatos.length) {
                 document.getElementById('mensaje').innerHTML = "<p style='color:red;'>❌ Debes seleccionar al menos un formato.</p>";
                 marcarErrorFormatos(true);
                 return;
