@@ -19,6 +19,7 @@ from backend.services.usuario_sp_service import (
 from backend.services.roles_service import get_all_roles, get_roles_for_user_group
 from backend.services.unidad_services import get_all_units
 from backend.services.nivel_service import get_all_niveles
+from backend.services.periodo_service import get_ultimo_periodo
 from backend.schemas.Usuario import UsuarioCreate
 from sqlalchemy.orm import Session
 from backend.utils.request import get_request_host
@@ -69,8 +70,20 @@ async def usuarios_view(
     
     # Verificar si tiene permisos administrativos
     tiene_permisos_admin = has_admin_permissions(db, id_rol)
-    
-    usuarios = get_usuarios_vista_sp(db)
+
+    usuario_operador = str(getattr(sess, "usuario", "") or "sistema")
+    unidad_operador = get_unidad_academica_nombre(db, id_unidad_academica)
+    _, periodo_literal = get_ultimo_periodo(db)
+    periodo_literal = periodo_literal or ""
+    host_operador = get_request_host(request)
+
+    usuarios = get_usuarios_vista_sp(
+        db,
+        usuario_operador=usuario_operador,
+        unidad_academica=unidad_operador,
+        periodo_literal=periodo_literal,
+        host=host_operador,
+    )
 
     # CASO ESPECIAL: Roles 7, 8, 9 pueden ver usuarios de todas las UAs (como superadmin)
     if es_super_admin or id_rol in [7, 8, 9]:

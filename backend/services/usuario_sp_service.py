@@ -263,8 +263,30 @@ def _row_value(row: dict[str, Any], *keys: str) -> str:
     return ""
 
 
-def get_usuarios_vista_sp(db: Session) -> list[dict[str, Any]]:
-    result = db.execute(text("EXEC dbo.SP_Consulta_Usuarios"))
+def get_usuarios_vista_sp(
+    db: Session,
+    usuario_operador: str,
+    unidad_academica: str,
+    periodo_literal: str,
+    host: str,
+) -> list[dict[str, Any]]:
+    result = db.execute(
+        text(
+            """
+            EXEC dbo.SP_Consulta_Usuarios
+                @UUsuario = :usuario_operador,
+                @UUnidad_Academica = :unidad_academica,
+                @PPeriodo = :periodo,
+                @HHost = :host
+            """
+        ),
+        {
+            "usuario_operador": usuario_operador,
+            "unidad_academica": unidad_academica,
+            "periodo": periodo_literal,
+            "host": host,
+        },
+    )
     rows = [dict(r) for r in result.mappings().all()]
 
     usuarios_activos = db.query(Usuario).filter(Usuario.Id_Estatus == 1).all()
@@ -568,6 +590,12 @@ def modificar_usuario_sp(
     id_rol = int(payload.get("Id_Rol") or usuario_actual.Id_Rol or 0)
     id_nivel_payload = payload.get("Id_Nivel") if "Id_Nivel" in payload else usuario_actual.Id_Nivel
     id_nivel = _to_optional_int(id_nivel_payload)
+    password_nueva = payload.get("Password")
+    if isinstance(password_nueva, str):
+        password_nueva = password_nueva.strip() or None
+    if password_nueva:
+        password_nueva = hash_password(password_nueva)
+
     id_formatos = [int(x) for x in (payload.get("Id_Formatos") or [])]
 
     if not id_formatos and id_rol not in ROLES_SIN_FORMATO:
@@ -599,8 +627,8 @@ def modificar_usuario_sp(
                     @UUnidad_Academica = :unidad,
                     @NNivel = :nivel,
                     @HHost = :host,
-                    @UUsuario = :usuario_operador,
-                    @UUsuarioNvo = :usuario_nuevo,
+                    @UUsuario = :usuario_objetivo,
+                    @UUsuarioAdm = :usuario_operador,
                     @CContrasena = :password,
                     @EEmail = :email,
                     @NNombre = :nombre,
@@ -611,11 +639,11 @@ def modificar_usuario_sp(
             {
                 "periodo": periodo_literal,
                 "unidad": unidad.Sigla,
-                "nivel": nivel.Nivel if nivel else "",
+                "nivel": nivel.Nivel if nivel else None,
                 "host": host,
+                "usuario_objetivo": usuario_objetivo,
                 "usuario_operador": usuario_operador,
-                "usuario_nuevo": usuario_objetivo,
-                "password": usuario_actual.Password,
+                "password": password_nueva,
                 "email": email,
                 "nombre": nombre,
                 "paterno": paterno,
